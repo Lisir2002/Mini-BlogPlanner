@@ -1,0 +1,4 @@
+; PHP-FPM 上传上限示例，放到 /etc/php/8.5/fpm/conf.d/99-cream-upload.ini
+; 应用自身限制单张图片 5MB，这里留出表单与 multipart 开销。
+upload_max_filesize = 12M
+post_max_size = 12M

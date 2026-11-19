@@ -1,0 +1,26 @@
+{
+  "id": "posts",
+  "name": "Posts",
+  "version": "0.2.3",
+  "priority": 25,
+  "class": "Plugin\\Posts\\PostsPlugin",
+  "runtime": true,
+  "enabled": true,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "posts",
+    "tags"
+  ],
+  "routes": [
+    "/posts",
+    "/posts/{slug}"
+  ],
+  "route_prefixes": [
+    "/posts"
+  ],
+  "migrations": false,
+  "hooks": []
+}

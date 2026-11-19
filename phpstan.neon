@@ -1,0 +1,13 @@
+parameters:
+  level: 8
+  paths:
+    - core
+    - plugins
+    - themes
+  excludePaths:
+    analyse:
+      - plugins/install/views/*
+      - themes/*/templates/*
+  tmpDir: .phpstan.cache
+  treatPhpDocTypesAsCertain: true
+  reportUnmatchedIgnoredErrors: true

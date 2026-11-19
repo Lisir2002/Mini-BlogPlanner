@@ -1,0 +1,44 @@
+{
+    "name": "lisir2002/mini-blogplanner",
+    "description": "Mini-BlogPlanner — the blog core behind 日记Planner.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.5.0",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.3",
+        "phpunit/phpunit": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Core\\": "core/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "preferred-install": "dist"
+    },
+    "scripts": {
+        "lint:version": "php tools/lint-version.php",
+        "lint:migrations": "php tools/lint-migrations.php",
+        "test": "php tests/run.php",
+        "check": [
+            "@lint:version",
+            "@lint:migrations",
+            "@lint:core",
+            "@test"
+        ],
+        "lint:core": "php tools/lint-core.php"
+    }
+}

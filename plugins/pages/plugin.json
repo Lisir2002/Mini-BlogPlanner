@@ -1,0 +1,24 @@
+{
+  "id": "pages",
+  "name": "Independent Pages",
+  "version": "0.2.2",
+  "priority": 40,
+  "class": "Plugin\\Pages\\PagesPlugin",
+  "runtime": true,
+  "enabled": true,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "independent-pages"
+  ],
+  "routes": [
+    "/{slug}"
+  ],
+  "route_prefixes": [
+    "/"
+  ],
+  "migrations": false,
+  "hooks": []
+}

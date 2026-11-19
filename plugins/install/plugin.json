@@ -1,0 +1,22 @@
+{
+  "id": "install",
+  "name": "Installer",
+  "version": "0.1.1",
+  "priority": 10,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "installer"
+  ],
+  "routes": [
+    "/install.php"
+  ],
+  "route_prefixes": [
+    "/install.php"
+  ],
+  "migrations": false,
+  "hooks": [],
+  "runtime": false
+}

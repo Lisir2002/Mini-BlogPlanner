@@ -1,0 +1,188 @@
+.archive-head {
+  margin-bottom: 28px;
+  container-type: inline-size;
+}
+
+.archive-head h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(32px, 6.4cqw, 52px);
+  line-height: 1.16;
+  letter-spacing: -0.045em;
+}
+
+.archive-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.post-list {
+  display: grid;
+  gap: 14px;
+}
+
+.post-card {
+  padding: 22px 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  container-type: inline-size;
+}
+
+.post-card h2 {
+  margin: 8px 0 8px;
+  font-size: clamp(20px, 3.3cqw, 27px);
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+}
+
+.post-card h2 a { text-decoration: none; }
+.post-card h2 a:hover { text-decoration: underline; text-decoration-color: var(--butter); text-underline-offset: 5px; }
+
+.post-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+}
+
+.post-meta span {
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.empty-note {
+  padding: 44px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  text-align: center;
+}
+
+.empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--butter);
+}
+
+.empty-note h2 { margin: 0 0 6px; font-size: 22px; }
+.empty-note p { margin: 0; color: var(--muted); }
+
+.post-page {
+  max-width: 780px;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.back-link:hover { color: var(--ink); }
+
+.post-head h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(32px, 7cqw, 58px);
+  line-height: 1.16;
+  letter-spacing: -0.045em;
+}
+
+.post-lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--cream-1);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.post-body {
+  margin-top: 30px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--ink-soft);
+}
+
+.post-body h2 { margin: 34px 0 12px; color: var(--ink); font-size: 26px; letter-spacing: -0.03em; }
+.post-body h3 { margin: 28px 0 10px; color: var(--ink); font-size: 21px; }
+.post-body p { margin: 0 0 18px; }
+.post-body a { color: var(--coral); text-underline-offset: 3px; }
+.post-body ul, .post-body ol { margin: 0 0 18px; padding-left: 1.3em; }
+.post-body li { margin-bottom: 8px; }
+.post-body blockquote {
+  margin: 22px 0;
+  padding: 12px 18px;
+  border-left: 4px solid var(--butter);
+  background: var(--cream-1);
+  color: var(--muted);
+}
+.post-body pre {
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: oklch(0.24 0.01 70);
+  color: oklch(0.96 0.01 92);
+  font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.post-body code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--cream-1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+.post-body pre code { padding: 0; background: transparent; }
+.post-body img { max-width: 100%; height: auto; border-radius: var(--radius-md); }
+
+@media (max-width: 640px) {
+  .post-card { padding: 18px 16px; }
+  .post-body { font-size: 15px; }
+}
+
+.preview-note {
+  margin: 0 0 1.4rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--coral);
+  border-radius: var(--radius-md);
+  background: var(--coral-soft);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}

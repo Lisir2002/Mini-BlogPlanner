@@ -1,0 +1,27 @@
+{
+  "id": "admin",
+  "name": "Admin",
+  "version": "0.6.3",
+  "priority": 10,
+  "class": "Plugin\\Admin\\AdminPlugin",
+  "runtime": true,
+  "enabled": true,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "admin",
+    "auth"
+  ],
+  "routes": [
+    "/admin",
+    "/admin/login",
+    "/admin/posts"
+  ],
+  "route_prefixes": [
+    "/admin"
+  ],
+  "migrations": false,
+  "hooks": []
+}

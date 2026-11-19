@@ -1,0 +1,293 @@
+openapi: 3.2.1
+info:
+  title: Mini-BlogPlanner API
+  summary: 个人博客的公开读取接口。
+  description: |
+    所有响应均为 JSON。错误使用 RFC 9457 problem+json。
+    版本号与 version.json 的 `api` 轴保持一致。
+  version: 1.1.0
+  contact:
+    name: Mini-BlogPlanner
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: /
+    description: 当前站点
+paths:
+  /api/v1/health:
+    get:
+      operationId: getApiHealth
+      summary: 读取服务健康状态
+      description: 检查数据库连接和结构版本是否与当前应用兼容。该接口不返回任何敏感配置。
+      responses:
+        "200":
+          description: 服务可用，结构版本兼容。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: 数据库不可用，或数据库结构版本不兼容。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [system]
+  /healthz:
+    get:
+      operationId: getHealthz
+      summary: 健康检查别名
+      description: 与 `/api/v1/health` 返回相同结果，供探针和部署脚本使用。
+      responses:
+        "200":
+          description: 服务可用。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: 服务不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [system]
+  /api/v1/posts:
+    get:
+      operationId: listPosts
+      summary: 列出已发布文章
+      description: 按发布时间倒序，最多 50 条。草稿和未到时间的文章不会出现。
+      responses:
+        "200":
+          description: 文章列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PostSummary"
+                  meta:
+                    type: object
+                    required: [count]
+                    properties:
+                      count:
+                        type: integer
+        "503":
+          description: 文章服务不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [posts]
+  /api/v1/tags:
+    get:
+      operationId: listTags
+      summary: 列出有已发布文章的标签
+      description: 按文章数量倒序。没有已发布文章的标签不会出现。
+      responses:
+        "200":
+          description: 标签列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TagSummary"
+                  meta:
+                    type: object
+                    required: [count]
+                    properties:
+                      count:
+                        type: integer
+        "503":
+          description: 标签服务不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [tags]
+  /api/v1/tags/{slug}:
+    get:
+      operationId: getTag
+      summary: 读取单个标签及其文章
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: 标签 slug。
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]{1,80}$"
+      responses:
+        "200":
+          description: 标签详情与已发布文章列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TagDetail"
+        "404":
+          description: 标签不存在或没有已发布文章。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 标签服务不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [tags]
+  /api/v1/posts/{slug}:
+    get:
+      operationId: getPost
+      summary: 读取单篇文章
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: 文章 slug，只含小写字母、数字和短横线。
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]{1,190}$"
+      responses:
+        "200":
+          description: 文章详情，包含正文 HTML。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Post"
+        "404":
+          description: 文章不存在或未发布。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 文章服务不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [posts]
+components:
+  schemas:
+    PostSummary:
+      type: object
+      required: [slug, title, excerpt, published_at, reading_minutes, url, tags]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        excerpt: { type: string }
+        published_at: { type: string, format: date-time }
+        reading_minutes: { type: integer, minimum: 1 }
+        url: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+    TagSummary:
+      type: object
+      required: [name, slug, url, post_count]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        url: { type: string }
+        post_count: { type: integer, minimum: 1 }
+    TagDetail:
+      type: object
+      required: [name, slug, url, posts]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        url: { type: string }
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostSummary"
+    Post:
+      allOf:
+        - $ref: "#/components/schemas/PostSummary"
+        - type: object
+          required: [body_html]
+          properties:
+            body_html:
+              type: string
+              description: 已通过白名单过滤的 HTML；调用方仍需按自己的上下文转义。
+    Health:
+      type: object
+      required: [status, app, api, schema]
+      properties:
+        status:
+          type: string
+          const: ok
+        app:
+          type: string
+          examples: ["0.6.0"]
+        api:
+          type: string
+          examples: ["1.1.0"]
+        schema:
+          type: integer
+          examples: [2026112004]
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          examples: ["/problems/schema-behind"]
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+          examples: ["/api/v1/health"]
+    ValidationProblem:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                required: [pointer, message]
+                properties:
+                  pointer:
+                    type: string
+                  message:
+                    type: string
+  responses:
+    Problem:
+      description: RFC 9457 problem details
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+tags:
+  - name: system
+    description: 健康检查与运维探针。
+  - name: posts
+    description: 已发布文章的公开读取接口。

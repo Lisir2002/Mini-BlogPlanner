@@ -1,0 +1,23 @@
+{
+  "id": "web",
+  "name": "Public Web",
+  "version": "0.2.1",
+  "priority": 20,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "public-html"
+  ],
+  "routes": [
+    "/"
+  ],
+  "route_prefixes": [
+    "/"
+  ],
+  "migrations": false,
+  "hooks": [],
+  "class": "Plugin\\Web\\WebPlugin",
+  "runtime": true
+}

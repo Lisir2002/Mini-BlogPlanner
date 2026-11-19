@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - name: PHP syntax
+        run: find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Version contract
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            php tools/lint-version.php --tag="${GITHUB_REF_NAME}"
+          else
+            php tools/lint-version.php
+          fi
+
+      - name: Migration contract
+        run: php tools/lint-migrations.php
+
+      - name: Core boundary
+        run: php tools/lint-core.php
+
+      - name: Unit tests
+        run: php tests/run.php
+
+      - name: Static analysis
+        run: vendor/bin/phpstan analyse --no-progress

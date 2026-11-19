@@ -1,0 +1,26 @@
+{
+  "id": "api",
+  "name": "HTTP API",
+  "version": "0.2.0",
+  "priority": 30,
+  "class": "Plugin\\Api\\ApiPlugin",
+  "runtime": true,
+  "enabled": true,
+  "requires": {
+    "php": ">=8.5.0",
+    "core": ">=0.1.0"
+  },
+  "provides": [
+    "json-api"
+  ],
+  "routes": [
+    "/api/v1/health",
+    "/healthz"
+  ],
+  "route_prefixes": [
+    "/api/",
+    "/healthz"
+  ],
+  "migrations": false,
+  "hooks": []
+}
