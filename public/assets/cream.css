@@ -15,6 +15,22 @@
   --sky: oklch(0.890 0.040 230);
   --shadow: 3px 3px 0 color-mix(in oklch, var(--ink) 12%, transparent);
   --shadow-lift: 6px 7px 0 color-mix(in oklch, var(--ink) 10%, transparent);
+  --paper-wash: linear-gradient(108deg, oklch(1 0 0 / 0.40), transparent 40%, oklch(0.86 0.04 80 / 0.055));
+  --paper-fiber:
+    repeating-linear-gradient(0deg, oklch(0.45 0.02 75 / 0.028) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, oklch(0.45 0.02 75 / 0.018) 0 1px, transparent 1px 6px);
+  --paper-shadow:
+    0 1px 0 oklch(1 0 0 / 0.72) inset,
+    0 0 0 1px oklch(0.45 0.02 75 / 0.035) inset,
+    4px 5px 0 -1px var(--cream-1),
+    4px 5px 0 0 oklch(0.78 0.02 80 / 0.62),
+    0 18px 32px -27px oklch(0.30 0.02 70 / 0.46);
+  --paper-shadow-lift:
+    0 1px 0 oklch(1 0 0 / 0.76) inset,
+    0 0 0 1px oklch(0.45 0.02 75 / 0.035) inset,
+    5px 7px 0 -1px var(--cream-1),
+    5px 7px 0 0 oklch(0.78 0.02 80 / 0.66),
+    0 26px 42px -29px oklch(0.30 0.02 70 / 0.5);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 22px;
@@ -44,11 +60,12 @@ body::before {
   inset: 0;
   pointer-events: none;
   opacity: 0.22;
+  opacity: 0.5;
   background-image:
-    linear-gradient(oklch(0.62 0.02 80 / 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.62 0.02 80 / 0.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to bottom, black, transparent 70%);
+    repeating-linear-gradient(0deg, oklch(0.45 0.02 75 / 0.035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, oklch(0.45 0.02 75 / 0.022) 0 1px, transparent 1px 6px),
+    radial-gradient(oklch(0.38 0.02 70 / 0.045) 0.55px, transparent 0.75px);
+  background-size: auto, auto, 7px 7px;
 }
 
 .skip-link {
@@ -92,7 +109,10 @@ summary:focus-visible {
   top: 0;
   z-index: 30;
   border-bottom: 1px solid var(--line);
-  background: oklch(0.988 0.010 92 / 0.86);
+  background:
+    linear-gradient(180deg, oklch(0.995 0.005 92 / 0.94), oklch(0.972 0.016 92 / 0.90)),
+    var(--paper);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.72) inset, 0 2px 0 oklch(0.88 0.015 85 / 0.65), 0 14px 34px -32px oklch(0.25 0.02 70 / 0.55);
   backdrop-filter: blur(14px) saturate(1.1);
 }
 
@@ -234,11 +254,13 @@ summary:focus-visible {
 }
 
 .hero-copy {
+  position: relative;
+  isolation: isolate;
   padding: clamp(24px, 4vw, 46px);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--paper);
-  box-shadow: var(--shadow);
+  border: 1px solid color-mix(in oklch, var(--line-strong) 86%, var(--paper));
+  border-radius: 10px 26px 12px 22px / 18px 12px 24px 14px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
   container-type: inline-size;
 }
 
@@ -350,12 +372,13 @@ summary:focus-visible {
   flex-direction: column;
   justify-content: center;
   padding: 30px 24px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklch, var(--line-strong) 90%, var(--paper));
+  border-radius: 6px 18px 10px 14px / 10px 6px 18px 8px;
   background:
-    repeating-linear-gradient(to bottom, transparent 0 31px, oklch(0.62 0.03 230 / 0.18) 31px 32px),
+    linear-gradient(90deg, transparent 0 31px, oklch(0.68 0.13 32 / 0.15) 31px 32px, transparent 32px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, oklch(0.55 0.04 230 / 0.14) 31px 32px),
     var(--cream-1);
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--paper-shadow-lift);
   transform: rotate(1.6deg);
   container-type: inline-size;
 }
@@ -367,9 +390,35 @@ summary:focus-visible {
   top: -12px;
   left: 50%;
   translate: -50% 0;
-  opacity: 0.8;
+  opacity: 0.88;
   border-radius: 2px;
+  background-image:
+    repeating-linear-gradient(90deg, oklch(1 0 0 / 0.26) 0 3px, transparent 3px 7px),
+    linear-gradient(180deg, oklch(1 0 0 / 0.12), oklch(0.45 0.02 75 / 0.035));
+  box-shadow: 0 2px 5px oklch(0.30 0.02 70 / 0.14), 0 1px 0 oklch(1 0 0 / 0.35) inset;
   clip-path: polygon(4% 0, 96% 4%, 100% 50%, 96% 96%, 4% 100%, 0 50%);
+}
+
+.hero-tape {
+  top: -13px;
+  left: 44px;
+  translate: 0 0;
+  transform: rotate(-5deg);
+}
+
+.article-tape {
+  top: -13px;
+  left: 42px;
+  translate: 0 0;
+  transform: rotate(-4deg);
+}
+
+.journal-tape {
+  top: -13px;
+  right: 11%;
+  left: auto;
+  translate: 0 0;
+  transform: rotate(3deg);
 }
 
 .tape-coral { background: var(--coral-soft); }
@@ -455,22 +504,48 @@ summary:focus-visible {
 
 .note-card {
   position: relative;
-  padding: 22px 20px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--paper);
-  box-shadow: var(--shadow);
+  isolation: isolate;
+  padding: 24px 20px 22px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 80%, var(--paper));
+  border-radius: 12px 14px 20px 8px / 14px 8px 24px 10px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
   transition: transform 180ms ease, box-shadow 180ms ease;
   container-type: inline-size;
+}
+
+.note-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.72;
+  mix-blend-mode: multiply;
 }
 
 .note-card:nth-child(1) { transform: rotate(-0.8deg); }
 .note-card:nth-child(2) { transform: rotate(0.5deg); }
 .note-card:nth-child(3) { transform: rotate(-0.3deg); }
 
+.note-card::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 0 0 16px 0;
+  background: linear-gradient(135deg, transparent 48%, oklch(0.92 0.03 88) 49%, var(--cream-1) 68%);
+  box-shadow: -2px -2px 4px oklch(0.30 0.02 70 / 0.08);
+  pointer-events: none;
+}
+
 .note-card:hover {
-  transform: translateY(-4px) rotate(0deg);
-  box-shadow: var(--shadow-lift);
+  transform: translateY(-5px) rotate(0deg);
+  box-shadow: var(--paper-shadow-lift);
 }
 
 .note-icon {
@@ -527,14 +602,30 @@ summary:focus-visible {
 .section-journal { margin-top: 48px; }
 
 .journal-paper {
-  padding: clamp(24px, 4vw, 42px);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
+  position: relative;
+  isolation: isolate;
+  padding: clamp(28px, 4vw, 46px);
+  border: 1px solid color-mix(in oklch, var(--line-strong) 88%, var(--paper));
+  border-radius: 5px 24px 8px 18px / 16px 8px 20px 7px;
   background:
-    radial-gradient(circle at 85% 18%, oklch(0.91 0.06 30 / 0.22), transparent 14rem),
+    linear-gradient(90deg, transparent 0 31px, oklch(0.68 0.13 32 / 0.24) 31px 32px, transparent 32px),
+    repeating-linear-gradient(to bottom, transparent 0 33px, oklch(0.55 0.04 230 / 0.13) 33px 34px),
+    radial-gradient(circle at 85% 18%, oklch(0.91 0.06 30 / 0.20), transparent 14rem),
     var(--paper);
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--paper-shadow);
   container-type: inline-size;
+}
+
+.journal-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.62;
+  mix-blend-mode: multiply;
 }
 
 .journal-heading {
@@ -667,6 +758,33 @@ summary:focus-visible {
 .footer-note strong { color: var(--cream-1); font-weight: 750; }
 
 .footer-meta a { color: var(--butter); text-underline-offset: 3px; }
+
+/* 纸张层：评论区与文章页共用同一套纤维、叠边和胶带语言。 */
+.comment-item, .comment-form {
+  position: relative;
+  isolation: isolate;
+  border-color: color-mix(in oklch, var(--line-strong) 78%, var(--paper));
+  border-radius: 8px 18px 10px 14px / 12px 8px 18px 9px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
+}
+
+.hero-copy::before, .comment-item::after, .comment-form::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.68;
+  mix-blend-mode: multiply;
+}
+
+.comment-item:nth-child(even) { transform: rotate(-0.18deg); }
+.comment-item:nth-child(odd) { transform: rotate(0.12deg); }
+.comment-item:hover { transform: rotate(0deg); }
+.comment-reply { background: var(--cream-1); box-shadow: none; }
 
 @media (max-width: 920px) {
   .hero { grid-template-columns: 1fr; }

@@ -21,12 +21,26 @@
 }
 
 .post-card {
-  padding: 22px 22px 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--paper);
-  box-shadow: var(--shadow);
+  position: relative;
+  isolation: isolate;
+  padding: 24px 22px 20px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 78%, var(--paper));
+  border-radius: 10px 18px 12px 14px / 14px 10px 18px 9px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
   container-type: inline-size;
+}
+
+.post-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.64;
+  mix-blend-mode: multiply;
 }
 
 .post-card h2 {
@@ -81,9 +95,28 @@
 .empty-note p { margin: 0; color: var(--muted); }
 
 .post-page {
-  max-width: 780px;
+  position: relative;
+  isolation: isolate;
+  max-width: 820px;
   margin: 0 auto;
+  padding: clamp(24px, 5vw, 54px);
+  border: 1px solid color-mix(in oklch, var(--line-strong) 82%, var(--paper));
+  border-radius: 7px 24px 10px 20px / 16px 8px 22px 10px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
   container-type: inline-size;
+}
+
+.post-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.66;
+  mix-blend-mode: multiply;
 }
 
 .back-link {
@@ -175,6 +208,7 @@
 @media (max-width: 640px) {
   .post-card { padding: 18px 16px; }
   .post-body { font-size: 15px; }
+  .post-page { padding: 22px 17px; border-radius: 6px 18px 8px 16px; }
 }
 
 .preview-note {

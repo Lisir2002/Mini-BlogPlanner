@@ -543,6 +543,18 @@ check('Error pages render a themed document for every status', function (): void
 
 
 
+check('Paper theme uses local fiber and layered edges', function (): void {
+    $root = dirname(__DIR__);
+    $cream = file_get_contents($root . '/public/assets/cream.css');
+    $posts = file_get_contents($root . '/public/assets/posts.css');
+    $comments = file_get_contents($root . '/public/assets/comments.css');
+    truthy($cream !== false && str_contains($cream, '--paper-fiber'), 'Missing paper fiber token');
+    truthy($cream !== false && str_contains($cream, '--paper-shadow'), 'Missing layered paper shadow');
+    truthy($cream !== false && str_contains($cream, 'hero-tape'), 'Missing hero tape detail');
+    truthy($posts !== false && str_contains($posts, '.post-page::before'), 'Article page must use the paper grain layer');
+    truthy($comments !== false && str_contains($comments, 'width: min(820px'), 'Comment sheet must align with the article sheet');
+});
+
 check('Brand separates project and site names', function (): void {
     $root = dirname(__DIR__);
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');

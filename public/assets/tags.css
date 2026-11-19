@@ -11,13 +11,27 @@
   grid-template-rows: auto auto;
   gap: 0.3rem 0.7rem;
   align-items: center;
+  position: relative;
+  isolation: isolate;
   padding: 1.1rem 1.2rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--paper);
+  border: 1px solid color-mix(in oklch, var(--line-strong) 78%, var(--paper));
+  border-radius: 8px 16px 10px 14px / 12px 8px 16px 9px;
+  background: var(--paper-wash), var(--paper);
   color: var(--ink);
   text-decoration: none;
-  box-shadow: var(--shadow);
+  box-shadow: var(--paper-shadow);
+}
+
+.tag-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--paper-fiber);
+  opacity: 0.64;
+  mix-blend-mode: multiply;
 }
 
 .tag-card:hover {

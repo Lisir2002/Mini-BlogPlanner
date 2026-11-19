@@ -5,6 +5,7 @@ $title = (string) ($site['title'] ?? '日记Planner');
 ?>
 <section class="hero">
   <div class="hero-copy">
+    <span class="tape tape-butter hero-tape" aria-hidden="true"></span>
     <span class="eyebrow"><?= cream_icon('spark', 'icon-sm') ?> 今日开张</span>
     <h1>把代码和日子，<br><span class="marker">贴进同一本手账。</span></h1>
     <p class="hero-lead">一个不着急的写作角落。微内核、插件、主题和版本契约都已经就位，接下来让文字慢慢长出来。</p>
@@ -82,6 +83,7 @@ $title = (string) ($site['title'] ?? '日记Planner');
 
 <section class="section section-journal">
   <div class="journal-paper">
+    <span class="tape tape-mint journal-tape" aria-hidden="true"></span>
     <div class="journal-heading">
       <span class="journal-stamp"><?= cream_icon('calendar') ?></span>
       <h2>这本手账接下来写什么</h2>

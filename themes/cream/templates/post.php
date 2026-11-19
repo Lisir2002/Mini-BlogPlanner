@@ -5,6 +5,7 @@ if (!is_object($post)) {
 }
 ?>
 <article class="post-page">
+  <span class="tape tape-butter article-tape" aria-hidden="true"></span>
   <?php if (($preview ?? false) === true): ?>
   <div class="preview-note">预览模式：这篇文章尚未发布，搜索引擎不会收录。</div>
   <?php endif; ?>

@@ -1,5 +1,5 @@
 .comments {
-  width: min(780px, calc(100% - 40px));
+  width: min(820px, calc(100% - 40px));
   margin: 0 auto;
   padding: clamp(42px, 7vw, 72px) 0 20px;
 }
