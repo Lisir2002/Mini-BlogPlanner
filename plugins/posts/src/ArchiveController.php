@@ -212,7 +212,8 @@ final class ArchiveController
             'page_styles' => ['posts.css', 'archive.css'],
         ]);
 
-        return Response::html($html);
+        return Response::html($html)
+            ->withHeader('Cache-Control', 'public, max-age=300');
     }
 
     private function baseUrl(Request $request): string

@@ -25,8 +25,8 @@
 
 - 总览、年归档、月归档都是 `CollectionPage` JSON-LD，并输出 canonical。
 - 月归档第 1 页 canonical 为 `/archive/{yyyy}/{mm}.html`；第 2 页起为 `/archive/{yyyy}/{mm}/page/{n}.html`。
-- 归档页是只读页面，不启动会话，缓存与普通公开列表一致。
-- 页面通过 `posts.css` 和 `archive.css` 渲染，移动端月网格自动收成两列，文章行隐藏右侧箭头。
+- 归档页是只读页面，不启动会话；成功页面显式声明 5 分钟公共缓存，避免每次访问都打数据库。
+- 页面通过 `posts.css` 和 `archive.css` 渲染，移动端月网格按可用宽度自动收成一到两列，文章行隐藏右侧箭头。
 
 ## 错误处理
 

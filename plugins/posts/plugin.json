@@ -1,7 +1,7 @@
 {
   "id": "posts",
   "name": "Posts",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "priority": 25,
   "class": "Plugin\\Posts\\PostsPlugin",
   "runtime": true,

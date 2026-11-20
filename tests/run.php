@@ -961,12 +961,15 @@ check('Atom and JSON Feed publish the same posts', function (): void {
 check('Feed and SEO endpoints skip sessions', function (): void {
     $root = dirname(__DIR__);
     $index = file_get_contents($root . '/public/index.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/ArchiveController.php');
     truthy($index !== false && str_contains($index, '$statelessPaths'), 'Front controller needs a stateless path list');
     truthy($index !== false && str_contains($index, "'/feed.xml'") && str_contains($index, "'/sitemap.xml'"), 'Feed and sitemap must be stateless');
     $session = $index === false ? false : strpos($index, 'Session::start()');
     $guard = $index === false ? false : strpos($index, 'if (!$stateless)');
     truthy($session !== false && $guard !== false && $guard < $session, 'Session startup must be skipped for stateless endpoints');
     truthy($index !== false && str_contains($index, "str_starts_with(\$path, '/archive/')"), 'Archive pages must be stateless too');
+    truthy($index !== false && str_contains($index, "'/archive.html'"), 'Archive index HTML alias must be stateless');
+    truthy($controller !== false && str_contains($controller, "'Cache-Control'") && str_contains($controller, "'public, max-age=300'"), 'Archive pages need explicit public caching');
 });
 
 check('Archive index and period pages are wired', function (): void {
