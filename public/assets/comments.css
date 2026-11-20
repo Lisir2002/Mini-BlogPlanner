@@ -347,6 +347,8 @@
   border-top-right-radius: 0;
 }
 
+.comment-reply-context[hidden] { display: none; }
+
 .comment-reply-context {
   display: flex;
   align-items: center;

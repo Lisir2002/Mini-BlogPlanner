@@ -49,7 +49,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
         <time datetime="<?= cream_e($comment->createdAt) ?>"><?= cream_e(cream_date($comment->createdAt)) ?></time>
       </div>
       <div class="comment-body"><?= nl2br(cream_e($comment->body)) ?></div>
-      <a class="comment-reply-link" href="/posts/<?= $slug ?>.html?reply=<?= (int) $comment->id ?>#comment-form"><?= cream_icon('arrow-right', 'icon-xs') ?> 回复</a>
+      <a class="comment-reply-link" href="/posts/<?= $slug ?>.html?reply=<?= (int) $comment->id ?>#comment-form" data-comment-reply="<?= (int) $comment->id ?>" data-comment-author="<?= cream_e($comment->authorName) ?>"><?= cream_icon('arrow-right', 'icon-xs') ?> 回复</a>
 
       <?php if ($thread['replies'] !== []): ?>
       <div class="comment-replies">
@@ -79,7 +79,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
       <span class="comment-composer-mark"><?= cream_icon('pen', 'icon-sm') ?></span>
       <span class="comment-composer-copy">
         <strong>写一张留言便签</strong>
-        <small><?= $replyTo !== null ? '回复 ' . cream_e($replyName) : '审核后显示 · 邮箱不会公开' ?></small>
+        <small data-comment-summary-note data-default-note="审核后显示 · 邮箱不会公开"><?= $replyTo !== null ? '回复 ' . cream_e($replyName) : '审核后显示 · 邮箱不会公开' ?></small>
       </span>
       <span class="comment-composer-action">
         <span class="composer-open-label">写留言</span>
@@ -91,18 +91,16 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
     <span class="tape tape-mint comment-form-tape" aria-hidden="true"></span>
     <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
     <input type="hidden" name="_form_at" value="<?= cream_e($formAt) ?>">
-    <input type="hidden" name="parent_id" value="<?= $replyTo !== null ? (int) $replyTo : '' ?>">
+    <input type="hidden" name="parent_id" value="<?= $replyTo !== null ? (int) $replyTo : '' ?>" data-comment-parent>
     <div class="comment-honeypot" aria-hidden="true">
       <label for="comment-website">网站</label>
       <input id="comment-website" name="website" type="text" tabindex="-1" autocomplete="off">
     </div>
 
-    <?php if ($replyTo !== null): ?>
-    <div class="comment-reply-context">
-      <span><?= cream_icon('arrow-right', 'icon-xs') ?> 正在回复 <strong><?= cream_e($replyName) ?></strong></span>
-      <a class="link-button" href="/posts/<?= $slug ?>.html#comment-form">取消回复</a>
+    <div class="comment-reply-context" data-comment-reply-context<?= $replyTo === null ? ' hidden' : '' ?>>
+      <span><?= cream_icon('arrow-right', 'icon-xs') ?> 正在回复 <strong data-comment-reply-name><?= $replyTo !== null ? cream_e($replyName) : '' ?></strong></span>
+      <a class="link-button" href="/posts/<?= $slug ?>.html#comment-form" data-comment-cancel>取消回复</a>
     </div>
-    <?php endif; ?>
 
     <div class="comment-fields">
       <label class="field">

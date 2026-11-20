@@ -623,6 +623,22 @@ check('Comment email switch gates the optional email field', function (): void {
     truthy($controller !== false && str_contains($controller, '$notifyEmail ?'), 'Controller must ignore email when the switch is off');
 });
 
+check('Comment replies open in place without a page reload', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/PostController.php');
+    $script = file_get_contents($root . '/public/assets/comments.js');
+    truthy($partial !== false && str_contains($partial, 'data-comment-reply="'), 'Reply links need an in-page target');
+    truthy($partial !== false && str_contains($partial, 'data-comment-author="'), 'Reply links need the author name');
+    truthy($partial !== false && str_contains($partial, 'data-comment-parent'), 'Reply parent id needs a script hook');
+    truthy($partial !== false && str_contains($partial, 'data-comment-reply-context'), 'Reply context must exist before the first click');
+    truthy($partial !== false && str_contains($partial, 'data-comment-cancel'), 'Cancel reply needs an in-page hook');
+    truthy($controller !== false && str_contains($controller, "'comments.js'"), 'Post pages must load the comment script');
+    truthy($script !== false && str_contains($script, 'event.preventDefault()'), 'Reply click must suppress navigation');
+    truthy($script !== false && str_contains($script, 'composer.open = true'), 'Reply click must open the composer');
+    truthy($script !== false && str_contains($script, 'history.replaceState'), 'Reply state must stay shareable without reloading');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');

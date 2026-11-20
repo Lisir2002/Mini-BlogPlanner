@@ -105,6 +105,7 @@ final class PostController
             'comment_reply_to' => $replyTo,
             'comment_reply_name' => $replyName,
             'page_styles' => ['posts.css', 'comments.css'],
+            'page_scripts' => ['comments.js'],
         ]);
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');
