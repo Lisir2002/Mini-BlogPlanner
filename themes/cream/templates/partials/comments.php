@@ -111,26 +111,21 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
       </label>
     </div>
 
-    <div class="comment-notify">
-      <label class="comment-notify-label" for="comment-notify">
-        <input class="comment-notify-input" id="comment-notify" name="notify_email" type="checkbox" value="1" role="switch" aria-describedby="comment-notify-hint"<?= $emailEnabled ? ' checked' : '' ?>>
+    <div class="comment-email-row">
+      <label class="comment-email-toggle" for="comment-notify">
+        <span class="comment-email-title">邮箱 <small>只用于回复提醒</small></span>
+        <input class="comment-notify-input" id="comment-notify" name="notify_email" type="checkbox" value="1" role="switch" aria-label="邮箱回复提醒" aria-describedby="comment-notify-hint"<?= $emailEnabled ? ' checked' : '' ?>>
         <span class="comment-notify-track" aria-hidden="true"><span class="comment-notify-thumb"></span></span>
-        <span class="comment-notify-copy">
-          <strong><?= cream_icon('mail', 'icon-xs') ?> 邮件回复提醒</strong>
-          <small id="comment-notify-hint">开启后填写邮箱，不会公开</small>
-        </span>
         <span class="comment-notify-state" aria-hidden="true">
           <span class="comment-notify-off">关闭</span>
           <span class="comment-notify-on">开启</span>
         </span>
+        <span class="comment-honeypot" id="comment-notify-hint">开启后填写邮箱，地址不会公开。</span>
       </label>
     </div>
 
     <div class="comment-email-field">
-      <label class="field">
-        <span>邮箱 <small>只用于回复提醒</small></span>
-        <input name="author_email" type="email" maxlength="190" value="<?= cream_e($value('author_email')) ?>" placeholder="你的邮箱地址" autocomplete="email" aria-invalid="<?= in_array('邮箱格式不正确。', $errors, true) ? 'true' : 'false' ?>">
-      </label>
+      <input id="comment-email" name="author_email" type="email" maxlength="190" value="<?= cream_e($value('author_email')) ?>" placeholder="你的邮箱地址" autocomplete="email" aria-label="邮箱" aria-describedby="comment-notify-hint" aria-invalid="<?= in_array('邮箱格式不正确。', $errors, true) ? 'true' : 'false' ?>">
     </div>
 
     <label class="field">

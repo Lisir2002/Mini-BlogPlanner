@@ -614,7 +614,9 @@ check('Comment email switch gates the optional email field', function (): void {
     truthy($partial !== false && str_contains($partial, 'class="comment-notify-input"'), 'Comment form needs a themed email switch');
     truthy($partial !== false && str_contains($partial, 'name="notify_email"'), 'Email switch needs a posted state');
     truthy($partial !== false && str_contains($partial, 'comment-email-field'), 'Email field needs a disclosure wrapper');
-    truthy($partial !== false && str_contains($partial, "cream_icon('mail'"), 'Email switch needs a mail icon');
+    truthy($partial !== false && str_contains($partial, 'class="comment-email-row"'), 'Email switch must share the email label row');
+    truthy($partial !== false && str_contains($partial, 'class="comment-email-toggle"'), 'Email label row needs a themed switch control');
+    truthy($partial !== false && str_contains($partial, 'comment-email-title'), 'Email label must name the switch row');
     truthy($css !== false && str_contains($css, ':has(.comment-notify-input:checked) .comment-email-field'), 'Checked switch must reveal the email field');
     truthy($css !== false && str_contains($css, '.comment-notify-thumb'), 'Email switch must draw its own thumb');
     truthy($controller !== false && str_contains($controller, "['notify_email']"), 'Controller must read the email switch');
