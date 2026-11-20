@@ -8,6 +8,7 @@ use Core\Config\Env;
 use Core\Http\Request;
 use Core\Http\Response;
 use Core\Page\PageRepository;
+use Core\Seo\StructuredData;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Version\Version;
@@ -29,22 +30,36 @@ final class PageController
             return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
         }
 
+        $site = $this->site();
+        $canonical = $this->baseUrl($request) . '/' . rawurlencode($slug) . '.html';
+
         $html = $this->theme->render($page->template(), [
-            'site' => [
-                'title' => (string) Env::get('APP_NAME', '日记Planner'),
-                'description' => (string) Env::get('APP_DESCRIPTION', '一个安静写字的地方。'),
-                'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
-            ],
+            'site' => $site,
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => $page->title(),
+            'page_description' => $site['description'],
             'current' => 'page',
             'content' => $page->content(),
+            'canonical_url' => $canonical,
+            'json_ld' => StructuredData::webPage($page->title(), $site['description'], $canonical, $site),
             'page_styles' => $page->styles(),
             'page_scripts' => $page->scripts(),
         ]);
 
         return Response::html($html);
+    }
+
+    private function baseUrl(Request $request): string
+    {
+        $configured = trim((string) Env::get('APP_URL', ''));
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        $host = trim((string) ($request->header('host') ?? 'localhost'));
+
+        return 'http://' . ($host === '' ? 'localhost' : $host);
     }
 
     /** @return array{title:string,description:string,language:string} */

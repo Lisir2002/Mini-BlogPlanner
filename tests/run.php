@@ -26,6 +26,8 @@ use Core\Version\SchemaBehind;
 use Core\Version\SchemaGuard;
 use Core\Version\SchemaMissing;
 use Core\Content\SearchTerm;
+use Core\Seo\SitemapBuilder;
+use Core\Seo\StructuredData;
 use Core\Version\Version;
 use Plugin\Admin\HtmlSanitizer;
 
@@ -982,6 +984,59 @@ check('Reader receipt merges reactions and sharing into a floater', function ():
     truthy($share !== false && str_contains($share, "setStatus('')"), 'Copy success must clear the red helper line');
     truthy($icons !== false && str_contains($icons, 'id="i-check"'), 'The icon sprite needs a check glyph');
     truthy($css !== false && str_contains($css, '--receipt-green') && str_contains($css, 'width: min(252px'), 'Floating receipt must use a compact green success style');
+});
+
+check('Sitemap XML escapes locations and formats priorities', function (): void {
+    $xml = SitemapBuilder::render([
+        [
+            'loc' => 'https://example.com/?a=1&b=2',
+            'lastmod' => '2026-11-20',
+            'changefreq' => 'daily',
+            'priority' => 0.85,
+        ],
+    ]);
+    truthy(str_starts_with($xml, '<?xml version="1.0" encoding="UTF-8"?>'), 'Sitemap must be XML');
+    truthy(str_contains($xml, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'), 'Sitemap must use the sitemap namespace');
+    truthy(str_contains($xml, '<loc>https://example.com/?a=1&amp;b=2</loc>'), 'Sitemap must escape ampersands');
+    truthy(str_contains($xml, '<lastmod>2026-11-20</lastmod>'), 'Sitemap must include lastmod');
+    truthy(str_contains($xml, '<priority>0.9</priority>'), 'Sitemap must format priority to one decimal');
+});
+
+check('Website structured data exposes search action', function (): void {
+    $data = StructuredData::website([
+        'title' => '日记Planner',
+        'description' => '把日子写进计划里。',
+        'language' => 'zh-CN',
+    ], 'https://example.com/');
+    truthy(($data['@type'] ?? null) === 'WebSite', 'Structured data must describe a WebSite');
+    truthy(($data['potentialAction']['target']['urlTemplate'] ?? null) === 'https://example.com/search?q={search_term_string}', 'WebSite search action must point at /search');
+});
+
+check('Public SEO routes expose sitemap, robots and structured data', function (): void {
+    $root = dirname(__DIR__);
+    $seo = file_get_contents($root . '/plugins/web/src/SeoController.php');
+    $web = file_get_contents($root . '/plugins/web/src/WebPlugin.php');
+    $layout = file_get_contents($root . '/themes/cream/templates/layout.php');
+    $home = file_get_contents($root . '/plugins/web/src/HomeController.php');
+    $posts = file_get_contents($root . '/plugins/posts/src/PostListController.php');
+    $post = file_get_contents($root . '/plugins/posts/src/PostController.php');
+    $tags = file_get_contents($root . '/plugins/posts/src/TagController.php');
+    $pages = file_get_contents($root . '/plugins/pages/src/PageController.php');
+    $pageRepository = file_get_contents($root . '/core/Page/PageRepository.php');
+    $postRepository = file_get_contents($root . '/core/Content/PostRepository.php');
+    truthy($seo !== false && str_contains($seo, 'SitemapBuilder::render'), 'SEO controller must build the sitemap');
+    truthy($seo !== false && str_contains($seo, 'Sitemap: '), 'Robots must point at the sitemap');
+    truthy($seo !== false && str_contains($seo, 'Disallow: /search'), 'Robots must keep search out of crawl');
+    truthy($web !== false && str_contains($web, 'SeoController') && str_contains($web, '/sitemap.xml') && str_contains($web, '/robots.txt'), 'Web plugin must register SEO routes');
+    truthy($layout !== false && str_contains($layout, 'application/ld+json') && str_contains($layout, 'JSON_HEX_TAG'), 'Layout must output safe JSON-LD');
+    truthy($home !== false && str_contains($home, 'canonical_url') && str_contains($home, 'StructuredData::website'), 'Home must expose canonical and WebSite data');
+    truthy($posts !== false && str_contains($posts, 'StructuredData::collectionPage'), 'Post list must expose collection data');
+    truthy($post !== false && str_contains($post, 'StructuredData::blogPosting'), 'Articles must expose BlogPosting data');
+    truthy($tags !== false && str_contains($tags, 'StructuredData::collectionPage'), 'Tags must expose collection data');
+    truthy($pages !== false && str_contains($pages, 'StructuredData::webPage'), 'Pages must expose WebPage data');
+    truthy($pageRepository !== false && str_contains($pageRepository, 'public function slugs'), 'Page repository must list page slugs');
+    truthy($postRepository !== false && str_contains($postRepository, 'publishedForSitemap'), 'Post repository must list sitemap posts');
+    truthy(is_file($root . '/docs/SEO.md'), 'SEO documentation must exist');
 });
 
 check('Compressed assets match their source files', function (): void {

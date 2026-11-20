@@ -44,4 +44,25 @@ final class PageRepository
 
         return PageResult::fromArray($result);
     }
+
+    /** @return list<string> */
+    public function slugs(): array
+    {
+        $directory = $this->root . '/' . trim($this->directory, '/');
+        $files = glob($directory . '/*.php');
+        if ($files === false) {
+            return [];
+        }
+
+        $slugs = [];
+        foreach ($files as $file) {
+            $slug = basename($file, '.php');
+            if (preg_match('/^[a-z0-9-]{1,64}$/', $slug) === 1) {
+                $slugs[] = $slug;
+            }
+        }
+        sort($slugs);
+
+        return $slugs;
+    }
 }

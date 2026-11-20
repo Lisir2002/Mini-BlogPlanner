@@ -1,7 +1,7 @@
 {
   "id": "pages",
   "name": "Independent Pages",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "priority": 40,
   "class": "Plugin\\Pages\\PagesPlugin",
   "runtime": true,

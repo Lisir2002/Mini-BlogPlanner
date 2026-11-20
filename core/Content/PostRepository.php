@@ -26,6 +26,21 @@ final class PostRepository
     }
 
     /** @return list<Post> */
+    public function publishedForSitemap(int $limit = 500): array
+    {
+        $limit = max(1, min(500, $limit));
+        $rows = $this->db->fetchAll(
+            "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
+             FROM posts
+             WHERE status = 'published' AND published_at <= NOW()
+             ORDER BY published_at DESC, id DESC
+             LIMIT " . $limit
+        );
+
+        return array_map(fn (array $row): Post => $this->map($row), $rows);
+    }
+
+    /** @return list<Post> */
     public function byTag(string $tagSlug, int $limit = 20): array
     {
         $limit = max(1, min(50, $limit));

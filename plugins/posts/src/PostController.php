@@ -12,6 +12,7 @@ use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Seo\StructuredData;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Version\Version;
@@ -129,6 +130,14 @@ final class PostController
             'page_description' => $description,
             'canonical_url' => $canonical,
             'share_meta' => $shareMeta,
+            'json_ld' => StructuredData::blogPosting(
+                $post,
+                $canonical,
+                $site,
+                $description,
+                $shareMeta['published'],
+                $shareMeta['modified'],
+            ),
             'current' => 'posts',
             'post' => $post,
             'comment_threads' => $threads,

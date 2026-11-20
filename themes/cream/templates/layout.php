@@ -8,6 +8,7 @@ $fullTitle = $pageTitle === $title ? $title : $pageTitle . ' · ' . $title;
 $metaDescription = trim((string) ($page_description ?? $description));
 $siteUrl = cream_site_url();
 $canonicalUrl = trim((string) ($canonical_url ?? ''));
+$jsonLd = is_array($json_ld ?? null) ? $json_ld : [];
 $shareMeta = is_array($share_meta ?? null) ? $share_meta : [];
 $shareType = (string) ($shareMeta['type'] ?? 'website');
 $shareTitle = (string) ($shareMeta['title'] ?? $pageTitle);
@@ -29,6 +30,9 @@ $feedUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.xml';
 <meta name="description" content="<?= cream_e($metaDescription) ?>">
 <?php if ($canonicalUrl !== ''): ?>
 <link rel="canonical" href="<?= cream_e($canonicalUrl) ?>">
+<?php endif; ?>
+<?php if ($jsonLd !== []): ?>
+<script type="application/ld+json"><?= (string) json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <?php endif; ?>
 <link rel="alternate" type="application/rss+xml" title="<?= cream_e($title) ?> · RSS" href="<?= cream_e($feedUrl) ?>">
 <meta property="og:site_name" content="<?= cream_e($title) ?>">

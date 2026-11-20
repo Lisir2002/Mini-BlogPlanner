@@ -9,6 +9,7 @@ use Core\Content\PostRepository;
 use Core\Database\Connection;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Seo\StructuredData;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Version\Version;
@@ -29,17 +30,34 @@ final class PostListController
             return ErrorPage::page($this->theme, $request, 503, '暂时无法读取文章，请稍后再试。', $this->version, $this->site());
         }
 
+        $site = $this->site();
+        $canonical = $this->baseUrl($request) . '/posts.html';
         $html = $this->theme->render('posts', [
-            'site' => $this->site(),
+            'site' => $site,
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => '文章',
+            'page_description' => '按时间排列的文章列表。',
             'current' => 'posts',
             'posts' => $posts,
+            'canonical_url' => $canonical,
+            'json_ld' => StructuredData::collectionPage('文章', '按时间排列的文章列表。', $canonical, $site),
             'page_styles' => ['posts.css'],
         ]);
 
         return Response::html($html);
+    }
+
+    private function baseUrl(Request $request): string
+    {
+        $configured = trim((string) Env::get('APP_URL', ''));
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        $host = trim((string) ($request->header('host') ?? 'localhost'));
+
+        return 'http://' . ($host === '' ? 'localhost' : $host);
     }
 
     /** @return array{title:string,description:string,language:string} */
