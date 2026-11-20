@@ -691,6 +691,15 @@ check('Reaction totals reach admin and API', function (): void {
     truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
 });
 
+check('Article back link is a themed paper tab', function (): void {
+    $root = dirname(__DIR__);
+    $posts = file_get_contents($root . '/public/assets/posts.css');
+    truthy($posts !== false && str_contains($posts, '.back-link .icon'), 'Back link needs a themed icon badge');
+    truthy($posts !== false && str_contains($posts, 'border-radius: 5px 11px 9px 6px'), 'Back link needs a paper-tab shape');
+    truthy($posts !== false && str_contains($posts, 'transform: rotate(-0.35deg)'), 'Back link needs a slight paper tilt');
+    truthy($posts !== false && str_contains($posts, '.back-link:focus-visible'), 'Back link needs a keyboard focus ring');
+});
+
 check('Article lead is a labeled summary slip', function (): void {
     $root = dirname(__DIR__);
     $post = file_get_contents($root . '/themes/cream/templates/post.php');
