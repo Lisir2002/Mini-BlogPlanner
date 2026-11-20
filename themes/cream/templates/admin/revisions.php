@@ -10,6 +10,10 @@ $draft = is_array($draft ?? null) ? $draft : null;
 $postId = (int) ($post['id'] ?? 0);
 $onlineVersion = (int) ($post['content_version'] ?? 1);
 $selectedVersion = (int) ($selected_version ?? 0);
+$baseVersion = (int) ($base_version ?? $onlineVersion);
+$baseLabel = (string) ($base_label ?? '线上 v' . $onlineVersion);
+$compareVersion = (int) ($compare_version ?? 0);
+$baseIsOnline = (bool) ($base_is_online ?? true);
 $draftVersion = (int) ($draft['draft_version'] ?? 0);
 $hasChanges = false;
 foreach ($diff as $row) {
@@ -51,8 +55,9 @@ foreach ($diff as $row) {
         $isSelected = $version === $selectedVersion;
         $date = (string) ($revision['published_at'] ?? $revision['created_at'] ?? '');
         ?>
+        <?php $compareQuery = $compareVersion > 0 && $version !== $compareVersion ? '&compare=' . $compareVersion : ''; ?>
         <a class="revision-item<?= $isSelected ? ' is-selected' : '' ?><?= $isCurrent ? ' is-online' : '' ?>"
-           href="/admin/posts/<?= $postId ?>/revisions?version=<?= $version ?>"
+           href="/admin/posts/<?= $postId ?>/revisions?version=<?= $version ?><?= $compareQuery ?>"
            <?= $isSelected ? 'aria-current="page"' : '' ?>>
           <span class="revision-version">v<?= $version ?></span>
           <span class="revision-copy">
@@ -71,8 +76,8 @@ foreach ($diff as $row) {
         <header class="revision-detail-head">
           <div>
             <span class="eyebrow">COMPARE</span>
-            <h2>v<?= $selectedVersion ?> 对比线上 v<?= $onlineVersion ?></h2>
-            <p><?= cream_e((string) ($selected['title'] ?? '')) ?></p>
+            <h2>v<?= $selectedVersion ?> 对比 <?= cream_e($baseLabel) ?></h2>
+            <p><?= cream_e((string) ($selected['title'] ?? '')) ?> · 基准 <?= cream_e($baseLabel) ?></p>
           </div>
           <div class="revision-badges">
             <span><?= cream_e((string) ($selected['status'] ?? 'draft')) ?></span>
@@ -81,13 +86,27 @@ foreach ($diff as $row) {
           </div>
         </header>
 
+        <form class="revision-compare" method="get" action="/admin/posts/<?= $postId ?>/revisions">
+          <input type="hidden" name="version" value="<?= $selectedVersion ?>">
+          <label for="revisionCompare">对比基准</label>
+          <select id="revisionCompare" name="compare" onchange="this.form.submit()">
+            <option value=""<?= $baseIsOnline ? ' selected' : '' ?>>线上 v<?= $onlineVersion ?></option>
+            <?php foreach ($revisions as $revision): ?>
+              <?php $optionVersion = (int) ($revision['version'] ?? 0); ?>
+              <?php if ($optionVersion === $selectedVersion) { continue; } ?>
+              <option value="<?= $optionVersion ?>"<?= $optionVersion === $baseVersion ? ' selected' : '' ?>>v<?= $optionVersion ?> · <?= cream_e((string) ($revision['published_at'] ?? $revision['created_at'] ?? '')) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <noscript><button class="admin-button ghost" type="submit">切换</button></noscript>
+        </form>
+
         <?php if ($draftVersion > 0): ?>
           <div class="revision-note">当前已有工作稿 d<?= $draftVersion ?>。恢复这个版本会覆盖工作稿，但不会改动线上文章。</div>
         <?php endif; ?>
 
         <div class="revision-fields">
           <table>
-            <thead><tr><th>字段</th><th>v<?= $selectedVersion ?></th><th>线上 v<?= $onlineVersion ?></th></tr></thead>
+            <thead><tr><th>字段</th><th>v<?= $selectedVersion ?></th><th><?= cream_e($baseLabel) ?></th></tr></thead>
             <tbody>
             <?php foreach ($fields as $field): ?>
               <tr class="<?= !empty($field['changed']) ? 'is-changed' : '' ?>">
@@ -103,7 +122,7 @@ foreach ($diff as $row) {
         <div class="revision-body-head">
           <div>
             <h3>正文差异</h3>
-            <p>红色为选中版本、绿色为线上版本；未变化的行保持灰色。</p>
+            <p>红色为 v<?= $selectedVersion ?>、绿色为 <?= cream_e($baseLabel) ?>；未变化的行保持灰色。</p>
           </div>
           <form method="post" action="/admin/posts/<?= $postId ?>/revisions/<?= $selectedVersion ?>/restore" class="revision-restore" onsubmit="return confirm('恢复会覆盖当前工作稿，线上文章不会改变。继续？')">
             <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
@@ -112,7 +131,7 @@ foreach ($diff as $row) {
         </div>
 
         <?php if (!$hasChanges): ?>
-          <div class="revision-same">这个版本的正文与线上一致，没有可显示的差异。</div>
+          <div class="revision-same">v<?= $selectedVersion ?> 与 <?= cream_e($baseLabel) ?> 的正文一致，没有可显示的差异。</div>
         <?php else: ?>
           <div class="revision-diff" role="region" aria-label="正文差异">
             <table>

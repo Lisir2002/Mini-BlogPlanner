@@ -59,20 +59,31 @@ final class RevisionAdminController
             }
             $tags = (new TagRepository($db))->namesForPost($id);
             $draft = (new PostDraftRepository($db))->find($id);
+            $compareVersion = (int) ($request->query()['compare'] ?? 0);
+            $compareRevision = $compareVersion > 0 && $compareVersion !== (int) ($selected['version'] ?? 0)
+                ? (new PostRevisionRepository($db))->find($id, $compareVersion)
+                : null;
         } catch (Throwable) {
             return $this->adminError($request, 503, '后台暂时无法连接数据库。');
         }
 
-        $currentText = $this->revisionText($post);
+        $onlineVersion = (int) ($post['content_version'] ?? 1);
+        $base = $compareRevision ?? $post;
+        $baseVersion = $compareRevision === null ? $onlineVersion : (int) ($compareRevision['version'] ?? $compareVersion);
+        $baseLabel = $compareRevision === null ? '线上 v' . $onlineVersion : 'v' . $baseVersion;
+        $baseTags = $compareRevision === null
+            ? $tags
+            : (is_array($compareRevision['tags'] ?? null) ? array_values($compareRevision['tags']) : []);
+        $currentText = $this->revisionText($base);
         $selectedText = $selected === null ? '' : $this->revisionText($selected);
         $diff = $selected === null ? [] : TextDiff::lines($selectedText, $currentText);
         $fields = $selected === null ? [] : [
-            $this->field('标题', (string) ($selected['title'] ?? ''), (string) ($post['title'] ?? '')),
-            $this->field('固定链接', (string) ($selected['slug'] ?? ''), (string) ($post['slug'] ?? '')),
-            $this->field('摘要', (string) ($selected['excerpt'] ?? ''), (string) ($post['excerpt'] ?? '')),
-            $this->field('标签', implode(', ', is_array($selected['tags'] ?? null) ? $selected['tags'] : []), implode(', ', $tags)),
-            $this->field('状态', (string) ($selected['status'] ?? ''), (string) ($post['status'] ?? '')),
-            $this->field('格式', (string) ($selected['body_format'] ?? ''), (string) ($post['body_format'] ?? '')),
+            $this->field('标题', (string) ($selected['title'] ?? ''), (string) ($base['title'] ?? '')),
+            $this->field('固定链接', (string) ($selected['slug'] ?? ''), (string) ($base['slug'] ?? '')),
+            $this->field('摘要', (string) ($selected['excerpt'] ?? ''), (string) ($base['excerpt'] ?? '')),
+            $this->field('标签', implode(', ', is_array($selected['tags'] ?? null) ? $selected['tags'] : []), implode(', ', $baseTags)),
+            $this->field('状态', (string) ($selected['status'] ?? ''), (string) ($base['status'] ?? '')),
+            $this->field('格式', (string) ($selected['body_format'] ?? ''), (string) ($base['body_format'] ?? '')),
         ];
 
         return $this->render('admin/revisions', $admin, [
@@ -82,6 +93,10 @@ final class RevisionAdminController
             'revisions' => $revisions,
             'selected' => $selected,
             'selected_version' => (int) ($selected['version'] ?? 0),
+            'base_version' => $baseVersion,
+            'base_label' => $baseLabel,
+            'base_is_online' => $compareRevision === null,
+            'compare_version' => $compareRevision === null ? 0 : $baseVersion,
             'current_text' => $currentText,
             'selected_text' => $selectedText,
             'diff' => $diff,

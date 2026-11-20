@@ -731,6 +731,10 @@
 .revision-detail-head p { color: var(--muted, #8c8274); margin: 0; }
 .revision-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .revision-badges span { font-size: 11px; padding: 3px 8px; border: 1px solid var(--line, #e7dfd2); border-radius: 999px; background: #fbf6ea; color: #6d6253; }
+.revision-compare { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 9px 12px; border: 1px dashed #e2d6c1; border-radius: 10px; background: #fbf6ea; }
+.revision-compare label { font-size: 12px; color: var(--muted, #8c8274); white-space: nowrap; }
+.revision-compare select { width: auto; min-width: 170px; padding: 7px 30px 7px 10px; font-size: 12px; }
+@media (max-width: 640px) { .revision-compare { align-items: flex-start; flex-direction: column; gap: 6px; } .revision-compare select { width: 100%; } }
 .revision-note { margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff3d9; border: 1px solid #ead6a8; font-size: 13px; color: #765a25; }
 .revision-fields { margin-top: 16px; overflow-x: auto; }
 .revision-fields table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -764,3 +768,5 @@
   .revision-restore { width: 100%; }
   .revision-restore .admin-button { width: 100%; }
 }
+.revision-fields th[scope="row"]{white-space:nowrap}
+@media (max-width:640px){.revision-fields table{min-width:620px}.revision-fields{-webkit-overflow-scrolling:touch}}

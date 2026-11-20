@@ -625,6 +625,9 @@ check('Revision migration and history page are wired', function (): void {
     truthy($controller !== false && substr_count($controller, 'PostRevisionRepository') >= 4, 'Publish and create must record revisions');
     $template = file_get_contents($root . '/themes/cream/templates/admin/revisions.php');
     truthy($template !== false && str_contains($template, '恢复为工作稿') && str_contains($template, 'diff-<?='), 'History page must compare and restore');
+    truthy(str_contains($template, 'revisionCompare') && str_contains($template, '对比基准'), 'History page must allow choosing another revision as base');
+    $revisionController = file_get_contents($root . '/plugins/admin/src/RevisionAdminController.php');
+    truthy($revisionController !== false && str_contains($revisionController, "query()['compare']"), 'Revision controller must read compare target');
     $editor = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
     truthy($editor !== false && str_contains($editor, '/revisions.html'), 'Editor must link to version history');
 });
