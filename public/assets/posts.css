@@ -248,8 +248,8 @@
 .post-lead-text {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 14.5px;
-  line-height: 1.7;
+  font-size: 12.5px;
+  line-height: 1.65;
   text-wrap: pretty;
 }
 
@@ -328,7 +328,7 @@
   .post-lead-paper { padding: 11px 13px 14px 14px; }
   .post-lead-label { margin-bottom: 4px; font-size: 8px; letter-spacing: 0.12em; }
   .post-lead-label .icon { width: 10px; height: 10px; }
-  .post-lead-text { font-size: 13.5px; line-height: 1.68; }
+  .post-lead-text { font-size: 11.5px; line-height: 1.6; }
 }
 
 .preview-note {

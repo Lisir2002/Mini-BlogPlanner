@@ -700,7 +700,7 @@ check('Article lead is a labeled summary slip', function (): void {
     truthy($post !== false && str_contains($post, 'post-lead-tape'), 'Summary slip needs a taped edge');
     truthy($posts !== false && str_contains($posts, '.post-lead-label'), 'Summary label must be themed');
     truthy($posts !== false && str_contains($posts, '--torn-edge: polygon('), 'Summary slip needs a torn edge');
-    truthy($posts !== false && str_contains($posts, 'font-size: 14.5px'), 'Summary must use smaller type than the article body');
+    truthy($posts !== false && str_contains($posts, 'font-size: 12.5px') && str_contains($posts, 'font-size: 11.5px'), 'Summary must use smaller type than the article body');
     truthy($posts !== false && str_contains($posts, '.post-lead-text'), 'Summary body must use its own type style');
 });
 
