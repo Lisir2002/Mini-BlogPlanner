@@ -18,16 +18,27 @@ final class FeedController
     public function __construct(private readonly Version $version) {}
 
     /** @param array<string, string> $params */
-    public function __invoke(Request $request, array $params): Response
+    public function __invoke(Request $request, array $params = []): Response
+    {
+        return $this->feed($request, 'rss');
+    }
+
+    public function atom(Request $request): Response
+    {
+        return $this->feed($request, 'atom');
+    }
+
+    public function json(Request $request): Response
+    {
+        return $this->feed($request, 'json');
+    }
+
+    private function feed(Request $request, string $format): Response
     {
         try {
             $posts = (new PostRepository(Connection::fromEnv()))->latest(20);
         } catch (Throwable) {
-            return Response::binary(
-                '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Feed unavailable</title><description>Feed temporarily unavailable.</description></channel></rss>',
-                'application/rss+xml; charset=utf-8',
-                503,
-            )->withHeader('Cache-Control', 'no-store');
+            return $this->unavailable($format);
         }
 
         $site = [
@@ -36,11 +47,47 @@ final class FeedController
             'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             'timezone' => (string) Env::get('APP_TIMEZONE', 'UTC'),
         ];
+        $baseUrl = $this->baseUrl($request);
+        $appVersion = $this->version->app();
 
-        $xml = FeedBuilder::render($posts, $site, $this->baseUrl($request), $this->version->app());
+        [$body, $contentType] = match ($format) {
+            'atom' => [
+                FeedBuilder::atom($posts, $site, $baseUrl, $appVersion),
+                'application/atom+xml; charset=utf-8',
+            ],
+            'json' => [
+                FeedBuilder::json($posts, $site, $baseUrl, $appVersion),
+                'application/feed+json; charset=utf-8',
+            ],
+            default => [
+                FeedBuilder::rss($posts, $site, $baseUrl, $appVersion),
+                'application/rss+xml; charset=utf-8',
+            ],
+        };
 
-        return Response::binary($xml, 'application/rss+xml; charset=utf-8')
+        return Response::binary($body, $contentType)
             ->withHeader('Cache-Control', 'public, max-age=300');
+    }
+
+    private function unavailable(string $format): Response
+    {
+        return match ($format) {
+            'atom' => Response::binary(
+                '<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Feed unavailable</title><updated>' . gmdate(DATE_ATOM) . '</updated></feed>',
+                'application/atom+xml; charset=utf-8',
+                503,
+            )->withHeader('Cache-Control', 'no-store'),
+            'json' => Response::binary(
+                '{"error":"Feed temporarily unavailable."}',
+                'application/feed+json; charset=utf-8',
+                503,
+            )->withHeader('Cache-Control', 'no-store'),
+            default => Response::binary(
+                '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Feed unavailable</title><description>Feed temporarily unavailable.</description></channel></rss>',
+                'application/rss+xml; charset=utf-8',
+                503,
+            )->withHeader('Cache-Control', 'no-store'),
+        };
     }
 
     private function baseUrl(Request $request): string

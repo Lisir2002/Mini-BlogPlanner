@@ -916,6 +916,46 @@ check('RSS feed publishes escaped posts with absolute links', function (): void 
     truthy(str_contains($xml, '摘要 &lt;script&gt;'), 'Feed excerpts must be escaped');
     truthy(str_contains($xml, '<category>手账</category>'), 'Feed should carry post tags');
     truthy(str_contains($xml, 'xmlns:atom="http://www.w3.org/2005/Atom"'), 'Feed should advertise its self link');
+    truthy(str_contains($xml, '<content:encoded><![CDATA[<p>body</p>]]></content:encoded>'), 'RSS should carry full post content');
+});
+
+check('Atom and JSON Feed publish the same posts', function (): void {
+    $root = dirname(__DIR__);
+    $posts = [
+        new \Core\Content\Post(
+            1,
+            'hello',
+            'A & <B>',
+            '摘要 <script>',
+            '<p>body</p>',
+            '2026-11-20 09:30:00',
+            '2026-11-20 10:00:00',
+            3,
+            ['手账', '代码'],
+        ),
+    ];
+    $site = ['title' => '日记 & Planner', 'description' => '安静写字', 'language' => 'zh-CN', 'timezone' => 'Asia/Shanghai'];
+
+    $atom = \Core\Content\FeedBuilder::atom($posts, $site, 'https://example.com', '0.1.35');
+    truthy(str_contains($atom, '<feed xmlns="http://www.w3.org/2005/Atom"'), 'Atom must use the Atom namespace');
+    truthy(str_contains($atom, 'href="https://example.com/atom.xml" rel="self"') || str_contains($atom, 'rel="self" type="application/atom+xml" href="https://example.com/atom.xml"'), 'Atom must advertise its self link');
+    truthy(str_contains($atom, '<content type="html">&lt;p&gt;body&lt;/p&gt;</content>'), 'Atom should escape full post content');
+    truthy(str_contains($atom, '<category term="手账"/>'), 'Atom should carry post tags');
+
+    $json = \Core\Content\FeedBuilder::json($posts, $site, 'https://example.com', '0.1.35');
+    $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+    truthy(is_array($data), 'JSON Feed must decode');
+    if (is_array($data)) {
+        same('https://jsonfeed.org/version/1.1', $data['version'] ?? null);
+        truthy(($data['items'][0]['content_html'] ?? '') === '<p>body</p>', 'JSON Feed should carry full post content');
+        truthy(($data['items'][0]['tags'] ?? []) === ['手账', '代码'], 'JSON Feed should carry post tags');
+    }
+
+    $layout = file_get_contents($root . '/themes/cream/templates/layout.php');
+    $plugin = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    truthy($layout !== false && str_contains($layout, 'application/atom+xml') && str_contains($layout, 'application/feed+json'), 'Layout needs Atom and JSON discovery links');
+    truthy($plugin !== false && str_contains($plugin, "'/atom.xml'") && str_contains($plugin, "'/feed.json'"), 'Posts plugin must route all feed formats');
+    truthy(is_file($root . '/docs/api/feeds.md'), 'Feed documentation must exist');
 });
 
 check('Article share card, RSS and social metadata are wired', function (): void {

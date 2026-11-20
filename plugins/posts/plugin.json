@@ -1,7 +1,7 @@
 {
   "id": "posts",
   "name": "Posts",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "priority": 25,
   "class": "Plugin\\Posts\\PostsPlugin",
   "runtime": true,
@@ -13,9 +13,14 @@
   "provides": [
     "posts",
     "tags",
-    "search"
+    "search",
+    "feed"
   ],
   "routes": [
+    "/feed",
+    "/feed.xml",
+    "/atom.xml",
+    "/feed.json",
     "/search",
     "/posts",
     "/posts/{slug}"

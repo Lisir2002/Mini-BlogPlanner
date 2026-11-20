@@ -19,6 +19,8 @@ if ($siteUrl !== '' && !str_starts_with($socialImage, 'http')) {
     $socialImage = $siteUrl . $socialImage;
 }
 $feedUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.xml';
+$feedAtomUrl = ($siteUrl === '' ? '' : $siteUrl) . '/atom.xml';
+$feedJsonUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.json';
 ?>
 <!doctype html>
 <html lang="<?= cream_e($locale) ?>">
@@ -35,6 +37,8 @@ $feedUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.xml';
 <script type="application/ld+json"><?= (string) json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <?php endif; ?>
 <link rel="alternate" type="application/rss+xml" title="<?= cream_e($title) ?> · RSS" href="<?= cream_e($feedUrl) ?>">
+<link rel="alternate" type="application/atom+xml" title="<?= cream_e($title) ?> · Atom" href="<?= cream_e($feedAtomUrl) ?>">
+<link rel="alternate" type="application/feed+json" title="<?= cream_e($title) ?> · JSON Feed" href="<?= cream_e($feedJsonUrl) ?>">
 <meta property="og:site_name" content="<?= cream_e($title) ?>">
 <meta property="og:title" content="<?= cream_e($shareTitle) ?>">
 <meta property="og:description" content="<?= cream_e($shareDescription) ?>">

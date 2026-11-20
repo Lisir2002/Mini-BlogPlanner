@@ -44,6 +44,8 @@ final class PostsPlugin implements PluginInterface
 
         return [
             new Route(['GET'], '/feed.xml', $feed, 'feed.xml'),
+            new Route(['GET'], '/atom.xml', static fn (Request $request, array $params): Response => $feed->atom($request), 'feed.atom'),
+            new Route(['GET'], '/feed.json', static fn (Request $request, array $params): Response => $feed->json($request), 'feed.json'),
             new Route(['GET'], '/feed', $feed, 'feed'),
             new Route(['GET'], '/search', $search, 'search'),
             new Route(['GET'], '/posts', new PostListController($this->version, $this->theme), 'posts.index'),

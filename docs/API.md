@@ -133,6 +133,16 @@
 - `404 /problems/tag-not-found`：标签不存在或没有已发布文章。
 - `503 /problems/service-unavailable`：数据库不可用。
 
+## 订阅端点
+
+订阅不走 `/api/v1`，直接输出 Feed 文件：
+
+- `GET /feed.xml`：RSS 2.0。
+- `GET /atom.xml`：Atom 1.0。
+- `GET /feed.json`：JSON Feed 1.1。
+
+三种格式字段、缓存与校验方式见 [订阅 Feed](api/feeds.md)。
+
 ## OpenAPI
 
 - 源文件：`public/docs/openapi.yaml`（OpenAPI 3.2.1）。
