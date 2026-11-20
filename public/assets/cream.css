@@ -218,7 +218,10 @@ summary:focus-visible {
 }
 
 .nav-mobile summary::-webkit-details-marker { display: none; }
-.nav-mobile summary > span { display: grid; place-items: center; }
+.nav-icon-open,
+.nav-icon-close { place-items: center; }
+
+.nav-icon-open { display: grid; }
 .nav-mobile[open] summary {
   background: var(--ink);
   border-color: var(--ink);

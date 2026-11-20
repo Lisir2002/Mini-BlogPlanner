@@ -691,6 +691,14 @@ check('Reaction totals reach admin and API', function (): void {
     truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
 });
 
+check('Navigation toggle shows only one icon', function (): void {
+    $root = dirname(__DIR__);
+    $css = file_get_contents($root . '/public/assets/cream.css');
+    truthy($css !== false && str_contains($css, '.nav-icon-open { display: grid; }'), 'Open icon must be visible');
+    truthy($css !== false && str_contains($css, '.nav-icon-close { display: none; }'), 'Close icon must start hidden');
+    truthy($css !== false && !str_contains($css, '.nav-mobile summary > span { display: grid;'), 'Generic span display must not override icon state');
+});
+
 check('Mobile navigation uses a torn right drawer', function (): void {
     $root = dirname(__DIR__);
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
