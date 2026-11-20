@@ -31,7 +31,7 @@ final class PostController
 
     /**
      * @param array<string, string> $params
-     * @param array{errors?:list<string>,values?:array{author_name:string,author_email:string,body:string},reply_to?:?int} $commentState
+     * @param array{errors?:list<string>,values?:array{author_name:string,author_email:string,body:string,email_enabled?:bool},reply_to?:?int} $commentState
      */
     public function render(Request $request, array $params, array $commentState = [], int $status = 200): Response
     {
@@ -59,6 +59,7 @@ final class PostController
             'author_name' => '',
             'author_email' => '',
             'body' => '',
+            'email_enabled' => false,
         ];
 
         $replyTo = $commentState['reply_to'] ?? null;

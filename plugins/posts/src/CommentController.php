@@ -51,7 +51,8 @@ final class CommentController
         }
 
         $name = $this->text((string) ($_POST['author_name'] ?? ''), 40);
-        $email = $this->text((string) ($_POST['author_email'] ?? ''), 190);
+        $notifyEmail = (string) ($_POST['notify_email'] ?? '') === '1';
+        $email = $notifyEmail ? $this->text((string) ($_POST['author_email'] ?? ''), 190) : '';
         $body = $this->text((string) ($_POST['body'] ?? ''), 1000);
         $errors = [];
 
@@ -132,7 +133,7 @@ final class CommentController
 
     /** @param list<string> $errors
      *  @param array<string, string> $params
-     *  @param array{author_name:string,author_email:string,body:string} $values
+     *  @param array{author_name:string,author_email:string,body:string,email_enabled?:bool} $values
      */
     private function error(Request $request, array $params, array $errors, array $values, ?int $replyTo = null): Response
     {
@@ -143,13 +144,16 @@ final class CommentController
         ], 422);
     }
 
-    /** @return array{author_name:string,author_email:string,body:string} */
+    /** @return array{author_name:string,author_email:string,body:string,email_enabled:bool} */
     private function values(): array
     {
+        $emailEnabled = (string) ($_POST['notify_email'] ?? '') === '1';
+
         return [
             'author_name' => $this->text((string) ($_POST['author_name'] ?? ''), 40),
-            'author_email' => $this->text((string) ($_POST['author_email'] ?? ''), 190),
+            'author_email' => $emailEnabled ? $this->text((string) ($_POST['author_email'] ?? ''), 190) : '',
             'body' => $this->text((string) ($_POST['body'] ?? ''), 1000),
+            'email_enabled' => $emailEnabled,
         ];
     }
 

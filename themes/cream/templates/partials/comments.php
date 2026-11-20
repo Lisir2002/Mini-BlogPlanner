@@ -13,6 +13,7 @@ $replyName = is_string($comment_reply_name ?? null) ? $comment_reply_name : '';
 $formAt = (string) ($comment_form_at ?? '');
 $csrf = (string) ($comment_csrf ?? '');
 $composerOpen = $replyTo !== null || $errors !== [];
+$emailEnabled = ($values['email_enabled'] ?? false) === true;
 $slug = rawurlencode((string) $post->slug);
 $value = static fn (string $key): string => (string) ($values[$key] ?? '');
 ?>
@@ -108,11 +109,30 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
         <span>称呼</span>
         <input name="author_name" maxlength="40" value="<?= cream_e($value('author_name')) ?>" placeholder="怎么称呼你？" autocomplete="name" aria-invalid="<?= in_array('称呼至少需要 2 个字。', $errors, true) ? 'true' : 'false' ?>">
       </label>
-      <label class="field">
-        <span>邮箱（可选，不会公开）</span>
-        <input name="author_email" type="email" maxlength="190" value="<?= cream_e($value('author_email')) ?>" placeholder="用于收到回复提醒" autocomplete="email" aria-invalid="<?= in_array('邮箱格式不正确。', $errors, true) ? 'true' : 'false' ?>">
+    </div>
+
+    <div class="comment-notify">
+      <label class="comment-notify-label" for="comment-notify">
+        <input class="comment-notify-input" id="comment-notify" name="notify_email" type="checkbox" value="1" role="switch" aria-describedby="comment-notify-hint"<?= $emailEnabled ? ' checked' : '' ?>>
+        <span class="comment-notify-track" aria-hidden="true"><span class="comment-notify-thumb"></span></span>
+        <span class="comment-notify-copy">
+          <strong><?= cream_icon('mail', 'icon-xs') ?> 邮件回复提醒</strong>
+          <small id="comment-notify-hint">开启后填写邮箱，不会公开</small>
+        </span>
+        <span class="comment-notify-state" aria-hidden="true">
+          <span class="comment-notify-off">关闭</span>
+          <span class="comment-notify-on">开启</span>
+        </span>
       </label>
     </div>
+
+    <div class="comment-email-field">
+      <label class="field">
+        <span>邮箱 <small>只用于回复提醒</small></span>
+        <input name="author_email" type="email" maxlength="190" value="<?= cream_e($value('author_email')) ?>" placeholder="你的邮箱地址" autocomplete="email" aria-invalid="<?= in_array('邮箱格式不正确。', $errors, true) ? 'true' : 'false' ?>">
+      </label>
+    </div>
+
     <label class="field">
       <span>留言</span>
       <textarea name="body" rows="4" maxlength="1000" placeholder="写下想说的话，最多 1000 字。" aria-invalid="<?= in_array('留言内容至少需要 2 个字。', $errors, true) ? 'true' : 'false' ?>"><?= cream_e($value('body')) ?></textarea>

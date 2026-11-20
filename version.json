@@ -1,5 +1,5 @@
 {
-  "app": "0.1.7",
+  "app": "0.1.8",
   "channel": "stable",
   "schema": 2026112005,
   "schema_min": 2026112005,
@@ -16,6 +16,6 @@
     "media": "0.1.1"
   },
   "themes": {
-    "cream": "0.2.4"
+    "cream": "0.2.5"
   }
 }

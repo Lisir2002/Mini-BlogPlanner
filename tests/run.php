@@ -606,6 +606,21 @@ check('Comment composer starts collapsed and opens only when needed', function (
     truthy($css !== false && str_contains($css, '.comment-composer[open] .comment-form'), 'Open composer must join its form sheet');
 });
 
+check('Comment email switch gates the optional email field', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $css = file_get_contents($root . '/public/assets/comments.css');
+    $controller = file_get_contents($root . '/plugins/posts/src/CommentController.php');
+    truthy($partial !== false && str_contains($partial, 'class="comment-notify-input"'), 'Comment form needs a themed email switch');
+    truthy($partial !== false && str_contains($partial, 'name="notify_email"'), 'Email switch needs a posted state');
+    truthy($partial !== false && str_contains($partial, 'comment-email-field'), 'Email field needs a disclosure wrapper');
+    truthy($partial !== false && str_contains($partial, "cream_icon('mail'"), 'Email switch needs a mail icon');
+    truthy($css !== false && str_contains($css, ':has(.comment-notify-input:checked) .comment-email-field'), 'Checked switch must reveal the email field');
+    truthy($css !== false && str_contains($css, '.comment-notify-thumb'), 'Email switch must draw its own thumb');
+    truthy($controller !== false && str_contains($controller, "['notify_email']"), 'Controller must read the email switch');
+    truthy($controller !== false && str_contains($controller, '$notifyEmail ?'), 'Controller must ignore email when the switch is off');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');

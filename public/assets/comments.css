@@ -445,9 +445,130 @@
 .comment-form-tape { background-color: var(--mint); }
 
 .comment-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  display: block;
+}
+
+.comment-notify {
+  margin: -2px 0 14px;
+}
+
+.comment-notify-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 52px;
+  padding: 9px 12px;
+  border: 1px dashed color-mix(in oklch, var(--line-strong) 48%, var(--paper));
+  border-radius: 6px 12px 7px 11px;
+  background-color: color-mix(in oklch, var(--cream-1) 54%, var(--paper));
+  background-image: var(--paper-fiber);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.comment-notify-label:hover {
+  background-color: color-mix(in oklch, var(--butter) 18%, var(--paper));
+  border-color: color-mix(in oklch, var(--line-strong) 70%, var(--paper));
+}
+
+.comment-form .comment-notify-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.comment-notify-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 24px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 58%, var(--paper));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--cream-1) 76%, var(--paper));
+  box-shadow: 0 1px 2px oklch(0.35 0.02 70 / 0.12) inset;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.comment-notify-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--paper) 92%, var(--cream-1));
+  box-shadow: 0 1px 3px oklch(0.35 0.02 70 / 0.24), 0 1px 0 oklch(1 0 0 / 0.7) inset;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.comment-notify-input:checked ~ .comment-notify-track {
+  border-color: color-mix(in oklch, var(--mint) 52%, var(--line-strong));
+  background: color-mix(in oklch, var(--mint) 66%, var(--paper));
+}
+
+.comment-notify-input:checked ~ .comment-notify-track .comment-notify-thumb {
+  transform: translateX(18px);
+}
+
+.comment-notify-input:focus-visible ~ .comment-notify-track {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.comment-notify-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comment-notify-copy strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.comment-notify-copy strong .icon { color: var(--coral); }
+.comment-notify-copy small { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+
+.comment-notify-state {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font: 9px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.comment-notify-on { display: none; }
+.comment-notify-input:checked ~ .comment-notify-state .comment-notify-off { display: none; }
+.comment-notify-input:checked ~ .comment-notify-state .comment-notify-on { display: inline; }
+
+.comment-email-field {
+  display: none;
+  margin: -2px 0 14px;
+  animation: comment-email-in 180ms ease both;
+}
+
+.comment-form:has(.comment-notify-input:checked) .comment-email-field { display: block; }
+.comment-email-field .field { margin-bottom: 0; }
+
+@keyframes comment-email-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comment-notify-label, .comment-notify-track, .comment-notify-thumb, .comment-email-field { animation: none; transition: none; }
 }
 
 .comment-form .field { display: grid; gap: 6px; margin-bottom: 14px; }
@@ -506,7 +627,14 @@
   }
   .comment-form-tape { right: 24px; width: 62px; height: 18px; }
   .comment-form textarea { min-height: 110px; }
-  .comment-fields { grid-template-columns: 1fr; gap: 0; }
+  .comment-fields { display: block; }
+  .comment-notify { margin-top: -1px; }
+  .comment-notify-label { min-height: 46px; gap: 9px; padding: 8px 10px; }
+  .comment-notify-track { width: 40px; height: 22px; }
+  .comment-notify-thumb { top: 2px; left: 2px; width: 16px; height: 16px; }
+  .comment-notify-input:checked ~ .comment-notify-track .comment-notify-thumb { transform: translateX(16px); }
+  .comment-notify-state { display: none; }
+  .comment-notify-copy strong { font-size: 11.5px; }
   .comment-form-foot { align-items: stretch; flex-direction: column; }
   .comment-form-foot .button { width: 100%; justify-content: center; }
 }
