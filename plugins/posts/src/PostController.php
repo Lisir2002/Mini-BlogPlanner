@@ -15,6 +15,8 @@ use Core\Http\Response;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Version\Version;
+use DateTimeImmutable;
+use DateTimeZone;
 use Throwable;
 
 final class PostController
@@ -106,12 +108,27 @@ final class PostController
             default => null,
         };
         $csrf = Csrf::token();
+        $site = $this->site();
+        $description = $post->excerpt !== '' ? $post->excerpt : $site['description'];
+        $canonical = $this->baseUrl($request) . '/posts/' . rawurlencode($post->slug) . '.html';
+        $shareMeta = [
+            'type' => 'article',
+            'url' => $canonical,
+            'title' => $post->title,
+            'description' => $description,
+            'published' => $this->iso($post->publishedAt, $site['timezone']),
+            'modified' => $this->iso($post->updatedAt, $site['timezone']),
+            'tags' => $post->tags,
+        ];
 
         $html = $this->theme->render('post', [
-            'site' => $this->site(),
+            'site' => $site,
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => $post->title,
+            'page_description' => $description,
+            'canonical_url' => $canonical,
+            'share_meta' => $shareMeta,
             'current' => 'posts',
             'post' => $post,
             'comment_threads' => $threads,
@@ -129,19 +146,41 @@ final class PostController
             'reaction_csrf' => $csrf,
             'reaction_notice' => $reactionNotice,
             'page_styles' => ['posts.css', 'comments.css', 'reactions.css'],
-            'page_scripts' => ['comments.js', 'reactions.js'],
+            'page_scripts' => ['comments.js', 'reactions.js', 'share.js'],
         ]);
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');
     }
 
-    /** @return array{title:string,description:string,language:string} */
+    private function baseUrl(Request $request): string
+    {
+        $configured = trim((string) Env::get('APP_URL', ''));
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        $host = trim((string) ($request->header('host') ?? 'localhost'));
+
+        return 'http://' . ($host === '' ? 'localhost' : $host);
+    }
+
+    private function iso(string $value, string $timezone): string
+    {
+        try {
+            return (new DateTimeImmutable($value, new DateTimeZone($timezone)))->format(DATE_ATOM);
+        } catch (Throwable) {
+            return $value;
+        }
+    }
+
+    /** @return array{title:string,description:string,language:string,timezone:string} */
     private function site(): array
     {
         return [
             'title' => (string) Env::get('APP_NAME', '日记Planner'),
             'description' => (string) Env::get('APP_DESCRIPTION', '一个安静写字的地方。'),
             'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
+            'timezone' => (string) Env::get('APP_TIMEZONE', 'UTC'),
         ];
     }
 }

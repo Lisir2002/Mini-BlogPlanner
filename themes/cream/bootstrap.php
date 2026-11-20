@@ -32,8 +32,24 @@ if (!function_exists('cream_asset')) {
         $safe = is_string($safe) ? str_replace('..', '', $safe) : '';
         $url = '/assets/' . ltrim((string) $safe, '/');
         $version = cream_asset_version();
+        $file = dirname(__DIR__, 2) . '/public/assets/' . ltrim((string) $safe, '/');
+        $mtime = is_file($file) ? filemtime($file) : false;
+        $stamp = $mtime === false ? '' : (string) $mtime;
+        $query = 'v=' . rawurlencode($version);
+        if ($stamp !== '') {
+            $query .= '&m=' . rawurlencode($stamp);
+        }
 
-        return $version === '' ? $url : $url . '?v=' . rawurlencode($version);
+        return $url . '?' . $query;
+    }
+}
+
+if (!function_exists('cream_site_url')) {
+    function cream_site_url(): string
+    {
+        $url = trim((string) \Core\Config\Env::get('APP_URL', ''));
+
+        return $url === '' ? '' : rtrim($url, '/');
     }
 }
 

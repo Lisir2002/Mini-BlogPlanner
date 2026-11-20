@@ -806,6 +806,66 @@ check('Admin mobile menu uses a torn drawer', function (): void {
     truthy($css !== false && !str_contains($css, 'backdrop-filter: blur(12px)'), 'Admin header must not trap fixed drawers');
 });
 
+check('RSS feed publishes escaped posts with absolute links', function (): void {
+    $posts = [
+        new \Core\Content\Post(
+            1,
+            'hello',
+            'A & <B>',
+            '摘要 <script>',
+            '<p>body</p>',
+            '2026-11-20 09:30:00',
+            '2026-11-20 09:30:00',
+            3,
+            ['手账', '代码'],
+        ),
+    ];
+    $xml = \Core\Content\FeedBuilder::render(
+        $posts,
+        ['title' => '日记 & Planner', 'description' => '安静写字', 'language' => 'zh-CN', 'timezone' => 'Asia/Shanghai'],
+        'https://example.com/',
+        '0.1.22',
+    );
+    truthy(str_starts_with($xml, '<?xml version="1.0" encoding="UTF-8"?>'), 'Feed must be XML');
+    truthy(str_contains($xml, '<rss version="2.0"'), 'Feed must use RSS 2.0');
+    truthy(str_contains($xml, '<link>https://example.com/posts/hello.html</link>'), 'Feed items need absolute links');
+    truthy(str_contains($xml, 'A &amp; &lt;B&gt;'), 'Feed titles must be XML-escaped');
+    truthy(str_contains($xml, '摘要 &lt;script&gt;'), 'Feed excerpts must be escaped');
+    truthy(str_contains($xml, '<category>手账</category>'), 'Feed should carry post tags');
+    truthy(str_contains($xml, 'xmlns:atom="http://www.w3.org/2005/Atom"'), 'Feed should advertise its self link');
+});
+
+check('Article share card, RSS and social metadata are wired', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/post-share.php');
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $layout = file_get_contents($root . '/themes/cream/templates/layout.php');
+    $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
+    $plugin = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/PostController.php');
+    $feed = file_get_contents($root . '/plugins/posts/src/FeedController.php');
+    $css = file_get_contents($root . '/public/assets/posts.css');
+    $script = file_get_contents($root . '/public/assets/share.js');
+    $icons = file_get_contents($root . '/public/assets/icons.svg');
+    truthy($partial !== false && str_contains($partial, 'data-share-card'), 'Share strip needs a script hook');
+    truthy($partial !== false && str_contains($partial, 'data-share-copy') && str_contains($partial, 'data-share-native'), 'Share strip needs copy and native buttons');
+    truthy($partial !== false && str_contains($partial, 'aria-live="polite"'), 'Share feedback must be announced');
+    truthy($post !== false && str_contains($post, 'partials/post-share.php'), 'Post template must include the share strip');
+    truthy($layout !== false && str_contains($layout, 'application/rss+xml'), 'Layout needs an RSS discovery link');
+    truthy($layout !== false && str_contains($layout, '<link rel="canonical"'), 'Article pages need a canonical URL');
+    truthy($layout !== false && str_contains($layout, 'property="og:image"'), 'Sharing needs an Open Graph image');
+    truthy($layout !== false && str_contains($layout, 'name="twitter:card"'), 'Sharing needs a Twitter card');
+    truthy($footer !== false && str_contains($footer, '/feed.xml'), 'Footer needs an RSS link');
+    truthy($plugin !== false && str_contains($plugin, "'/feed.xml'"), 'Feed endpoint must be routed');
+    truthy($feed !== false && str_contains($feed, 'application/rss+xml'), 'Feed must use the RSS content type');
+    truthy($controller !== false && str_contains($controller, "'share_meta'") && str_contains($controller, "'share.js'"), 'Post pages must pass share metadata and load the script');
+    truthy($css !== false && str_contains($css, '.post-share') && str_contains($css, '.post-share-button'), 'Share strip needs the paper-ticket style');
+    truthy($script !== false && str_contains($script, 'navigator.clipboard') && str_contains($script, "execCommand('copy')"), 'Copy must work with and without the clipboard API');
+    truthy($script !== false && str_contains($script, 'navigator.share'), 'Native sharing must be feature-detected');
+    truthy($icons !== false && str_contains($icons, 'i-link') && str_contains($icons, 'i-share'), 'Share controls need themed icons');
+    truthy(is_file($root . '/public/assets/social-card.png'), 'Open Graph image asset is missing');
+});
+
 check('Compressed assets match their source files', function (): void {
     $assets = dirname(__DIR__) . '/public/assets';
     foreach (glob($assets . '/*.gz') ?: [] as $gz) {

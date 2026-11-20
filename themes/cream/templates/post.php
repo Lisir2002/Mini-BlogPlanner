@@ -34,6 +34,7 @@ if (!is_object($post)) {
 <?= $post->body ?>
   </div>
   <?php if (($preview ?? false) !== true): ?>
+  <?php require __DIR__ . '/partials/post-share.php'; ?>
   <?php require __DIR__ . '/partials/reactions.php'; ?>
   <?php endif; ?>
 </article>
