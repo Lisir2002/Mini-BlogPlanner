@@ -13,9 +13,9 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
     </a>
 
     <nav class="nav nav-desktop" aria-label="主导航">
-      <a class="nav-link<?= $current === 'home' ? ' is-current' : '' ?>" href="/">首页</a>
-      <a class="nav-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html">文章</a>
-      <a class="nav-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html">标签</a>
+      <a class="nav-link<?= $current === 'home' ? ' is-current' : '' ?>" href="/"<?= $current === 'home' ? ' aria-current="page"' : '' ?>>首页</a>
+      <a class="nav-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html"<?= $current === 'posts' ? ' aria-current="page"' : '' ?>>文章</a>
+      <a class="nav-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>标签</a>
       <a class="nav-link" href="/about.html">关于</a>
       <a class="nav-link" href="/api.html">接口文档</a>
       <a class="nav-link" href="/healthz">站点状态</a>
@@ -35,22 +35,22 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
             <p class="nav-drawer-sub">挑一页，继续翻。</p>
           </div>
           <div class="nav-drawer-links">
-            <a class="nav-drawer-link<?= $current === 'home' ? ' is-current' : '' ?>" href="/">
+            <a class="nav-drawer-link<?= $current === 'home' ? ' is-current' : '' ?>" href="/"<?= $current === 'home' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('planner', 'icon-sm') ?></span>
               <span class="nav-drawer-text">首页</span>
               <span class="nav-drawer-index">01</span>
             </a>
-            <a class="nav-drawer-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html">
+            <a class="nav-drawer-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html"<?= $current === 'posts' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
               <span class="nav-drawer-text">文章</span>
               <span class="nav-drawer-index">02</span>
             </a>
-            <a class="nav-drawer-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html">
+            <a class="nav-drawer-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('tag', 'icon-sm') ?></span>
               <span class="nav-drawer-text">标签</span>
               <span class="nav-drawer-index">03</span>
             </a>
-            <a class="nav-drawer-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html">
+            <a class="nav-drawer-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html"<?= $current === 'about' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('heart', 'icon-sm') ?></span>
               <span class="nav-drawer-text">关于</span>
               <span class="nav-drawer-index">04</span>

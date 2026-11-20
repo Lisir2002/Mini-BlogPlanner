@@ -13,6 +13,10 @@
   --butter: oklch(0.905 0.090 95);
   --mint: oklch(0.875 0.045 158);
   --sky: oklch(0.890 0.040 230);
+  --marker-wash: linear-gradient(92deg, oklch(0.90 0.13 97 / 0.38), oklch(0.95 0.10 100 / 0.70) 32%, oklch(0.88 0.14 94 / 0.48) 74%, oklch(0.93 0.11 98 / 0.58));
+  --marker-fiber: repeating-linear-gradient(92deg, transparent 0 10px, oklch(0.84 0.10 95 / 0.05) 10px 12px, transparent 12px 20px);
+  --marker-tail: oklch(0.83 0.12 92 / 0.24);
+  --marker-cut: polygon(0 20%, 5% 7%, 13% 13%, 24% 3%, 36% 12%, 49% 4%, 61% 12%, 74% 3%, 88% 11%, 100% 5%, 96% 28%, 100% 51%, 95% 77%, 98% 92%, 85% 96%, 71% 88%, 57% 98%, 42% 90%, 27% 97%, 12% 89%, 2% 95%, 0 65%);
   --shadow: 3px 3px 0 color-mix(in oklch, var(--ink) 12%, transparent);
   --shadow-lift: 6px 7px 0 color-mix(in oklch, var(--ink) 10%, transparent);
   --paper-wash: linear-gradient(108deg, oklch(1 0 0 / 0.40), transparent 40%, oklch(0.86 0.04 80 / 0.055));
@@ -1337,4 +1341,95 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outlin
   .error-top { gap: 10px; }
   .error-actions .button { flex: 1 1 100%; justify-content: center; }
   .error-card { padding: 28px 20px; }
+}
+
+/* 当前导航用半透明暖黄扫痕代替黑色纸签，笔尾略微越出文字边界。 */
+@keyframes marker-nav-in {
+  from { right: calc(100% - 12px); opacity: 0.36; }
+  to { right: -4px; opacity: 1; }
+}
+
+@keyframes marker-drawer-in {
+  from { right: calc(100% - 10px); opacity: 0.36; }
+  to { right: -18px; opacity: 1; }
+}
+
+.site-header .nav-link.is-current {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.site-header .nav-link.is-current:hover {
+  background: transparent;
+  color: var(--ink);
+}
+
+.site-header .nav-link.is-current::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 7px -4px 6px -4px;
+  background: var(--marker-fiber), var(--marker-wash);
+  clip-path: var(--marker-cut);
+  transform: rotate(-1.5deg) skewY(-0.4deg);
+  transform-origin: left center;
+  mix-blend-mode: multiply;
+  animation: marker-nav-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
+}
+
+.site-header .nav-drawer-link.is-current {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink);
+}
+
+.site-header .nav-drawer-link.is-current:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+.site-header .nav-drawer-link.is-current .nav-drawer-icon {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--butter) 66%, var(--paper));
+}
+
+.site-header .nav-drawer-link.is-current .nav-drawer-index {
+  color: var(--muted);
+  opacity: 0.78;
+}
+
+.site-header .nav-drawer-link.is-current .nav-drawer-text {
+  position: relative;
+  isolation: isolate;
+  flex: 0 1 auto;
+  margin-right: auto;
+  padding: 0 3px;
+  white-space: nowrap;
+}
+
+.site-header .nav-drawer-link.is-current .nav-drawer-text::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -5px;
+  right: -18px;
+  top: -3px;
+  bottom: -3px;
+  background: var(--marker-fiber), var(--marker-wash);
+  clip-path: var(--marker-cut);
+  transform: rotate(-1deg);
+  transform-origin: left center;
+  mix-blend-mode: multiply;
+  animation: marker-drawer-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header .nav-link.is-current::before,
+  .site-header .nav-drawer-link.is-current .nav-drawer-text::before {
+    animation: none;
+  }
 }

@@ -555,6 +555,18 @@ check('Paper theme uses local fiber and layered edges', function (): void {
     truthy($comments !== false && str_contains($comments, 'width: min(820px'), 'Comment sheet must align with the article sheet');
 });
 
+check('Highlighter marks current navigation and article quotes', function (): void {
+    $root = dirname(__DIR__);
+    $cream = file_get_contents($root . '/public/assets/cream.css');
+    $posts = file_get_contents($root . '/public/assets/posts.css');
+    truthy($cream !== false && str_contains($cream, '--marker-wash'), 'Missing marker color token');
+    truthy($cream !== false && str_contains($cream, '--marker-cut'), 'Missing marker edge token');
+    truthy($cream !== false && str_contains($cream, '.site-header .nav-link.is-current::before'), 'Current navigation needs a marker layer');
+    truthy($cream !== false && str_contains($cream, '.site-header .nav-drawer-link.is-current .nav-drawer-text::before'), 'Drawer current item needs a marker layer');
+    truthy($posts !== false && str_contains($posts, '.post-body blockquote::before'), 'Article quotes need a marker layer');
+    truthy($cream !== false && str_contains($cream, '@media (prefers-reduced-motion: reduce)'), 'Marker animation needs a reduced-motion fallback');
+});
+
 check('Brand separates project and site names', function (): void {
     $root = dirname(__DIR__);
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
