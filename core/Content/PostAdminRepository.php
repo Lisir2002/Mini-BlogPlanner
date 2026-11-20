@@ -27,7 +27,7 @@ final class PostAdminRepository
     public function find(int $id): ?array
     {
         return $this->db->fetchOne(
-            'SELECT id, slug, title, excerpt, body, status, reading_minutes, published_at, updated_at
+            'SELECT id, slug, title, excerpt, body, status, reading_minutes, series_id, published_at, updated_at
              FROM posts
              WHERE id = ?
              LIMIT 1',
@@ -39,8 +39,8 @@ final class PostAdminRepository
     public function create(array $data): int
     {
         $this->db->execute(
-            "INSERT INTO posts (slug, title, excerpt, body, status, published_at, author_id, reading_minutes)
-             VALUES (?, ?, ?, ?, ?, IF(? = 'published', NOW(), NULL), ?, ?)",
+            "INSERT INTO posts (slug, title, excerpt, body, status, published_at, author_id, reading_minutes, series_id)
+             VALUES (?, ?, ?, ?, ?, IF(? = 'published', NOW(), NULL), ?, ?, ?)",
             [
                 $data['slug'],
                 $data['title'],
@@ -50,6 +50,7 @@ final class PostAdminRepository
                 $data['status'],
                 $data['author_id'],
                 $data['reading_minutes'],
+                $data['series_id'] ?? null,
             ],
         );
         $row = $this->db->fetchOne('SELECT LAST_INSERT_ID() AS id');
@@ -64,7 +65,7 @@ final class PostAdminRepository
             "UPDATE posts
              SET slug = ?, title = ?, excerpt = ?, body = ?, status = ?,
                  published_at = IF(? = 'published', COALESCE(published_at, NOW()), NULL),
-                 author_id = ?, reading_minutes = ?
+                 author_id = ?, reading_minutes = ?, series_id = ?
              WHERE id = ?",
             [
                 $data['slug'],
@@ -75,6 +76,7 @@ final class PostAdminRepository
                 $data['status'],
                 $data['author_id'],
                 $data['reading_minutes'],
+                $data['series_id'] ?? null,
                 $id,
             ],
         );

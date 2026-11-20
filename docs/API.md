@@ -23,9 +23,9 @@
 ```json
 {
   "status": "ok",
-  "app": "0.1.33",
+  "app": "0.1.39",
   "api": "1.3.0",
-  "schema": 2026112007
+  "schema": 2026112101
 }
 ```
 
@@ -131,6 +131,32 @@
 返回标签信息和该标签下的已发布文章。`slug` 只允许小写字母、数字、短横线。
 
 - `404 /problems/tag-not-found`：标签不存在或没有已发布文章。
+- `503 /problems/service-unavailable`：数据库不可用。
+
+### `GET /api/v1/series`
+
+列出有已发布文章的系列，按最近一篇已发布文章的时间倒序。
+
+```json
+{
+  "data": [
+    {
+      "name": "建站手记",
+      "slug": "jian-zhan-shou-ji",
+      "description": "从第一行代码到站点上线。",
+      "url": "/series/jian-zhan-shou-ji.html",
+      "post_count": 2
+    }
+  ],
+  "meta": {"count": 1}
+}
+```
+
+### `GET /api/v1/series/{slug}`
+
+返回系列信息与该系列下的已发布文章，文章按发布时间从早到晚排列。`slug` 只允许小写字母、数字、短横线。
+
+- `404 /problems/series-not-found`：系列不存在或没有已发布文章。
 - `503 /problems/service-unavailable`：数据库不可用。
 
 ## 订阅端点

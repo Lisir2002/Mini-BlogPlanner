@@ -42,6 +42,7 @@ final class PostsPlugin implements PluginInterface
         $search = new SearchController($this->version, $this->theme);
         $feed = new FeedController($this->version);
         $archive = new ArchiveController($this->version, $this->theme);
+        $series = new SeriesController($this->version, $this->theme);
 
         return [
             new Route(['GET'], '/archive', static fn (Request $request, array $params): Response => $archive->index($request), 'archive.index'),
@@ -59,6 +60,8 @@ final class PostsPlugin implements PluginInterface
             new Route(['POST'], '/posts/{slug}/reaction', static fn (Request $request, array $params): Response => $reactions->submit($request, $params), 'posts.reactions.store'),
             new Route(['GET'], '/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'tags.index'),
             new Route(['GET'], '/tags/{slug}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'tags.show'),
+            new Route(['GET'], '/series', static fn (Request $request, array $params): Response => $series->index($request), 'series.index'),
+            new Route(['GET'], '/series/{slug}', static fn (Request $request, array $params): Response => $series->show($request, $params), 'series.show'),
         ];
     }
 }

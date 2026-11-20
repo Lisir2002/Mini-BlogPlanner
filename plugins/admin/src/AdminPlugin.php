@@ -42,6 +42,7 @@ final class AdminPlugin implements PluginInterface
         $media = new MediaAdminController($root, $this->theme);
         $audit = new AuditAdminController($this->theme);
         $tags = new TagAdminController($this->theme);
+        $series = new SeriesAdminController($this->theme);
         $comments = new CommentAdminController($this->theme);
 
         return [
@@ -68,6 +69,10 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/tags/{id}/rename', static fn (Request $request, array $params): Response => $tags->rename($request, $params), 'admin.tags.rename'),
             new Route(['POST'], '/admin/tags/{id}/merge', static fn (Request $request, array $params): Response => $tags->merge($request, $params), 'admin.tags.merge'),
             new Route(['POST'], '/admin/tags/{id}/delete', static fn (Request $request, array $params): Response => $tags->delete($request, $params), 'admin.tags.delete'),
+            new Route(['GET'], '/admin/series', static fn (Request $request, array $params): Response => $series->index($request), 'admin.series.index'),
+            new Route(['POST'], '/admin/series', static fn (Request $request, array $params): Response => $series->create($request), 'admin.series.create'),
+            new Route(['POST'], '/admin/series/{id}', static fn (Request $request, array $params): Response => $series->update($request, $params), 'admin.series.update'),
+            new Route(['POST'], '/admin/series/{id}/delete', static fn (Request $request, array $params): Response => $series->delete($request, $params), 'admin.series.delete'),
         ];
     }
 }

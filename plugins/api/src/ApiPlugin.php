@@ -30,6 +30,7 @@ final class ApiPlugin implements PluginInterface
         $health = new HealthController($this->version);
         $posts = new PostApiController();
         $tags = new TagApiController();
+        $series = new SeriesApiController();
 
         return [
             new Route(['GET'], '/api/v1/health', static fn (Request $request, array $params): Response => $health($request), 'api.health'),
@@ -39,6 +40,8 @@ final class ApiPlugin implements PluginInterface
             new Route(['GET'], '/api/v1/posts/{slug}', static fn (Request $request, array $params): Response => $posts->show($request, $params), 'api.posts.show'),
             new Route(['GET'], '/api/v1/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'api.tags.index'),
             new Route(['GET'], '/api/v1/tags/{slug}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'api.tags.show'),
+            new Route(['GET'], '/api/v1/series', static fn (Request $request, array $params): Response => $series->index($request), 'api.series.index'),
+            new Route(['GET'], '/api/v1/series/{slug}', static fn (Request $request, array $params): Response => $series->show($request, $params), 'api.series.show'),
         ];
     }
 }

@@ -31,6 +31,7 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
     <nav class="admin-nav nav-desktop" aria-label="后台导航">
       <a class="<?= $current === 'posts' ? 'is-current' : '' ?>" href="/admin/posts.html">文章</a>
       <a class="<?= $current === 'tags' ? 'is-current' : '' ?>" href="/admin/tags.html">标签</a>
+      <a class="<?= $current === 'series' ? 'is-current' : '' ?>" href="/admin/series.html">系列</a>
       <a class="<?= $current === 'comments' ? 'is-current' : '' ?>" href="/admin/comments.html">评论</a>
       <a class="<?= $current === 'media' ? 'is-current' : '' ?>" href="/admin/media.html">媒体</a>
       <a class="<?= $current === 'audit' ? 'is-current' : '' ?>" href="/admin/audit.html">审计</a>
@@ -66,25 +67,30 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
               <span class="nav-drawer-text">标签</span>
               <span class="nav-drawer-index">02</span>
             </a>
+            <a class="nav-drawer-link<?= $current === 'series' ? ' is-current' : '' ?>" href="/admin/series.html"<?= $current === 'series' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('layers', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">系列</span>
+              <span class="nav-drawer-index">03</span>
+            </a>
             <a class="nav-drawer-link<?= $current === 'comments' ? ' is-current' : '' ?>" href="/admin/comments.html"<?= $current === 'comments' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('comment', 'icon-sm') ?></span>
               <span class="nav-drawer-text">评论</span>
-              <span class="nav-drawer-index">03</span>
+              <span class="nav-drawer-index">04</span>
             </a>
             <a class="nav-drawer-link<?= $current === 'media' ? ' is-current' : '' ?>" href="/admin/media.html"<?= $current === 'media' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('layers', 'icon-sm') ?></span>
               <span class="nav-drawer-text">媒体</span>
-              <span class="nav-drawer-index">04</span>
+              <span class="nav-drawer-index">05</span>
             </a>
             <a class="nav-drawer-link<?= $current === 'audit' ? ' is-current' : '' ?>" href="/admin/audit.html"<?= $current === 'audit' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
               <span class="nav-drawer-text">审计</span>
-              <span class="nav-drawer-index">05</span>
+              <span class="nav-drawer-index">06</span>
             </a>
             <a class="nav-drawer-link" href="/" target="_blank" rel="noopener">
               <span class="nav-drawer-icon"><?= cream_icon('external', 'icon-sm') ?></span>
               <span class="nav-drawer-text">查看站点</span>
-              <span class="nav-drawer-index">06</span>
+              <span class="nav-drawer-index">07</span>
             </a>
           </div>
           <div class="nav-drawer-foot admin-mobile-foot">
