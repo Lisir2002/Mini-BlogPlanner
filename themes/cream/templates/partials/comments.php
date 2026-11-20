@@ -41,9 +41,9 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
   <?php endif; ?>
 
   <?php if ($threads !== []): ?>
-  <div class="comment-list">
+  <div class="comment-list" id="comment-list" data-comment-list>
     <?php foreach ($threads as $thread): $comment = $thread['comment']; ?>
-    <article class="comment-item" id="comment-<?= (int) $comment->id ?>">
+    <article class="comment-item comment-thread" id="comment-<?= (int) $comment->id ?>" data-comment-thread>
       <div class="comment-meta">
         <strong><?= cream_e($comment->authorName) ?></strong>
         <time datetime="<?= cream_e($comment->createdAt) ?>"><?= cream_e(cream_date($comment->createdAt)) ?></time>
@@ -66,6 +66,13 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
       <?php endif; ?>
     </article>
     <?php endforeach; ?>
+  </div>
+  <div class="comment-more" data-comment-more hidden>
+    <button class="comment-more-button" type="button" data-comment-more-button aria-controls="comment-list">
+      <span class="comment-more-icon"><?= cream_icon('arrow-right', 'icon-xs') ?></span>
+      <span>再看 <strong data-comment-more-count>3</strong> 条留言</span>
+      <small>每次展开 3 条</small>
+    </button>
   </div>
   <?php else: ?>
   <div class="comment-empty">

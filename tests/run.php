@@ -779,6 +779,19 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '@media (max-height: 640px)'), 'Short screens need a compact login layout');
 });
 
+check('Comments start with three and reveal in batches', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $script = file_get_contents($root . '/public/assets/comments.js');
+    $css = file_get_contents($root . '/public/assets/comments.css');
+    truthy($partial !== false && str_contains($partial, 'data-comment-list'), 'Comment list needs a reveal target');
+    truthy($partial !== false && str_contains($partial, 'data-comment-thread'), 'Each top-level comment must be a revealable thread');
+    truthy($partial !== false && str_contains($partial, 'data-comment-more hidden'), 'Load-more control must start hidden for no-script fallback');
+    truthy($script !== false && str_contains($script, 'const pageSize = 3;') && str_contains($script, 'commentMore.hidden = false;'), 'Comments must reveal three at a time');
+    truthy($script !== false && str_contains($script, 'thread.hidden = index >= visible;'), 'Hidden comment threads must be removed from view');
+    truthy($css !== false && str_contains($css, '.comment-more[hidden] { display: none; }') && str_contains($css, '.comment-more-button'), 'Load-more control must use the paper tab style');
+});
+
 check('Admin mobile menu uses a torn drawer', function (): void {
     $root = dirname(__DIR__);
     $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');

@@ -1,6 +1,57 @@
 (() => {
   'use strict';
 
+  const commentList = document.querySelector('[data-comment-list]');
+  const commentMore = document.querySelector('[data-comment-more]');
+  if (commentList && commentMore) {
+    const threads = Array.from(commentList.querySelectorAll('[data-comment-thread]'));
+    const moreButton = commentMore.querySelector('[data-comment-more-button]');
+    const moreCount = commentMore.querySelector('[data-comment-more-count]');
+    const pageSize = 3;
+    let visible = pageSize;
+
+    if (threads.length > pageSize && moreButton && moreCount) {
+      const hash = location.hash.replace(/^#/, '');
+      if (hash) {
+        try {
+          const target = document.getElementById(decodeURIComponent(hash));
+          const thread = target ? target.closest('[data-comment-thread]') : null;
+          const index = thread ? threads.indexOf(thread) : -1;
+          if (index >= pageSize) visible = index + 1;
+        } catch (error) {
+          // 地址中的锚点无法解析时，仍按默认三条展示。
+        }
+      }
+
+      const render = () => {
+        threads.forEach((thread, index) => {
+          thread.hidden = index >= visible;
+        });
+        const left = threads.length - visible;
+        if (left <= 0) {
+          commentMore.hidden = true;
+          return;
+        }
+        commentMore.hidden = false;
+        moreCount.textContent = String(left);
+        moreButton.setAttribute('aria-label', '再看 ' + left + ' 条留言');
+      };
+
+      moreButton.addEventListener('click', () => {
+        const start = visible;
+        visible = Math.min(visible + pageSize, threads.length);
+        threads.slice(start, visible).forEach((thread) => {
+          thread.hidden = false;
+          thread.classList.add('is-revealing');
+          thread.addEventListener('animationend', () => thread.classList.remove('is-revealing'), { once: true });
+        });
+        render();
+      });
+
+      render();
+    }
+  }
+
   const composer = document.getElementById('comment-form');
   if (!composer) return;
 
