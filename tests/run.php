@@ -895,6 +895,12 @@ check('Reader receipt merges reactions and sharing into a floater', function ():
     truthy($script !== false && str_contains($script, "classList.add('receipt-script')"), 'Script must mark enhanced layout');
     truthy($script !== false && str_contains($script, 'document.body.appendChild(receipt)'), 'Floating receipt must escape article stacking context');
     truthy($css !== false && str_contains($css, 'html.receipt-script'), 'Enhanced share layout must be scoped to script mode');
+    $share = file_get_contents($root . '/public/assets/share.js');
+    $icons = file_get_contents($root . '/public/assets/icons.svg');
+    truthy($share !== false && str_contains($share, '复制成功') && str_contains($share, "setCopyIcon('check')"), 'Copy success must switch the button to a check label');
+    truthy($share !== false && str_contains($share, "setStatus('')"), 'Copy success must clear the red helper line');
+    truthy($icons !== false && str_contains($icons, 'id="i-check"'), 'The icon sprite needs a check glyph');
+    truthy($css !== false && str_contains($css, '--receipt-green') && str_contains($css, 'width: min(252px'), 'Floating receipt must use a compact green success style');
 });
 
 check('Compressed assets match their source files', function (): void {

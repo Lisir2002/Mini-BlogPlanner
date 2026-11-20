@@ -1,5 +1,6 @@
 /* 读者回执：桌面是一张双格纸，窄屏则由胶纸签抽成悬浮小卡。 */
 .post-receipt {
+  --receipt-green: oklch(0.54 0.105 156);
   position: relative;
   margin: 30px 0 20px;
   border: 1px solid color-mix(in oklch, var(--line-strong) 74%, var(--paper));
@@ -120,6 +121,15 @@
 .post-receipt .post-share-tools { min-width: 0; margin-top: 8px; }
 .post-receipt .post-share-actions { justify-content: flex-start; }
 .post-receipt .post-share-button { min-height: 32px; }
+.post-receipt .post-share-button.is-copied,
+.post-receipt .post-share-button.is-copied:hover {
+  border-color: color-mix(in oklch, var(--receipt-green) 60%, var(--ink));
+  background: var(--receipt-green);
+  color: var(--paper);
+  box-shadow:
+    2px 2px 0 -1px var(--cream-1),
+    2px 2px 0 0 color-mix(in oklch, var(--receipt-green) 58%, var(--ink));
+}
 .post-receipt .post-share-status {
   min-height: 0;
   margin-top: 5px;
@@ -137,12 +147,12 @@
   }
   .post-receipt-panel { display: block; }
   .post-receipt-feedback {
-    padding: 11px 14px 9px;
+    padding: 8px 12px 6px;
     border-bottom: 1px dashed color-mix(in oklch, var(--line-strong) 56%, var(--paper));
   }
   .post-receipt-share {
     display: block;
-    padding: 9px 14px 21px;
+    padding: 6px 12px 8px;
     border-left: 0;
   }
   .post-receipt .post-reactions {
@@ -173,11 +183,11 @@
   .post-receipt .reaction-form { flex: 0 0 auto; }
   .post-receipt .reaction-button {
     min-width: 64px;
-    min-height: 38px;
-    padding: 5px 7px 5px 5px;
+    min-height: 36px;
+    padding: 4px 6px 4px 4px;
     gap: 4px;
   }
-  .post-receipt .reaction-mark { width: 24px; height: 24px; }
+  .post-receipt .reaction-mark { width: 23px; height: 23px; }
   .post-receipt .reaction-label { font-size: 10.5px; }
   .post-receipt .reaction-count { font-size: 10px; }
   .post-receipt .post-share { display: block; }
@@ -193,7 +203,7 @@
     margin: 6px 0 0;
   }
   .post-receipt .post-share-actions { justify-content: flex-end; }
-  .post-receipt .post-share-button { min-height: 38px; padding: 5px 10px; }
+  .post-receipt .post-share-button { min-height: 36px; padding: 4px 9px; }
   .post-receipt .post-share-fallback { text-align: left; }
   html.receipt-script .post-receipt .post-share {
     display: flex;
@@ -202,12 +212,10 @@
   }
   html.receipt-script .post-receipt .post-share-tools { margin: 0 0 0 auto; }
   .post-receipt .post-share-status {
-    position: absolute;
-    right: 14px;
-    bottom: 4px;
-    margin: 0;
+    margin: 3px 0 0;
     font-size: 9px;
-    line-height: 1.25;
+    line-height: 1.2;
+    text-align: right;
   }
   .post-receipt .reaction-status {
     position: absolute;
@@ -236,11 +244,11 @@
 .post-receipt-tab {
   display: none;
   position: fixed;
-  right: 9px;
+  right: 3px;
   top: var(--receipt-y, 62vh);
   z-index: 36;
-  width: 42px;
-  height: 96px;
+  width: 36px;
+  height: 88px;
   padding: 0;
   border: 0;
   background:
@@ -260,7 +268,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   pointer-events: auto;
 }
 .post-receipt-tab:hover { filter: drop-shadow(3px 4px 0 color-mix(in oklch, var(--line-strong) 48%, transparent)); }
@@ -269,18 +277,18 @@
 .post-receipt-tab-mark {
   display: grid;
   place-items: center;
-  width: 23px;
-  height: 23px;
+  width: 21px;
+  height: 21px;
   border: 1px solid color-mix(in oklch, var(--coral) 55%, transparent);
   border-radius: 50%;
   color: var(--coral);
-  font: 700 12px/1 "Noto Serif CJK SC", "Songti SC", serif;
+  font: 700 11px/1 "Noto Serif CJK SC", "Songti SC", serif;
   letter-spacing: 0;
 }
 .post-receipt-tab-label {
   color: var(--ink);
-  font: 700 11px/1 "Noto Serif CJK SC", "Songti SC", serif;
-  letter-spacing: 0.18em;
+  font: 700 10px/1 "Noto Serif CJK SC", "Songti SC", serif;
+  letter-spacing: 0.16em;
   writing-mode: vertical-rl;
   text-orientation: upright;
 }
@@ -311,9 +319,9 @@
 .post-receipt[data-receipt-floating="true"] .post-receipt-panel {
   position: fixed;
   top: var(--receipt-y, 62vh);
-  right: 58px;
+  right: 46px;
   display: block;
-  width: min(300px, calc(100vw - 70px));
+  width: min(252px, calc(100vw - 54px));
   max-height: calc(100dvh - 32px);
   overflow: visible;
   padding: 0;
@@ -336,12 +344,12 @@
   z-index: 35;
 }
 .post-receipt[data-receipt-floating="true"] .post-receipt-feedback {
-  padding: 12px 14px 9px;
+  padding: 8px 12px 6px;
   border-bottom: 1px dashed color-mix(in oklch, var(--line-strong) 56%, var(--paper));
 }
 .post-receipt[data-receipt-floating="true"] .post-receipt-share {
   display: block;
-  padding: 9px 14px 21px;
+  padding: 6px 12px 8px;
   border-left: 0;
 }
 .post-receipt[data-receipt-floating="true"][data-receipt-open="true"] .post-receipt-panel {

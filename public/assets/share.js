@@ -9,6 +9,8 @@
   var tools = card.querySelector('[data-share-tools]');
   var copyButton = card.querySelector('[data-share-copy]');
   var copyLabel = card.querySelector('[data-share-label]');
+  var copyIcon = copyButton ? copyButton.querySelector('.icon use') : null;
+  var copyIconHref = copyIcon ? copyIcon.getAttribute('href') : '';
   var nativeButton = card.querySelector('[data-share-native]');
   var status = card.querySelector('[data-share-status]');
   var url = card.getAttribute('data-share-url') || window.location.href;
@@ -28,18 +30,27 @@
     }
   }
 
+  function setCopyIcon(name) {
+    if (!copyIcon || !copyIconHref) {
+      return;
+    }
+    copyIcon.setAttribute('href', copyIconHref.replace(/#i-(link|check)$/, '#i-' + name));
+  }
+
   function setCopied() {
     window.clearTimeout(resetTimer);
     copyButton.classList.add('is-copied');
     if (copyLabel) {
-      copyLabel.textContent = '已复制';
+      copyLabel.textContent = '复制成功';
     }
-    setStatus('链接已复制，可以粘贴到任何地方。');
+    setCopyIcon('check');
+    setStatus('');
     resetTimer = window.setTimeout(function () {
       copyButton.classList.remove('is-copied');
       if (copyLabel) {
         copyLabel.textContent = '复制链接';
       }
+      setCopyIcon('link');
       setStatus('');
     }, 2600);
   }
