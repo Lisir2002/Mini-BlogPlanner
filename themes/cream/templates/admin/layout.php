@@ -16,9 +16,12 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
 <link rel="preload" href="<?= cream_asset('icons.svg') ?>" as="image" type="image/svg+xml" fetchpriority="low">
 <link rel="stylesheet" href="<?= cream_asset('cream.css') ?>" fetchpriority="high">
 <link rel="stylesheet" href="<?= cream_asset('admin.css') ?>" fetchpriority="high">
+<?php foreach (($page_styles ?? []) as $style): ?>
+<link rel="stylesheet" href="<?= cream_e(str_starts_with((string) $style, '/') ? (string) $style : cream_asset((string) $style)) ?>">
+<?php endforeach; ?>
 <link rel="icon" href="<?= cream_asset('favicon.svg') ?>" type="image/svg+xml">
 </head>
-<body class="admin-body<?= $current === 'login' ? ' admin-login-body' : '' ?>">
+<body class="admin-body<?= $current === 'login' ? ' admin-login-body' : '' ?><?= isset($body_class) ? ' ' . cream_e((string) $body_class) : '' ?>">
 <?php require dirname(__DIR__) . '/partials/loader.php'; ?>
 <a class="skip-link" href="#admin-main">跳到正文</a>
 <header class="admin-header">
@@ -104,5 +107,8 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
 <?= $content ?>
 </main>
 <script src="<?= cream_asset('cream.js') ?>" defer onerror="document.getElementById('cream-loader').hidden=true"></script>
+<?php foreach (($page_scripts ?? []) as $script): ?>
+<script src="<?= cream_e(str_starts_with((string) $script, '/') ? (string) $script : cream_asset((string) $script)) ?>" defer></script>
+<?php endforeach; ?>
 </body>
 </html>

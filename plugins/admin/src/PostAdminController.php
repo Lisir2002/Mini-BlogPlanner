@@ -9,6 +9,7 @@ use Core\Auth\Admin;
 use Core\Config\Env;
 use Core\Content\Post;
 use Core\Content\PostAdminRepository;
+use Core\Content\PostConflictException;
 use Core\Content\ReactionRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
@@ -25,12 +26,14 @@ final class PostAdminController
     use AdminErrors;
 
     private readonly AdminGuard $guard;
+    private readonly BodyRenderer $renderer;
 
     public function __construct(
         private readonly Theme $theme,
         private readonly Version $version,
     ) {
         $this->guard = new AdminGuard($this->theme);
+        $this->renderer = new BodyRenderer();
     }
 
     public function index(Request $request): Response
@@ -82,13 +85,19 @@ final class PostAdminController
         if ($admin instanceof Response) {
             return $admin;
         }
-        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
-            return $this->renderEditor($admin, null, ['页面已过期，请刷新后重试。'], '/admin/posts.html', 419);
+
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $request->wantsJson()
+                ? $this->jsonFail(['页面已过期，请刷新后重试。'], 419)
+                : $this->renderEditor($admin, null, ['页面已过期，请刷新后重试。'], '/admin/posts.html', 419);
         }
 
-        [$values, $errors, $tags] = $this->validate();
+        [$values, $errors, $tags] = $this->validate($payload);
         if ($errors !== []) {
-            return $this->renderEditor($admin, null, $errors, '/admin/posts.html', 422, $values);
+            return $request->wantsJson()
+                ? $this->jsonFail($errors, 422)
+                : $this->renderEditor($admin, null, $errors, '/admin/posts.html', 422, $values);
         }
 
         $newId = 0;
@@ -99,7 +108,17 @@ final class PostAdminController
             });
             $this->audit($admin, 'post.created', ['id' => $newId, 'slug' => $values['slug'], 'status' => $values['status']]);
         } catch (Throwable) {
-            return $this->renderEditor($admin, null, ['保存失败，slug 可能已存在。'], '/admin/posts.html', 422, $values);
+            return $request->wantsJson()
+                ? $this->jsonFail(['保存失败，slug 可能已存在。'], 422)
+                : $this->renderEditor($admin, null, ['保存失败，slug 可能已存在。'], '/admin/posts.html', 422, $values);
+        }
+
+        if ($request->wantsJson()) {
+            return $this->jsonSuccess([
+                'id' => $newId,
+                'content_version' => 1,
+                'redirect' => '/admin/posts/' . $newId . '.html',
+            ]);
         }
 
         return Response::redirect('/admin/posts.html', 303);
@@ -131,6 +150,37 @@ final class PostAdminController
         }
 
         return $this->renderEditor($admin, $post, [], '/admin/posts/' . $id . '.html', 200, $post);
+    }
+
+    public function previewBody(Request $request): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $this->jsonFail(['页面已过期，请刷新后重试。'], 419);
+        }
+
+        $format = (string) ($payload['format'] ?? 'markdown');
+        $source = (string) ($payload['source'] ?? '');
+        if (!in_array($format, ['markdown', 'html'], true)) {
+            return $this->jsonFail(['不支持的正文格式。'], 400);
+        }
+        if (strlen($source) > 1_000_000) {
+            return $this->jsonFail(['正文超过 1 MB，请拆分后再预览。'], 413);
+        }
+
+        $preview = $this->renderer->render($format, $source);
+
+        return $this->jsonSuccess([
+            'html' => $preview['html'],
+            'warnings' => $preview['warnings'],
+            'headings' => $this->renderer->headings($preview['html']),
+            'stats' => $this->renderer->stats($preview['html']),
+        ]);
     }
 
     /** @param array<string, string> $params */
@@ -192,26 +242,78 @@ final class PostAdminController
         }
         $id = $this->id($params);
         if ($id === null) {
-            return $this->adminError($request, 404, 'Not Found');
-        }
-        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
-            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+            return $request->wantsJson()
+                ? $this->jsonFail(['文章不存在。'], 404)
+                : $this->adminError($request, 404, 'Not Found');
         }
 
-        [$values, $errors, $tags] = $this->validate();
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $request->wantsJson()
+                ? $this->jsonFail(['页面已过期，请刷新后重试。'], 419)
+                : $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        $expectedVersion = (int) ($payload['content_version'] ?? 0);
+        if ($expectedVersion < 1) {
+            return $request->wantsJson()
+                ? $this->jsonFail(['缺少文稿版本号，请刷新后重试。'], 422)
+                : $this->renderEditor($admin, null, ['缺少文稿版本号，请刷新后重试。'], '/admin/posts/' . $id . '.html', 422);
+        }
+
+        [$values, $errors, $tags] = $this->validate($payload);
         if ($errors !== []) {
-            return $this->renderEditor($admin, null, $errors, '/admin/posts/' . $id . '.html', 422, $values);
+            return $request->wantsJson()
+                ? $this->jsonFail($errors, 422)
+                : $this->renderEditor($admin, null, $errors, '/admin/posts/' . $id . '.html', 422, $values);
         }
 
         try {
             $db = Connection::fromEnv();
-            $db->transaction(function (ConnectionInterface $tx) use ($id, $values, $tags, $admin): void {
-                (new PostAdminRepository($tx))->update($id, $values + ['author_id' => $admin->id]);
+            $newVersion = 0;
+            $db->transaction(function (ConnectionInterface $tx) use ($id, $values, $tags, $admin, $expectedVersion, &$newVersion): void {
+                $newVersion = (new PostAdminRepository($tx))->update($id, $values + ['author_id' => $admin->id], $expectedVersion);
                 (new TagRepository($tx))->sync($id, $tags);
             });
-            $this->audit($admin, 'post.updated', ['id' => $id, 'slug' => $values['slug'], 'status' => $values['status']]);
+            $this->audit($admin, 'post.updated', ['id' => $id, 'slug' => $values['slug'], 'status' => $values['status'], 'version' => $newVersion]);
+            $current = (new PostAdminRepository($db))->find($id);
+        } catch (PostConflictException $exception) {
+            $current = $exception->current;
+            try {
+                $current['tags'] = implode(', ', (new TagRepository(Connection::fromEnv()))->namesForPost($id));
+            } catch (Throwable) {
+                $current['tags'] = '';
+            }
+            $values['content_version'] = (int) ($current['content_version'] ?? 1);
+            if ($request->wantsJson()) {
+                return $this->jsonFail(
+                    ['这篇文稿已在另一个窗口保存，当前版本已更新。'],
+                    409,
+                    [
+                        'code' => 'conflict',
+                        'current' => [
+                            'id' => (int) ($current['id'] ?? $id),
+                            'title' => (string) ($current['title'] ?? ''),
+                            'content_version' => (int) ($current['content_version'] ?? 1),
+                            'updated_at' => (string) ($current['updated_at'] ?? ''),
+                        ],
+                    ],
+                );
+            }
+
+            return $this->renderEditor($admin, $current, ['这篇文稿已在另一个窗口保存，已阻止覆盖。'], '/admin/posts/' . $id . '.html', 409, $values);
         } catch (Throwable) {
-            return $this->renderEditor($admin, null, ['保存失败，slug 可能已存在。'], '/admin/posts/' . $id . '.html', 422, $values);
+            return $request->wantsJson()
+                ? $this->jsonFail(['保存失败，slug 可能已存在。'], 422)
+                : $this->renderEditor($admin, null, ['保存失败，slug 可能已存在。'], '/admin/posts/' . $id . '.html', 422, $values);
+        }
+
+        if ($request->wantsJson()) {
+            return $this->jsonSuccess([
+                'id' => $id,
+                'content_version' => $newVersion,
+                'updated_at' => (string) ($current['updated_at'] ?? date('Y-m-d H:i:s')),
+            ]);
         }
 
         return Response::redirect('/admin/posts.html', 303);
@@ -261,14 +363,24 @@ final class PostAdminController
      */
     private function renderEditor(Admin $admin, ?array $post, array $errors, string $action, int $status = 200, array $values = []): Response
     {
-        $data = $values !== [] ? $values : ($post ?? [
+        $defaults = [
             'title' => '',
             'slug' => '',
             'excerpt' => '',
             'body' => '',
+            'body_format' => 'markdown',
+            'body_source' => '',
             'status' => 'draft',
             'tags' => '',
-        ]);
+            'content_version' => 1,
+            'updated_at' => '',
+        ];
+        $data = array_merge($defaults, $post ?? [], $values);
+        $format = in_array($data['body_format'] ?? null, ['markdown', 'html'], true) ? (string) $data['body_format'] : 'markdown';
+        $source = $format === 'markdown'
+            ? (string) ($data['body_source'] ?? '')
+            : (string) ($data['body'] ?? '');
+        $preview = $this->renderer->render($format, $source);
 
         return $this->render('admin/editor', $admin, [
             'title' => preg_match('#^/admin/posts/[1-9]#', $action) === 1 ? '编辑文章' : '写新文章',
@@ -277,6 +389,15 @@ final class PostAdminController
             'values' => $data,
             'errors' => $errors,
             'action' => $action,
+            'body_format' => $format,
+            'preview_html' => $preview['html'],
+            'preview_headings' => $this->renderer->headings($preview['html']),
+            'preview_warnings' => $preview['warnings'],
+            'preview_stats' => $this->renderer->stats($preview['html']),
+            'body_html_value' => $format === 'html' || $source !== '' ? (string) ($data['body'] ?? '') : '',
+            'page_styles' => ['posts.css', 'editor.css'],
+            'page_scripts' => ['editor.js'],
+            'body_class' => 'editor-body',
         ], $status);
     }
 
@@ -291,17 +412,34 @@ final class PostAdminController
         return (int) $value;
     }
 
-    /** @return array{0:array<string, mixed>,1:list<string>,2:list<string>} */
-    private function validate(): array
+    /** @param array<string, mixed> $input
+     *  @return array{0:array<string, mixed>,1:list<string>,2:list<string>}
+     */
+    private function validate(array $input): array
     {
-        $title = trim((string) ($_POST['title'] ?? ''));
-        $slug = trim((string) ($_POST['slug'] ?? ''));
-        $excerpt = trim((string) ($_POST['excerpt'] ?? ''));
-        $body = (new HtmlSanitizer())->clean((string) ($_POST['body'] ?? ''));
-        $status = (string) ($_POST['status'] ?? 'draft');
-        $tagRaw = trim((string) ($_POST['tags'] ?? ''));
+        $title = trim((string) ($input['title'] ?? ''));
+        $slug = trim((string) ($input['slug'] ?? ''));
+        $excerpt = trim((string) ($input['excerpt'] ?? ''));
+        $format = (string) ($input['body_format'] ?? 'html');
+        $status = (string) ($input['status'] ?? 'draft');
+        $tagRaw = trim((string) ($input['tags'] ?? ''));
         $tags = TagRepository::normalize(preg_split('/[,，]/u', $tagRaw) ?: []);
         $errors = [];
+
+        if (!in_array($format, ['markdown', 'html'], true)) {
+            $errors[] = '正文格式只能是 Markdown 或 HTML。';
+            $format = 'html';
+        }
+
+        $source = $format === 'markdown'
+            ? (string) ($input['body_source'] ?? '')
+            : (string) ($input['body'] ?? '');
+        if (strlen($source) > 1_000_000) {
+            $errors[] = '源文不能超过 1 MB。';
+        }
+        $preview = $this->renderer->render($format, $source);
+        $body = $preview['html'];
+        $bodySource = $format === 'markdown' ? $source : null;
 
         if ($title === '' || mb_strlen($title) > 200) {
             $errors[] = '标题必须为 1–200 个字符。';
@@ -312,7 +450,7 @@ final class PostAdminController
         if (mb_strlen($excerpt) > 500) {
             $errors[] = '摘要不能超过 500 个字符。';
         }
-        if (trim($body) === '' || mb_strlen($body) > 200000) {
+        if (trim(strip_tags($body)) === '' || mb_strlen($body) > 200000) {
             $errors[] = '正文不能为空，且不能超过 200000 个字符。';
         }
         if (!in_array($status, ['draft', 'published'], true)) {
@@ -329,10 +467,43 @@ final class PostAdminController
             'slug' => $slug,
             'excerpt' => $excerpt,
             'body' => $body,
+            'body_format' => $format,
+            'body_source' => $bodySource,
             'status' => $status,
             'reading_minutes' => $minutes,
             'tags' => implode(', ', $tags),
         ], $errors, $tags];
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(): array
+    {
+        $type = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+        if (str_contains($type, 'application/json')) {
+            $raw = file_get_contents('php://input');
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return $_POST;
+    }
+
+    /** @param list<string> $errors
+     *  @param array<string, mixed> $extra
+     */
+    private function jsonFail(array $errors, int $status, array $extra = []): Response
+    {
+        return Response::json([
+            'ok' => false,
+            'errors' => $errors,
+        ] + $extra, $status)->withHeader('Cache-Control', 'no-store');
+    }
+
+    /** @param array<string, mixed> $data */
+    private function jsonSuccess(array $data): Response
+    {
+        return Response::json(['ok' => true] + $data)->withHeader('Cache-Control', 'no-store');
     }
 
     /** @param array<string, mixed> $payload */

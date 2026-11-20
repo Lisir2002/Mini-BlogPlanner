@@ -105,6 +105,8 @@ php bin/upgrade.php resume --plan=<plan_id>
 | `down` | 本批次迁移全部 reversible，且没有 irreversible | 按逆序执行 `down()`，结构降到目标版本，再切 release | 取决于 down 是否正确 |
 | `restore` | 有不可逆迁移，或 down 失败 | 恢复升级前 DB 备份，再切 release | 备份之后的数据会丢 |
 
+编辑器迁移 `2026112103` 的 `down` 会把 Markdown 源文、正文格式和版本号暂存到 `posts_editor_rollback_backup`，再删除三列；重新升级时从备份表恢复并删除该表。降级期间源文不会丢，但旧版本代码不读取这张备份表。
+
 回退前置条件：
 
 - 升级锁已拿到，维护模式已开。

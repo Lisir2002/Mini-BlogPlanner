@@ -30,6 +30,9 @@ use Core\Seo\SitemapBuilder;
 use Core\Seo\StructuredData;
 use Core\Version\Version;
 use Plugin\Admin\HtmlSanitizer;
+use Plugin\Admin\MarkdownRenderer;
+use Plugin\Admin\BodyRenderer;
+use Core\Content\PostConflictException;
 
 require dirname(__DIR__) . '/bootstrap/autoload.php';
 
@@ -428,6 +431,81 @@ check('HtmlSanitizer removes executable markup and unsafe URLs', function (): vo
     truthy(!str_contains($html, 'javascript:'), 'Unsafe URL survived');
     truthy(str_contains($html, 'rel="noopener noreferrer"'), 'Link hardening missing');
     truthy(!str_contains($html, 'iframe'), 'Embedded page survived');
+});
+
+check('MarkdownRenderer renders safe blocks and keeps unsupported links as text', function (): void {
+    $result = (new MarkdownRenderer())->render(
+        "# 标题\n\n第一段\n第二段\n\n**加粗** *斜体* ~~删除~~ [好链接](https://example.com)\n\n" .
+        "> 引用\n\n- 一\n- 二\n\n- [x] 完成\n- [ ] 待办\n\n" .
+        "| 左 | 右 |\n| :--- | ---: |\n| 1 | 2 |\n\n```php\necho 1;\n```\n\n" .
+        "<script>alert(1)</script>\n\n[坏链接](javascript:alert(1))"
+    );
+    truthy(str_contains($result['html'], '<h2>标题</h2>'), 'Heading must map to H2');
+    truthy(str_contains($result['html'], '<p>第一段第二段</p>'), 'Chinese lines must join without a space');
+    truthy(str_contains($result['html'], '<strong>加粗</strong>'), 'Strong emphasis missing');
+    truthy(str_contains($result['html'], '<em>斜体</em>'), 'Italic emphasis missing');
+    truthy(str_contains($result['html'], '<del>删除</del>'), 'Strikethrough missing');
+    truthy(str_contains($result['html'], '<blockquote><p>引用</p></blockquote>'), 'Quote missing');
+    truthy(str_contains($result['html'], '<table>') && str_contains($result['html'], 'align="right"'), 'Table alignment missing');
+    truthy(str_contains($result['html'], 'class="language-php"'), 'Code language class missing');
+    truthy(str_contains($result['html'], '☑ 完成') && str_contains($result['html'], '☐ 待办'), 'Task list markers missing');
+    truthy(!str_contains($result['html'], '<script'), 'Raw script tag must be escaped');
+    truthy(str_contains($result['html'], '&lt;script&gt;'), 'Raw script must remain visible as text');
+    truthy(!str_contains($result['html'], 'href="javascript:'), 'Unsafe link must not become an anchor');
+    truthy(str_contains($result['html'], '[坏链接](javascript:alert(1))'), 'Unsafe link should stay literal');
+});
+
+check('MarkdownRenderer warns on unclosed fences and mismatched table columns', function (): void {
+    $fence = (new MarkdownRenderer())->render("```html\n<span>没有闭合");
+    truthy(str_contains($fence['html'], '&lt;span&gt;'), 'Unclosed fence content must be escaped');
+    truthy(count($fence['warnings']) === 1 && str_contains($fence['warnings'][0], '代码块'), 'Expected an unclosed fence warning');
+    $table = (new MarkdownRenderer())->render("| A | B |\n| --- | --- |\n| 1 | 2 | 3 |");
+    truthy(str_contains($table['html'], '<table>'), 'Table must still render');
+    truthy(count($table['warnings']) === 1 && str_contains($table['warnings'][0], '列数'), 'Expected a table column warning');
+});
+
+check('BodyRenderer sanitizes HTML and reports removed markup', function (): void {
+    $renderer = new BodyRenderer();
+    $result = $renderer->render('html',
+        '<p onclick="x()">你好</p><script>alert(1)</script>' .
+        '<table><thead><tr><th>列</th></tr></thead><tbody><tr><td colspan="2">值</td></tr></tbody></table>' .
+        '<code class="language-php">echo 1;</code><iframe src="https://evil.example"></iframe>'
+    );
+    truthy(str_contains($result['html'], '<p>你好</p>'), 'Safe paragraph missing');
+    truthy(!str_contains($result['html'], 'onclick') && !str_contains($result['html'], '<script'), 'Unsafe HTML survived');
+    truthy(str_contains($result['html'], '<table>') && str_contains($result['html'], 'colspan="2"'), 'Table attributes missing');
+    truthy(str_contains($result['html'], '<code class="language-php">'), 'Code language class missing');
+    truthy(!str_contains($result['html'], 'iframe'), 'Iframe survived');
+    truthy(count($result['warnings']) === 1, 'Expected one sanitization warning');
+});
+
+check('BodyRenderer stats and headings read the rendered document', function (): void {
+    $renderer = new BodyRenderer();
+    $html = '<h2>第一节</h2><h3>第二节</h3><p>中文 English 123</p>';
+    same([['level' => 2, 'text' => '第一节'], ['level' => 3, 'text' => '第二节']], $renderer->headings($html));
+    $stats = $renderer->stats($html);
+    truthy($stats['chars'] > 0 && $stats['words'] >= 3, 'Stats should count text and words');
+    same(1, $stats['reading_minutes']);
+});
+
+check('PostConflictException carries the current row', function (): void {
+    $current = ['id' => 9, 'content_version' => 4, 'updated_at' => '2026-11-21 10:00:00'];
+    $exception = new PostConflictException($current);
+    same($current, $exception->current);
+    same('这篇文稿已被另一个窗口更新。', $exception->getMessage());
+});
+
+check('Editor migration and template preserve the dual-source contract', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112103_add_editor_body_contract.php');
+    truthy($migration !== false && str_contains($migration, 'body_format') && str_contains($migration, 'body_source') && str_contains($migration, 'content_version'), 'Migration must add the three editor columns');
+    truthy(str_contains($migration, 'DROP COLUMN content_version') && str_contains($migration, 'DROP COLUMN body_source'), 'Migration must be reversible');
+    truthy(str_contains($migration, 'posts_editor_rollback_backup') && str_contains($migration, 'REPLACE INTO posts_editor_rollback_backup'), 'Rollback must preserve editor source before dropping columns');
+    truthy(str_contains($migration, 'JOIN posts_editor_rollback_backup') && str_contains($migration, 'p.body_source = b.body_source'), 'Upgrade must restore editor source after rollback');
+    $template = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
+    truthy($template !== false && str_contains($template, 'name="body_source"') && str_contains($template, 'id="bodyHtml"'), 'Editor must expose both source editors');
+    truthy(str_contains($template, 'data-ajax="off"'), 'Editor form must bypass the global AJAX replacement');
+    truthy(is_file($root . '/public/assets/editor.css') && is_file($root . '/public/assets/editor.js'), 'Editor assets must exist');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {

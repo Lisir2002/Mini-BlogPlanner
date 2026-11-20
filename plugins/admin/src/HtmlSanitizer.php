@@ -27,7 +27,7 @@ final class HtmlSanitizer
         'strong' => [],
         'em' => [],
         'del' => [],
-        'code' => [],
+        'code' => ['class'],
         'pre' => [],
         'blockquote' => [],
         'ul' => [],
@@ -37,6 +37,15 @@ final class HtmlSanitizer
         'img' => ['src', 'alt', 'title'],
         'figure' => [],
         'figcaption' => [],
+        'table' => [],
+        'thead' => [],
+        'tbody' => [],
+        'tr' => [],
+        'th' => ['colspan', 'rowspan', 'align'],
+        'td' => ['colspan', 'rowspan', 'align'],
+        'caption' => [],
+        'sup' => [],
+        'sub' => [],
     ];
 
     /** @var list<string> */
@@ -139,6 +148,27 @@ final class HtmlSanitizer
                     $remove[] = $attribute->nodeName;
                 } else {
                     $element->setAttribute($name, $value);
+                }
+            }
+
+            if ($name === 'class') {
+                $value = trim($attribute->nodeValue ?? '');
+                if (strtolower($element->tagName) !== 'code' || preg_match('/^language-[a-z0-9+#._-]+$/', $value) !== 1) {
+                    $remove[] = $attribute->nodeName;
+                }
+            }
+
+            if ($name === 'align') {
+                $value = strtolower(trim($attribute->nodeValue ?? ''));
+                if (!in_array($value, ['left', 'center', 'right'], true)) {
+                    $remove[] = $attribute->nodeName;
+                }
+            }
+
+            if ($name === 'colspan' || $name === 'rowspan') {
+                $value = trim($attribute->nodeValue ?? '');
+                if (preg_match('/^[1-9][0-9]?$/', $value) !== 1) {
+                    $remove[] = $attribute->nodeName;
                 }
             }
         }

@@ -53,6 +53,7 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/posts', static fn (Request $request, array $params): Response => $posts->create($request), 'admin.posts.create'),
             new Route(['GET'], '/admin/posts/new', static fn (Request $request, array $params): Response => $posts->createForm($request), 'admin.posts.new'),
             new Route(['GET'], '/admin/posts/{id}', static fn (Request $request, array $params): Response => $posts->editForm($request, $params), 'admin.posts.edit'),
+            new Route(['POST'], '/admin/posts/preview-body', static fn (Request $request, array $params): Response => $posts->previewBody($request), 'admin.posts.preview_body'),
             new Route(['GET'], '/admin/posts/{id}/preview', static fn (Request $request, array $params): Response => $posts->preview($request, $params), 'admin.posts.preview'),
             new Route(['POST'], '/admin/posts/{id}', static fn (Request $request, array $params): Response => $posts->update($request, $params), 'admin.posts.update'),
             new Route(['POST'], '/admin/posts/{id}/archive', static fn (Request $request, array $params): Response => $posts->archive($request, $params), 'admin.posts.archive'),

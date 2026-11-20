@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Core\Content;
 
 use Core\Database\ConnectionInterface;
+use RuntimeException;
 
 final class PostAdminRepository
 {
@@ -16,7 +17,7 @@ final class PostAdminRepository
         $limit = max(1, min(200, $limit));
 
         return $this->db->fetchAll(
-            'SELECT id, slug, title, excerpt, status, published_at, updated_at
+            'SELECT id, slug, title, excerpt, body_format, status, published_at, updated_at
              FROM posts
              ORDER BY updated_at DESC, id DESC
              LIMIT ' . $limit
@@ -27,7 +28,8 @@ final class PostAdminRepository
     public function find(int $id): ?array
     {
         return $this->db->fetchOne(
-            'SELECT id, slug, title, excerpt, body, status, reading_minutes, published_at, updated_at
+            'SELECT id, slug, title, excerpt, body, body_format, body_source, status,
+                    reading_minutes, content_version, published_at, updated_at
              FROM posts
              WHERE id = ?
              LIMIT 1',
@@ -39,13 +41,15 @@ final class PostAdminRepository
     public function create(array $data): int
     {
         $this->db->execute(
-            "INSERT INTO posts (slug, title, excerpt, body, status, published_at, author_id, reading_minutes)
-             VALUES (?, ?, ?, ?, ?, IF(? = 'published', NOW(), NULL), ?, ?)",
+            "INSERT INTO posts (slug, title, excerpt, body, body_format, body_source, status, published_at, author_id, reading_minutes, content_version)
+             VALUES (?, ?, ?, ?, ?, ?, ?, IF(? = 'published', NOW(), NULL), ?, ?, 1)",
             [
                 $data['slug'],
                 $data['title'],
                 $data['excerpt'],
                 $data['body'],
+                $data['body_format'],
+                $data['body_source'],
                 $data['status'],
                 $data['status'],
                 $data['author_id'],
@@ -58,26 +62,39 @@ final class PostAdminRepository
     }
 
     /** @param array<string, mixed> $data */
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, int $expectedVersion): int
     {
-        $this->db->execute(
+        $affected = $this->db->execute(
             "UPDATE posts
-             SET slug = ?, title = ?, excerpt = ?, body = ?, status = ?,
+             SET slug = ?, title = ?, excerpt = ?, body = ?, body_format = ?, body_source = ?, status = ?,
                  published_at = IF(? = 'published', COALESCE(published_at, NOW()), NULL),
-                 author_id = ?, reading_minutes = ?
-             WHERE id = ?",
+                 author_id = ?, reading_minutes = ?, content_version = content_version + 1
+             WHERE id = ? AND content_version = ?",
             [
                 $data['slug'],
                 $data['title'],
                 $data['excerpt'],
                 $data['body'],
+                $data['body_format'],
+                $data['body_source'],
                 $data['status'],
                 $data['status'],
                 $data['author_id'],
                 $data['reading_minutes'],
                 $id,
+                $expectedVersion,
             ],
         );
+
+        if ($affected === 0) {
+            $current = $this->find($id);
+            if ($current === null) {
+                throw new RuntimeException('文章不存在。');
+            }
+            throw new PostConflictException($current);
+        }
+
+        return $expectedVersion + 1;
     }
 
     public function archive(int $id): void
