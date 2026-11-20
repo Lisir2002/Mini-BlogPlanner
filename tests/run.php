@@ -595,6 +595,8 @@ check('Article metadata pairs every value with an icon', function (): void {
     truthy($partial !== false && str_contains($partial, 'cream_word_count'), 'Metadata must include computed word count');
     truthy($post !== false && str_contains($post, 'partials/post-meta.php'), 'Article must use the shared metadata component');
     truthy($posts !== false && str_contains($posts, '.meta-icon'), 'Metadata icons must be themed');
+    truthy($posts !== false && str_contains($posts, '.meta-label { display: none; }'), 'Metadata labels must not consume space');
+    truthy($posts !== false && str_contains($posts, '.post-meta .meta-item { min-height: 24px;'), 'Mobile metadata must stay compact');
 });
 
 check('Compressed assets match their source files', function (): void {

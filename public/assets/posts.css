@@ -63,16 +63,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
-  margin: 2px 0 0;
+  gap: 4px;
+  margin: 1px 0 0;
 }
 
 .meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 4px 9px 4px 4px;
+  gap: 4px;
+  min-height: 26px;
+  padding: 2px 6px 2px 2px;
   border: 1px solid color-mix(in oklch, var(--line-strong) 62%, var(--paper));
   border-radius: 8px 11px 7px 10px / 10px 7px 11px 8px;
   background: color-mix(in oklch, var(--cream-1) 78%, var(--paper));
@@ -83,9 +83,9 @@
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 25px;
-  height: 25px;
-  border-radius: 7px 9px 6px 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px 8px 5px 7px;
   color: var(--ink-soft);
   background: var(--butter);
 }
@@ -104,25 +104,22 @@
   line-height: 1.12;
 }
 
-.meta-label {
-  color: var(--muted);
-  font: 8px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  letter-spacing: 0.12em;
-}
+.meta-label { display: none; }
 
 .meta-text time,
 .meta-data {
   color: var(--ink-soft);
-  font: 11.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font: 10.5px/1.15 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-weight: 650;
   white-space: nowrap;
 }
 
-.post-meta--compact .meta-label { display: none; }
-.post-meta--compact .meta-item { min-height: 29px; padding: 3px 8px 3px 3px; gap: 5px; }
-.post-meta--compact .meta-icon { width: 22px; height: 22px; }
+.meta-icon .icon { width: 11.5px; height: 11.5px; }
+
+.post-meta--compact .meta-item { min-height: 24px; padding: 1px 5px 1px 1px; gap: 3px; }
+.post-meta--compact .meta-icon { width: 18px; height: 18px; }
 .post-meta--compact .meta-text time,
-.post-meta--compact .meta-data { font-size: 11px; }
+.post-meta--compact .meta-data { font-size: 10px; }
 
 .empty-note {
   padding: 44px 24px;
@@ -260,6 +257,12 @@
   .post-card { padding: 18px 16px; }
   .post-body { font-size: 15px; }
   .post-page { padding: 22px 17px; border-radius: 6px 18px 8px 16px; }
+  .post-meta { gap: 4px; }
+  .post-meta .meta-item { min-height: 24px; padding: 1px 5px 1px 1px; gap: 3px; }
+  .post-meta .meta-icon { width: 18px; height: 18px; }
+  .post-meta .meta-icon .icon { width: 10.5px; height: 10.5px; }
+  .post-meta .meta-text time,
+  .post-meta .meta-data { font-size: 9.5px; }
 }
 
 .preview-note {

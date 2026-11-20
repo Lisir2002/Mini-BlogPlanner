@@ -4,12 +4,13 @@ if (!is_object($post)) {
     return;
 }
 $compact = ($compact ?? false) === true;
-$showUpdated = ($show_updated ?? true) === true;
 $commentCount = is_int($comment_count ?? null) ? $comment_count : null;
 $wordCount = cream_word_count((string) $post->body);
 $updatedAt = is_string($post->updatedAt ?? null) && $post->updatedAt !== ''
     ? $post->updatedAt
     : (string) $post->publishedAt;
+$showUpdated = ($show_updated ?? true) === true
+    && substr($post->publishedAt, 0, 10) !== substr($updatedAt, 0, 10);
 ?>
 <div class="post-meta<?= $compact ? ' post-meta--compact' : '' ?>" aria-label="文章信息">
   <span class="meta-item" title="发布日期">
