@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.2.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.3.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -23,9 +23,9 @@
 ```json
 {
   "status": "ok",
-  "app": "0.6.0",
-  "api": "1.2.0",
-  "schema": 2026112006
+  "app": "0.1.33",
+  "api": "1.3.0",
+  "schema": 2026112007
 }
 ```
 
@@ -68,6 +68,39 @@
 ```
 
 草稿、归档和 `published_at` 晚于当前时间的文章不会返回。
+
+### `GET /api/v1/search`
+
+按关键词检索已发布文章。`q` 为空返回 `422`；单个汉字会退回包含匹配；其余查询使用 ngram 全文索引。
+
+**200**
+
+```json
+{
+  "data": [
+    {
+      "slug": "hello",
+      "title": "第一篇",
+      "excerpt": "摘要",
+      "published_at": "2026-11-20T08:00:00+08:00",
+      "reading_minutes": 3,
+      "url": "/posts/hello.html",
+      "tags": ["手账"]
+    }
+  ],
+  "meta": {"query": "手账", "count": 1}
+}
+```
+
+**422**
+
+- `type=/problems/search-query-required`：`q` 为空或只有空白字符。
+
+**503**
+
+- `type=/problems/service-unavailable`：数据库不可用。
+
+响应带 `Cache-Control: no-store`。
 
 ### `GET /api/v1/posts/{slug}`
 

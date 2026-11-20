@@ -1,7 +1,7 @@
 {
   "id": "posts",
   "name": "Posts",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "priority": 25,
   "class": "Plugin\\Posts\\PostsPlugin",
   "runtime": true,
@@ -12,14 +12,17 @@
   },
   "provides": [
     "posts",
-    "tags"
+    "tags",
+    "search"
   ],
   "routes": [
+    "/search",
     "/posts",
     "/posts/{slug}"
   ],
   "route_prefixes": [
-    "/posts"
+    "/posts",
+    "/search"
   ],
   "migrations": false,
   "hooks": []

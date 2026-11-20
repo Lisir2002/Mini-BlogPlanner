@@ -25,6 +25,7 @@ use Core\Version\SchemaAhead;
 use Core\Version\SchemaBehind;
 use Core\Version\SchemaGuard;
 use Core\Version\SchemaMissing;
+use Core\Content\SearchTerm;
 use Core\Version\Version;
 use Plugin\Admin\HtmlSanitizer;
 
@@ -567,6 +568,19 @@ check('Highlighter marks current navigation and article quotes', function (): vo
     truthy($cream !== false && str_contains($cream, '@media (prefers-reduced-motion: reduce)'), 'Marker animation needs a reduced-motion fallback');
 });
 
+check('Short pages pin the footer to the viewport bottom', function (): void {
+    $root = dirname(__DIR__);
+    $cream = file_get_contents($root . '/public/assets/cream.css');
+    truthy(
+        $cream !== false && str_contains($cream, "body {\n  margin: 0;\n  min-height: 100vh;\n  display: flex;\n  flex-direction: column;"),
+        'The page body must be a vertical flex column'
+    );
+    truthy(
+        $cream !== false && str_contains($cream, ".site-main {\n  flex: 1 0 auto;"),
+        'The main region must grow so short pages keep the footer at the bottom'
+    );
+});
+
 check('Brand separates project and site names', function (): void {
     $root = dirname(__DIR__);
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
@@ -711,6 +725,51 @@ check('Reaction totals reach admin and API', function (): void {
     truthy($admin !== false && str_contains($admin, 'ReactionRepository'), 'Admin must load reaction totals');
     truthy($adminView !== false && str_contains($adminView, '赞 ') && str_contains($adminView, '踩 '), 'Admin list must show reaction totals');
     truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
+});
+
+check('Search terms are cleaned and shortened', function (): void {
+    same('手账 建站', SearchTerm::normalize(' <b>手账</b>   建站 '));
+    same('', SearchTerm::normalize(null));
+    same('', SearchTerm::normalize('   '));
+    same(SearchTerm::MAX_LENGTH, mb_strlen(SearchTerm::normalize(str_repeat('字', 80)), 'UTF-8'));
+    truthy(SearchTerm::isShort('字'), 'One character must use the LIKE fallback');
+    truthy(!SearchTerm::isShort('手账'), 'Two characters must use the full-text index');
+});
+
+check('Search index migration keeps the ngram contract', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112007_add_post_search_index.php');
+    truthy($migration !== false && str_contains($migration, 'ALTER TABLE posts'), 'Search index migration must alter posts');
+    truthy($migration !== false && str_contains($migration, 'FULLTEXT KEY ft_posts_search'), 'Search index must use the expected key');
+    truthy($migration !== false && str_contains($migration, 'WITH PARSER ngram'), 'Search index must use the ngram parser');
+    truthy($migration !== false && str_contains($migration, 'DROP INDEX ft_posts_search'), 'Search index migration must be reversible');
+});
+
+check('Search page, route and API are wired', function (): void {
+    $root = dirname(__DIR__);
+    $template = file_get_contents($root . '/themes/cream/templates/search.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/SearchController.php');
+    $repository = file_get_contents($root . '/core/Content/PostRepository.php');
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $posts = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    $api = file_get_contents($root . '/plugins/api/src/PostApiController.php');
+    $css = file_get_contents($root . '/public/assets/search.css');
+    truthy($template !== false && str_contains($template, 'action="/search"'), 'Search page needs a GET form');
+    truthy($template !== false && str_contains($template, 'search-results'), 'Search page needs result cards');
+    truthy($template !== false && str_contains($template, '没有翻到这一页'), 'Search page needs an empty result state');
+    truthy($controller !== false && str_contains($controller, "'search.css'"), 'Search page must load its stylesheet');
+    truthy($controller !== false && str_contains($controller, 'X-Robots-Tag'), 'Search page must be noindex');
+    truthy($controller !== false && str_contains($controller, 'noindex, follow'), 'Search page must keep links followable');
+    truthy($repository !== false && str_contains($repository, 'MATCH(title, excerpt, body)'), 'Search must use the full-text index');
+    truthy($repository !== false && str_contains($repository, 'LIKE ? OR excerpt LIKE ?'), 'Single-character search must fall back to LIKE');
+    truthy($header !== false && str_contains($header, 'nav-icon-link'), 'Desktop header needs a search entry');
+    truthy($header !== false && str_contains($header, 'href="/search"'), 'Search entry must point to /search');
+    truthy($header !== false && str_contains($header, 'nav-drawer-index">05'), 'Mobile drawer needs a search row');
+    truthy($posts !== false && str_contains($posts, "'/search'"), 'Search route must be registered');
+    truthy($api !== false && str_contains($api, 'public function search'), 'Search API method must exist');
+    truthy($css !== false && str_contains($css, '.search-form'), 'Search page needs a themed form');
+    truthy(is_file($root . '/public/assets/search.css.gz'), 'Search stylesheet needs a compressed copy');
+    truthy(is_file($root . '/docs/SEARCH.md'), 'Search documentation must exist');
 });
 
 check('Navigation toggle shows only one icon', function (): void {

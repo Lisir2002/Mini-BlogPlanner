@@ -39,11 +39,13 @@ final class PostsPlugin implements PluginInterface
         $tags = new TagController($this->version, $this->theme);
         $comments = new CommentController($this->version, $this->theme);
         $reactions = new ReactionController($this->version, $this->theme);
+        $search = new SearchController($this->version, $this->theme);
         $feed = new FeedController($this->version);
 
         return [
             new Route(['GET'], '/feed.xml', $feed, 'feed.xml'),
             new Route(['GET'], '/feed', $feed, 'feed'),
+            new Route(['GET'], '/search', $search, 'search'),
             new Route(['GET'], '/posts', new PostListController($this->version, $this->theme), 'posts.index'),
             new Route(['GET'], '/posts/{slug}', new PostController($this->version, $this->theme), 'posts.show'),
             new Route(['POST'], '/posts/{slug}/comments', static fn (Request $request, array $params): Response => $comments->submit($request, $params), 'posts.comments.store'),

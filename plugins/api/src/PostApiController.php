@@ -9,6 +9,7 @@ use Core\Content\Post;
 use Core\Content\PostResource;
 use Core\Content\PostRepository;
 use Core\Content\ReactionRepository;
+use Core\Content\SearchTerm;
 use Core\Database\Connection;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -28,6 +29,31 @@ final class PostApiController
             'data' => array_map(static fn (Post $post): array => PostResource::summary($post), $posts),
             'meta' => ['count' => count($posts)],
         ]);
+    }
+
+    public function search(Request $request): Response
+    {
+        $query = SearchTerm::normalize($request->query()['q'] ?? null);
+        if ($query === '') {
+            return Response::problem([
+                'type' => '/problems/search-query-required',
+                'title' => 'Search Query Required',
+                'status' => 422,
+                'detail' => '搜索词不能为空。',
+                'instance' => $request->path(),
+            ], 422);
+        }
+
+        try {
+            $posts = (new PostRepository(Connection::fromEnv()))->search($query);
+        } catch (Throwable) {
+            return $this->unavailable($request);
+        }
+
+        return Response::json([
+            'data' => array_map(static fn (Post $post): array => PostResource::summary($post), $posts),
+            'meta' => ['query' => $query, 'count' => count($posts)],
+        ])->withHeader('Cache-Control', 'no-store');
     }
 
     /** @param array<string, string> $params */

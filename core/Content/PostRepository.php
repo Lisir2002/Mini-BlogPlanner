@@ -45,6 +45,47 @@ final class PostRepository
         return $this->withTags($posts);
     }
 
+    /** @return list<Post> */
+    public function search(string $query, int $limit = 20): array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+
+        $limit = max(1, min(30, $limit));
+        $like = '%' . addcslashes($query, '%_\\') . '%';
+        if (SearchTerm::isShort($query)) {
+            $rows = $this->db->fetchAll(
+                "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
+                 FROM posts
+                 WHERE status = 'published' AND published_at <= NOW()
+                   AND (title LIKE ? OR excerpt LIKE ? OR body LIKE ?)
+                 ORDER BY ((CASE WHEN title LIKE ? THEN 3 ELSE 0 END)
+                        + (CASE WHEN excerpt LIKE ? THEN 2 ELSE 0 END)) DESC,
+                          published_at DESC, id DESC
+                 LIMIT " . $limit,
+                [$like, $like, $like, $like, $like],
+            );
+        } else {
+            $rows = $this->db->fetchAll(
+                "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes,
+                        MATCH(title, excerpt, body) AGAINST (? IN NATURAL LANGUAGE MODE) AS relevance
+                 FROM posts
+                 WHERE status = 'published' AND published_at <= NOW()
+                   AND MATCH(title, excerpt, body) AGAINST (? IN NATURAL LANGUAGE MODE)
+                 ORDER BY ((CASE WHEN title LIKE ? THEN 3 ELSE 0 END)
+                        + (CASE WHEN excerpt LIKE ? THEN 2 ELSE 0 END)
+                        + relevance) DESC,
+                          published_at DESC, id DESC
+                 LIMIT " . $limit,
+                [$query, $query, $like, $like],
+            );
+        }
+
+        return $this->withTags(array_map(fn (array $row): Post => $this->map($row), $rows));
+    }
+
     /** @param list<Post> $posts
      *  @return list<Post>
      */

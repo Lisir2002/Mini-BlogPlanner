@@ -19,6 +19,7 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
       <a class="nav-link" href="/about.html">关于</a>
       <a class="nav-link" href="/api.html">接口文档</a>
       <a class="nav-link" href="/healthz">站点状态</a>
+      <a class="nav-icon-link<?= $current === 'search' ? ' is-current' : '' ?>" href="/search" aria-label="搜索文章"<?= $current === 'search' ? ' aria-current="page"' : '' ?>><?= cream_icon('search', 'icon-sm') ?></a>
     </nav>
 
     <details class="nav-mobile">
@@ -55,15 +56,20 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
               <span class="nav-drawer-text">关于</span>
               <span class="nav-drawer-index">04</span>
             </a>
+            <a class="nav-drawer-link<?= $current === 'search' ? ' is-current' : '' ?>" href="/search"<?= $current === 'search' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('search', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">搜索</span>
+              <span class="nav-drawer-index">05</span>
+            </a>
             <a class="nav-drawer-link" href="/api.html">
               <span class="nav-drawer-icon"><?= cream_icon('plug', 'icon-sm') ?></span>
               <span class="nav-drawer-text">接口文档</span>
-              <span class="nav-drawer-index">05</span>
+              <span class="nav-drawer-index">06</span>
             </a>
             <a class="nav-drawer-link" href="/healthz">
               <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
               <span class="nav-drawer-text">站点状态</span>
-              <span class="nav-drawer-index">06</span>
+              <span class="nav-drawer-index">07</span>
             </a>
           </div>
           <div class="nav-drawer-foot">

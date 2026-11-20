@@ -49,6 +49,8 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   color: var(--ink);
   background:
     radial-gradient(circle at 12% 8%, oklch(0.94 0.035 95 / 0.55), transparent 28rem),
@@ -424,6 +426,7 @@ body.nav-open { overflow: hidden; }
 }
 
 .site-main {
+  flex: 1 0 auto;
   width: min(var(--content), calc(100% - 40px));
   margin: 0 auto;
   padding: 38px 0 24px;
@@ -1425,6 +1428,37 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outlin
   transform-origin: left center;
   mix-blend-mode: multiply;
   animation: marker-drawer-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.site-header .nav-icon-link {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin-left: 2px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 72%, var(--paper));
+  border-radius: 10px 13px 9px 12px / 12px 9px 13px 8px;
+  background: color-mix(in oklch, var(--paper) 84%, var(--cream-1));
+  color: var(--ink-soft);
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.site-header .nav-icon-link:hover {
+  background: var(--paper);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.site-header .nav-icon-link.is-current {
+  border-color: var(--line-strong);
+  background: color-mix(in oklch, var(--butter) 66%, var(--paper));
+  color: var(--ink);
+}
+
+.site-header .nav-icon-link .icon {
+  width: 15px;
+  height: 15px;
 }
 
 @media (prefers-reduced-motion: reduce) {
