@@ -39,6 +39,7 @@ final class AdminPlugin implements PluginInterface
         $root = dirname(__DIR__, 3);
         $login = new LoginController($root, $this->theme);
         $posts = new PostAdminController($this->theme, $this->version);
+        $revisions = new RevisionAdminController($this->theme);
         $media = new MediaAdminController($root, $this->theme);
         $audit = new AuditAdminController($this->theme);
         $tags = new TagAdminController($this->theme);
@@ -53,6 +54,8 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/posts', static fn (Request $request, array $params): Response => $posts->create($request), 'admin.posts.create'),
             new Route(['GET'], '/admin/posts/new', static fn (Request $request, array $params): Response => $posts->createForm($request), 'admin.posts.new'),
             new Route(['GET'], '/admin/posts/{id}', static fn (Request $request, array $params): Response => $posts->editForm($request, $params), 'admin.posts.edit'),
+            new Route(['GET'], '/admin/posts/{id}/revisions', static fn (Request $request, array $params): Response => $revisions->show($request, $params), 'admin.posts.revisions'),
+            new Route(['POST'], '/admin/posts/{id}/revisions/{version}/restore', static fn (Request $request, array $params): Response => $revisions->restore($request, $params), 'admin.posts.revisions.restore'),
             new Route(['POST'], '/admin/posts/preview-body', static fn (Request $request, array $params): Response => $posts->previewBody($request), 'admin.posts.preview_body'),
             new Route(['GET'], '/admin/posts/{id}/preview', static fn (Request $request, array $params): Response => $posts->preview($request, $params), 'admin.posts.preview'),
             new Route(['POST'], '/admin/posts/{id}/draft', static fn (Request $request, array $params): Response => $posts->saveDraft($request, $params), 'admin.posts.draft.save'),

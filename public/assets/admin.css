@@ -706,3 +706,61 @@
   .comment-admin-actions form { flex: 1 1 auto; }
   .comment-admin-actions .admin-button, .comment-admin-actions .link-button { width: 100%; justify-content: center; }
 }
+
+/* 版本历史：列表与正文差异 */
+.revision-page .admin-page-head { align-items: flex-start; }
+.revision-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.revision-layout { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.revision-list { background: #fffdf7; border: 1px solid var(--line, #e7dfd2); border-radius: 14px; padding: 10px; box-shadow: 0 10px 24px rgba(92, 73, 45, .05); }
+.revision-list-head { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 10px 12px; border-bottom: 1px dashed var(--line, #e7dfd2); }
+.revision-list-head strong { font-size: 14px; letter-spacing: .04em; }
+.revision-list-head span { color: var(--muted, #8c8274); font-size: 12px; }
+.revision-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px; border-radius: 10px; text-decoration: none; color: inherit; border: 1px solid transparent; }
+.revision-item + .revision-item { margin-top: 2px; }
+.revision-item:hover { background: #faf4e7; }
+.revision-item.is-selected { background: #f4ead8; border-color: #dfc9a5; }
+.revision-item.is-online .revision-version { color: #2f6d4f; }
+.revision-version { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; color: #6d6253; }
+.revision-copy { min-width: 0; display: grid; gap: 4px; }
+.revision-copy strong { font-size: 13px; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.revision-copy small { color: var(--muted, #8c8274); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.revision-tag { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: #e7f1e9; color: #2f6d4f; white-space: nowrap; }
+.revision-detail { min-width: 0; background: #fffdf7; border: 1px solid var(--line, #e7dfd2); border-radius: 14px; padding: 18px; box-shadow: 0 10px 24px rgba(92, 73, 45, .05); }
+.revision-detail-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.revision-detail-head h2 { margin: 3px 0 4px; font-size: clamp(20px, 2.4vw, 30px); }
+.revision-detail-head p { color: var(--muted, #8c8274); margin: 0; }
+.revision-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.revision-badges span { font-size: 11px; padding: 3px 8px; border: 1px solid var(--line, #e7dfd2); border-radius: 999px; background: #fbf6ea; color: #6d6253; }
+.revision-note { margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff3d9; border: 1px solid #ead6a8; font-size: 13px; color: #765a25; }
+.revision-fields { margin-top: 16px; overflow-x: auto; }
+.revision-fields table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.revision-fields th, .revision-fields td { padding: 9px 10px; border-bottom: 1px solid #f0e8d8; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.revision-fields thead th { color: var(--muted, #8c8274); font-weight: 500; font-size: 12px; }
+.revision-fields tr.is-changed { background: #fff8e8; }
+.revision-fields tr.is-changed th { color: #9a6a21; }
+.revision-body-head { margin-top: 22px; display: flex; justify-content: space-between; gap: 14px; align-items: flex-end; }
+.revision-body-head h3 { margin: 0 0 3px; font-size: 16px; }
+.revision-body-head p { margin: 0; color: var(--muted, #8c8274); font-size: 12px; }
+.revision-restore { flex-shrink: 0; }
+.revision-same { margin-top: 12px; padding: 16px; border-radius: 10px; background: #f7f3e9; color: #6d6253; font-size: 13px; }
+.revision-diff { margin-top: 12px; border: 1px solid #eee4d2; border-radius: 10px; overflow: hidden; max-height: 62vh; overflow-y: auto; }
+.revision-diff table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.revision-diff td { padding: 4px 10px; vertical-align: top; }
+.revision-diff .diff-sign { width: 22px; text-align: center; color: #8c8274; user-select: none; }
+.revision-diff code { white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.revision-diff .diff-remove { background: #fbe4df; }
+.revision-diff .diff-remove code { color: #8d2f22; }
+.revision-diff .diff-add { background: #e4f3e8; }
+.revision-diff .diff-add code { color: #235b3a; }
+.revision-diff .diff-same { background: #fffdf7; }
+.revision-diff .diff-info { background: #f3ede0; color: #765a25; font-size: 12px; }
+.revision-raw { margin-top: 14px; }
+.revision-raw summary { cursor: pointer; color: #6d6253; font-size: 13px; }
+.revision-raw pre { margin-top: 10px; padding: 14px; border-radius: 8px; background: #f7f3e9; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 40vh; overflow: auto; }
+@media (max-width: 900px) {
+  .revision-layout { grid-template-columns: 1fr; }
+  .revision-detail-head, .revision-body-head { flex-direction: column; align-items: flex-start; }
+  .revision-badges { justify-content: flex-start; }
+  .revision-restore { width: 100%; }
+  .revision-restore .admin-button { width: 100%; }
+}

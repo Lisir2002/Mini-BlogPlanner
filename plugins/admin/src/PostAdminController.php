@@ -12,6 +12,7 @@ use Core\Content\PostAdminRepository;
 use Core\Content\PostConflictException;
 use Core\Content\PostDraftConflictException;
 use Core\Content\PostDraftRepository;
+use Core\Content\PostRevisionRepository;
 use Core\Content\ReactionRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
@@ -109,6 +110,7 @@ final class PostAdminController
             Connection::fromEnv()->transaction(function (ConnectionInterface $db) use ($values, $tags, $admin, &$newId): void {
                 $newId = (new PostAdminRepository($db))->create($values + ['author_id' => $admin->id]);
                 (new TagRepository($db))->sync($newId, $tags);
+                (new PostRevisionRepository($db))->record($newId, 1, $values, $tags, $admin->id);
             });
             $this->audit($admin, 'post.created', ['id' => $newId, 'slug' => $values['slug'], 'status' => $values['status']]);
         } catch (Throwable) {
@@ -356,6 +358,7 @@ final class PostAdminController
             $newVersion = 0;
             $db->transaction(function (ConnectionInterface $tx) use ($id, $values, $tags, $admin, $expectedVersion, &$newVersion): void {
                 $newVersion = (new PostAdminRepository($tx))->update($id, $values + ['author_id' => $admin->id], $expectedVersion);
+                (new PostRevisionRepository($tx))->record($id, $newVersion, $values, $tags, $admin->id);
                 (new TagRepository($tx))->sync($id, $tags);
                 (new PostDraftRepository($tx))->delete($id);
             });
@@ -495,6 +498,7 @@ final class PostAdminController
             $newVersion = 0;
             $db->transaction(function (ConnectionInterface $tx) use ($id, $values, $tags, $admin, $expectedVersion, &$newVersion): void {
                 $newVersion = (new PostAdminRepository($tx))->update($id, $values + ['author_id' => $admin->id], $expectedVersion);
+                (new PostRevisionRepository($tx))->record($id, $newVersion, $values, $tags, $admin->id);
                 (new TagRepository($tx))->sync($id, $tags);
             });
             $this->audit($admin, 'post.updated', ['id' => $id, 'slug' => $values['slug'], 'status' => $values['status'], 'version' => $newVersion]);

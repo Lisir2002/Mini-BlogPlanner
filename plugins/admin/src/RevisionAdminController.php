@@ -1,0 +1,226 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Plugin\Admin;
+
+use Core\Audit\AuditRepository;
+use Core\Auth\Admin;
+use Core\Config\Env;
+use Core\Content\PostAdminRepository;
+use Core\Content\PostDraftRepository;
+use Core\Content\PostRevisionRepository;
+use Core\Content\TagRepository;
+use Core\Content\TextDiff;
+use Core\Database\Connection;
+use Core\Http\Csrf;
+use Core\Http\Request;
+use Core\Http\Response;
+use Core\Theme\Theme;
+use Throwable;
+
+final class RevisionAdminController
+{
+    use AdminErrors;
+
+    private readonly AdminGuard $guard;
+
+    public function __construct(private readonly Theme $theme)
+    {
+        $this->guard = new AdminGuard($this->theme);
+    }
+
+    /** @param array<string, string> $params */
+    public function show(Request $request, array $params): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        $id = $this->postId($params);
+        if ($id === null) {
+            return $this->adminError($request, 404, 'Not Found');
+        }
+
+        try {
+            $db = Connection::fromEnv();
+            $post = (new PostAdminRepository($db))->find($id);
+            if ($post === null) {
+                return $this->adminError($request, 404, 'Not Found');
+            }
+            $revisions = (new PostRevisionRepository($db))->listForPost($id);
+            $selected = null;
+            $version = (int) ($request->query()['version'] ?? 0);
+            if ($version > 0) {
+                $selected = (new PostRevisionRepository($db))->find($id, $version);
+            }
+            if ($selected === null && $revisions !== []) {
+                $selected = (new PostRevisionRepository($db))->find($id, (int) $revisions[0]['version']);
+            }
+            $tags = (new TagRepository($db))->namesForPost($id);
+            $draft = (new PostDraftRepository($db))->find($id);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '后台暂时无法连接数据库。');
+        }
+
+        $currentText = $this->revisionText($post);
+        $selectedText = $selected === null ? '' : $this->revisionText($selected);
+        $diff = $selected === null ? [] : TextDiff::lines($selectedText, $currentText);
+        $fields = $selected === null ? [] : [
+            $this->field('标题', (string) ($selected['title'] ?? ''), (string) ($post['title'] ?? '')),
+            $this->field('固定链接', (string) ($selected['slug'] ?? ''), (string) ($post['slug'] ?? '')),
+            $this->field('摘要', (string) ($selected['excerpt'] ?? ''), (string) ($post['excerpt'] ?? '')),
+            $this->field('标签', implode(', ', is_array($selected['tags'] ?? null) ? $selected['tags'] : []), implode(', ', $tags)),
+            $this->field('状态', (string) ($selected['status'] ?? ''), (string) ($post['status'] ?? '')),
+            $this->field('格式', (string) ($selected['body_format'] ?? ''), (string) ($post['body_format'] ?? '')),
+        ];
+
+        return $this->render('admin/revisions', $admin, [
+            'title' => '版本历史',
+            'current' => 'posts',
+            'post' => $post,
+            'revisions' => $revisions,
+            'selected' => $selected,
+            'selected_version' => (int) ($selected['version'] ?? 0),
+            'current_text' => $currentText,
+            'selected_text' => $selectedText,
+            'diff' => $diff,
+            'fields' => $fields,
+            'draft' => $draft,
+            'retention' => PostRevisionRepository::RETENTION,
+        ]);
+    }
+
+    /** @param array<string, string> $params */
+    public function restore(Request $request, array $params): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        $id = $this->postId($params);
+        $version = (int) ($params['version'] ?? 0);
+        if ($id === null || $version < 1) {
+            return $request->wantsJson()
+                ? Response::json(['ok' => false, 'errors' => ['版本不存在。']], 404)
+                : $this->adminError($request, 404, 'Not Found');
+        }
+
+        $payload = $this->payload($request);
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $request->wantsJson()
+                ? Response::json(['ok' => false, 'errors' => ['页面已过期，请刷新后重试。']], 419)
+                : $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        try {
+            $db = Connection::fromEnv();
+            $post = (new PostAdminRepository($db))->find($id);
+            $revision = (new PostRevisionRepository($db))->find($id, $version);
+            if ($post === null || $revision === null) {
+                return $request->wantsJson()
+                    ? Response::json(['ok' => false, 'errors' => ['版本不存在。']], 404)
+                    : $this->adminError($request, 404, 'Not Found');
+            }
+            $draft = (new PostDraftRepository($db))->find($id);
+            $status = (string) ($revision['status'] ?? 'published') === 'published' ? 'published' : 'draft';
+            $values = [
+                'title' => (string) ($revision['title'] ?? ''),
+                'slug' => (string) ($revision['slug'] ?? ''),
+                'excerpt' => (string) ($revision['excerpt'] ?? ''),
+                'status' => $status,
+                'body_format' => (string) ($revision['body_format'] ?? 'markdown'),
+                'body_source' => (string) ($revision['body_source'] ?? ''),
+                'body_html' => (string) ($revision['body_html'] ?? ''),
+                'tags' => is_array($revision['tags'] ?? null) ? $revision['tags'] : [],
+            ];
+            $draftVersion = (new PostDraftRepository($db))->save(
+                $id,
+                $values,
+                (int) ($post['content_version'] ?? 1),
+                (int) ($draft['draft_version'] ?? 0),
+            );
+            try {
+                (new AuditRepository($db))->append('post.revision_restored', $admin->username, [
+                    'id' => $id,
+                    'version' => $version,
+                    'draft_version' => (int) ($draftVersion['draft_version'] ?? 0),
+                ]);
+            } catch (Throwable) {
+                // 审计失败不能回滚已经写入的工作稿。
+            }
+        } catch (Throwable) {
+            return $request->wantsJson()
+                ? Response::json(['ok' => false, 'errors' => ['恢复失败，请稍后重试。']], 503)
+                : $this->adminError($request, 503, '恢复失败，请稍后重试。');
+        }
+
+        if ($request->wantsJson()) {
+            return Response::json([
+                'ok' => true,
+                'draft_version' => (int) ($draftVersion['draft_version'] ?? 0),
+                'redirect' => '/admin/posts/' . $id . '.html',
+            ]);
+        }
+
+        return Response::redirect('/admin/posts/' . $id . '.html', 303);
+    }
+
+    /** @param array<string, mixed> $post @return string */
+    private function revisionText(array $post): string
+    {
+        $source = $post['body_source'] ?? null;
+        if (is_string($source) && trim($source) !== '') {
+            return $source;
+        }
+
+        return (string) ($post['body_html'] ?? $post['body'] ?? '');
+    }
+
+    /** @return array{label:string,old:string,new:string,changed:bool} */
+    private function field(string $label, string $old, string $new): array
+    {
+        return ['label' => $label, 'old' => $old, 'new' => $new, 'changed' => $old !== $new];
+    }
+
+    /** @param array<string, string> $params */
+    private function postId(array $params): ?int
+    {
+        $id = filter_var($params['id'] ?? null, FILTER_VALIDATE_INT);
+        if (!is_int($id) || $id < 1) {
+            return null;
+        }
+
+        return $id;
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(Request $request): array
+    {
+        $type = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+        if (str_contains($type, 'application/json')) {
+            $raw = file_get_contents('php://input');
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return $_POST;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function render(string $template, Admin $admin, array $data, int $status = 200): Response
+    {
+        $html = $this->theme->render($template, $data + [
+            'site' => [
+                'title' => (string) Env::get('APP_NAME', '日记Planner'),
+                'description' => (string) Env::get('APP_DESCRIPTION', '一个安静写字的地方。'),
+                'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
+            ],
+            'admin' => $admin,
+            'csrf' => Csrf::token(),
+        ], 'admin/layout');
+
+        return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');
+    }
+}

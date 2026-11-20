@@ -51,6 +51,7 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
       </div>
     </div>
     <div class="editor-page-actions">
+      <?php if ($post !== null): ?><a class="admin-button ghost" href="/admin/posts/<?= $postId ?>/revisions.html"><?= cream_icon('layers', 'icon-xs') ?> 版本历史</a><?php endif; ?>
       <?php if ($post !== null): ?><a class="admin-button ghost" href="/admin/posts/<?= $postId ?>/preview.html" target="_blank" rel="noopener"><?= cream_icon('external', 'icon-xs') ?> 预览</a><?php endif; ?>
       <a class="admin-button ghost" href="/admin/posts.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 返回列表</a>
       <button class="admin-button primary" type="submit" form="editorForm" id="editorSaveTop"><?= cream_icon('check', 'icon-xs') ?> 发布工作稿</button>

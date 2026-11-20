@@ -36,6 +36,8 @@ use Plugin\Admin\ContentHealth;
 use Core\Content\PostConflictException;
 use Core\Content\PostDraftConflictException;
 use Core\Content\PostDraftRepository;
+use Core\Content\PostRevisionRepository;
+use Core\Content\TextDiff;
 
 require dirname(__DIR__) . '/bootstrap/autoload.php';
 
@@ -577,6 +579,54 @@ check('Working draft migration and editor contract are wired', function (): void
     truthy(str_contains($template, '发布工作稿') && str_contains($template, 'editorServerDraft'), 'Editor must separate publish from autosave');
     $script = file_get_contents($root . '/public/assets/editor.js');
     truthy($script !== false && str_contains($script, 'saveDraftNow') && str_contains($script, 'scheduleAutosave'), 'Editor script must autosave working drafts');
+});
+
+check('Text diff marks added and removed lines', function (): void {
+    $diff = TextDiff::lines("第一行\n旧内容\n第三行", "第一行\n新内容\n第三行");
+    $types = array_column($diff, 'type');
+    truthy(in_array('remove', $types, true), 'Diff must mark removed line');
+    truthy(in_array('add', $types, true), 'Diff must mark added line');
+    same(1, count(array_keys($types, 'remove', true)));
+    same(1, count(array_keys($types, 'add', true)));
+    same([], TextDiff::lines('相同正文', '相同正文'));
+});
+
+check('Revision repository decodes tags and reads snapshots', function (): void {
+    $db = new FakeConnection([
+        'id' => 9,
+        'post_id' => 3,
+        'version' => 4,
+        'title' => '发布版本',
+        'slug' => 'release',
+        'excerpt' => '',
+        'tags_json' => '["生活","版本"]',
+        'status' => 'published',
+        'body_format' => 'markdown',
+        'body_source' => '# 版本',
+        'body_html' => '<h2>版本</h2>',
+        'reading_minutes' => 2,
+        'author_id' => 1,
+        'published_at' => '2026-11-21 10:00:00',
+        'created_at' => '2026-11-21 10:00:00',
+    ]);
+    $revision = (new PostRevisionRepository($db))->find(3, 4);
+    truthy($revision !== null, 'Revision must be readable');
+    same(['生活', '版本'], $revision['tags']);
+    same(4, $revision['version']);
+});
+
+check('Revision migration and history page are wired', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112105_add_post_revisions.php');
+    truthy($migration !== false && str_contains($migration, 'CREATE TABLE IF NOT EXISTS post_revisions'), 'Missing post_revisions table');
+    truthy(str_contains($migration, 'INSERT INTO post_revisions'), 'Existing posts must be backfilled');
+    truthy(str_contains($migration, 'DROP TABLE IF EXISTS post_revisions'), 'Revision migration must be reversible');
+    $controller = file_get_contents($root . '/plugins/admin/src/PostAdminController.php');
+    truthy($controller !== false && substr_count($controller, 'PostRevisionRepository') >= 4, 'Publish and create must record revisions');
+    $template = file_get_contents($root . '/themes/cream/templates/admin/revisions.php');
+    truthy($template !== false && str_contains($template, '恢复为工作稿') && str_contains($template, 'diff-<?='), 'History page must compare and restore');
+    $editor = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
+    truthy($editor !== false && str_contains($editor, '/revisions.html'), 'Editor must link to version history');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {
