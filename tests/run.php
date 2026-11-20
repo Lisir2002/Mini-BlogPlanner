@@ -691,6 +691,17 @@ check('Reaction totals reach admin and API', function (): void {
     truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
 });
 
+check('Article lead is a labeled summary slip', function (): void {
+    $root = dirname(__DIR__);
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $posts = file_get_contents($root . '/public/assets/posts.css');
+    truthy($post !== false && str_contains($post, 'class="post-lead"'), 'Article lead must use the summary slip');
+    truthy($post !== false && str_contains($post, '文章概览'), 'Summary slip needs a visible label');
+    truthy($posts !== false && str_contains($posts, '.post-lead-label'), 'Summary label must be themed');
+    truthy($posts !== false && str_contains($posts, 'border-left: 3px solid var(--coral)'), 'Summary slip needs the coral edge');
+    truthy($posts !== false && str_contains($posts, '.post-lead-text'), 'Summary body must use its own type style');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');
