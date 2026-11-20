@@ -566,6 +566,16 @@ check('Brand separates project and site names', function (): void {
     truthy($readme !== false && str_starts_with($readme, "# Mini-BlogPlanner"), 'README must use the project name');
 });
 
+check('Footer sits close to content and groups its links', function (): void {
+    $root = dirname(__DIR__);
+    $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
+    $css = file_get_contents($root . '/public/assets/cream.css');
+    truthy($footer !== false && str_contains($footer, 'footer-brand') && str_contains($footer, 'footer-links'), 'Footer needs a brand block and a link group');
+    truthy($footer !== false && str_contains($footer, 'footer-product') && str_contains($footer, 'footer-meta'), 'Footer version line needs its own row');
+    truthy($css !== false && str_contains($css, 'padding: 38px 0 24px;'), 'Content must not reserve a large blank above the footer');
+    truthy($css !== false && str_contains($css, 'grid-template-areas:') && str_contains($css, '"brand links"'), 'Desktop footer must use a compact two-row grid');
+});
+
 check('Comment form rejects stale and malformed timestamps', function (): void {
     truthy(!\Plugin\Posts\CommentForm::validate('not-a-timestamp'), 'Malformed timestamp must fail');
     truthy(!\Plugin\Posts\CommentForm::validate((string) (time() - 7200)), 'Stale form must fail');

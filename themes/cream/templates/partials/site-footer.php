@@ -6,13 +6,22 @@ $schema = (string) ($schema ?? '');
 <footer class="site-footer">
   <div class="footer-scallop" aria-hidden="true"></div>
   <div class="footer-inner">
-    <p class="footer-note"><?= cream_icon('planner', 'icon-sm') ?> <strong><?= cream_e($siteTitle) ?></strong> · 把日子写进计划里。</p>
+    <div class="footer-brand">
+      <span class="footer-mark" aria-hidden="true"><?= cream_icon('planner', 'icon-sm') ?></span>
+      <div class="footer-brand-copy">
+        <p class="footer-note"><strong><?= cream_e($siteTitle) ?></strong></p>
+        <p class="footer-tagline">把日子写进计划里。</p>
+      </div>
+    </div>
+    <nav class="footer-links" aria-label="站点入口">
+      <a class="footer-link" href="/feed.xml"><?= cream_icon('rss', 'icon-xs') ?><span>RSS</span></a>
+      <a class="footer-link" href="/api.html"><?= cream_icon('plug', 'icon-xs') ?><span>接口</span></a>
+      <a class="footer-link" href="/healthz"><?= cream_icon('shield', 'icon-xs') ?><span>状态</span></a>
+      <a class="footer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?><span>后台</span></a>
+    </nav>
     <p class="footer-meta">
-      Mini-BlogPlanner v<?= cream_e($app) ?><?php if ($schema !== ''): ?> · schema <?= cream_e($schema) ?><?php endif; ?>
-      · <a class="footer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?> 后台</a>
-      · <a href="/feed.xml"><?= cream_icon('rss', 'icon-xs') ?> RSS</a>
-      · <a href="/api.html">API</a>
-      · <a href="/healthz">healthz</a>
+      <span class="footer-product">Mini-BlogPlanner v<?= cream_e($app) ?></span>
+      <?php if ($schema !== ''): ?><span class="footer-sep" aria-hidden="true">·</span><span>schema <?= cream_e($schema) ?></span><?php endif; ?>
     </p>
   </div>
 </footer>
