@@ -32,7 +32,10 @@ use Core\Version\Version;
 use Plugin\Admin\HtmlSanitizer;
 use Plugin\Admin\MarkdownRenderer;
 use Plugin\Admin\BodyRenderer;
+use Plugin\Admin\ContentHealth;
 use Core\Content\PostConflictException;
+use Core\Content\PostDraftConflictException;
+use Core\Content\PostDraftRepository;
 
 require dirname(__DIR__) . '/bootstrap/autoload.php';
 
@@ -506,6 +509,74 @@ check('Editor migration and template preserve the dual-source contract', functio
     truthy($template !== false && str_contains($template, 'name="body_source"') && str_contains($template, 'id="bodyHtml"'), 'Editor must expose both source editors');
     truthy(str_contains($template, 'data-ajax="off"'), 'Editor form must bypass the global AJAX replacement');
     truthy(is_file($root . '/public/assets/editor.css') && is_file($root . '/public/assets/editor.js'), 'Editor assets must exist');
+});
+
+check('Content health separates blockers, warnings and info', function (): void {
+    $health = (new ContentHealth())->inspect([
+        'title' => '短',
+        'slug' => 'Bad Slug',
+        'excerpt' => '',
+        'body_format' => 'markdown',
+        'body_source' => "# 标题\n\n```php\necho 1;\n",
+        'body_html' => '<img src="/x">',
+        'slug_exists' => true,
+    ], ['表格列数不一致'], [['level' => 3, 'text' => '跳级']]);
+    truthy(in_array('正文不能为空，补一段再发布。', $health['blockers'], true), 'Empty body must block publish');
+    truthy(in_array('固定链接已被其他文章使用。', $health['blockers'], true), 'Duplicate slug must block publish');
+    truthy(in_array('Markdown 代码围栏没有闭合，补上结尾的 ```。', $health['blockers'], true), 'Unclosed fence must block publish');
+    truthy(count($health['warnings']) >= 5, 'Warnings must include title, headings, image, excerpt and table');
+    same('blocker', $health['checks'][1]['level']);
+    same('info', $health['checks'][8]['level']);
+});
+
+check('Content health passes a complete article', function (): void {
+    $health = (new ContentHealth())->inspect([
+        'title' => '一篇完整的手账',
+        'slug' => 'weekend-journal',
+        'excerpt' => '这是一个足够长的摘要，用来告诉读者这篇文章记录了什么，也方便列表页展示，让读者一眼知道内容重点。',
+        'body_format' => 'markdown',
+        'body_source' => "## 小节\n\n正文\n\n```php\necho 1;\n```\n",
+        'body_html' => '<h2>小节</h2><p>正文</p><img src="/x.png" alt="示例">',
+        'slug_exists' => false,
+    ], [], [['level' => 2, 'text' => '小节']]);
+    same([], $health['blockers']);
+    same([], $health['warnings']);
+});
+
+check('Post draft repository decodes tags and reports conflicts', function (): void {
+    $db = new FakeConnection([
+        'post_id' => 3,
+        'title' => '工作稿',
+        'slug' => 'draft',
+        'excerpt' => '',
+        'tags_json' => '["生活","手账"]',
+        'status' => 'draft',
+        'body_format' => 'markdown',
+        'body_source' => '# 工作稿',
+        'body_html' => '<h2>工作稿</h2>',
+        'base_version' => 3,
+        'draft_version' => 2,
+        'updated_at' => '2026-11-21 10:00:00',
+    ]);
+    $draft = (new PostDraftRepository($db))->find(3);
+    truthy($draft !== null, 'Draft must be readable');
+    same(['生活', '手账'], $draft['tags']);
+    same(2, $draft['draft_version']);
+    $exception = new PostDraftConflictException($draft);
+    same(2, $exception->current['draft_version']);
+});
+
+check('Working draft migration and editor contract are wired', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112104_add_post_drafts.php');
+    truthy($migration !== false && str_contains($migration, 'CREATE TABLE IF NOT EXISTS post_drafts'), 'Missing post_drafts table');
+    truthy(str_contains($migration, 'draft_version') && str_contains($migration, 'base_version'), 'Draft needs base and draft versions');
+    truthy(str_contains($migration, 'DROP TABLE IF EXISTS post_drafts'), 'Draft migration must be reversible');
+    $template = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
+    truthy($template !== false && str_contains($template, 'data-draft-url') && str_contains($template, 'name="draft_version"'), 'Editor must expose the draft endpoint and version');
+    truthy(str_contains($template, '发布工作稿') && str_contains($template, 'editorServerDraft'), 'Editor must separate publish from autosave');
+    $script = file_get_contents($root . '/public/assets/editor.js');
+    truthy($script !== false && str_contains($script, 'saveDraftNow') && str_contains($script, 'scheduleAutosave'), 'Editor script must autosave working drafts');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {

@@ -177,7 +177,10 @@ editor.php（textarea）
 | `body_format` | `VARCHAR(12)` | 工作稿格式 |
 | `body_source` | `MEDIUMTEXT NULL` | 工作稿源文 |
 | `base_version` | `BIGINT UNSIGNED` | 打开时基于的发布稿版本 |
+| `draft_version` | `BIGINT UNSIGNED` | 工作稿自身版本，自动保存失败时用于冲突恢复 |
 | `updated_at` | `DATETIME` | 自动保存时间 |
+
+实现补充：工作稿同时保存 `slug`、`tags_json`、目标 `status`，避免只改标签或固定链接时无法进入工作稿。自动保存只写 `post_drafts`，不递增 `posts.content_version`；发布接口在事务内更新发布稿、同步标签并删除工作稿。
 
 发布动作在一个事务内：写 `post_revisions` → 更新 `posts` → 清空或同步工作稿。
 

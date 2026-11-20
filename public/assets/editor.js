@@ -9,6 +9,7 @@
   var html = form.querySelector('#bodyHtml');
   var bodyFormat = form.querySelector('#bodyFormat');
   var contentVersion = form.querySelector('#contentVersion');
+  var draftVersionInput = form.querySelector('#draftVersion');
   var title = form.querySelector('#title');
   var slug = form.querySelector('#slug');
   var excerpt = form.querySelector('#excerpt');
@@ -40,6 +41,9 @@
   var outline = form.querySelector('.editor-outline');
   var draftBanner = form.querySelector('#editorDraftBanner');
   var draftTime = form.querySelector('#editorDraftTime');
+  var serverDraftBanner = form.querySelector('#editorServerDraft');
+  var draftClear = form.querySelector('#editorDraftClear');
+  var checkList = form.querySelector('#editorCheckList');
   var conflict = form.querySelector('#editorConflict');
   var conflictText = form.querySelector('#editorConflictText');
   var commandMenu = form.querySelector('#editorCommandMenu');
@@ -53,14 +57,22 @@
 
   var postId = parseInt(form.getAttribute('data-post-id') || '0', 10) || 0;
   var previewUrl = form.getAttribute('data-preview-url') || '/admin/posts/preview-body.html';
+  var draftUrl = form.getAttribute('data-draft-url') || '';
+  var draftDiscardUrl = form.getAttribute('data-draft-discard-url') || '';
   var serverUpdatedAt = form.getAttribute('data-updated-at') || '';
   var mode = bodyFormat && bodyFormat.value === 'html' ? 'html' : 'markdown';
   var expectedVersion = parseInt(contentVersion && contentVersion.value ? contentVersion.value : '1', 10) || 1;
+  var draftVersion = parseInt(form.getAttribute('data-draft-version') || '0', 10) || 0;
   var dirty = false;
   var saving = false;
+  var autosaving = false;
+  var autosavePaused = false;
+  var publishQueued = false;
+  var editRevision = 0;
   var previewSeq = 0;
   var previewTimer = 0;
   var draftTimer = 0;
+  var autosaveTimer = 0;
   var conflictCurrent = null;
   var pendingDraft = null;
   var draftKey = 'cream-editor:' + (postId > 0 ? postId : 'new');
@@ -107,12 +119,25 @@
     if (saveButton) saveButton.disabled = value;
   }
 
+  function versionText() {
+    return '线上 v' + expectedVersion + (draftVersion > 0 ? ' · 工作稿 d' + draftVersion : '');
+  }
+
   function updateVersion(value) {
     expectedVersion = Math.max(1, parseInt(String(value), 10) || 1);
     if (contentVersion) contentVersion.value = String(expectedVersion);
-    if (versionLabel) versionLabel.textContent = '工作稿 v' + expectedVersion;
+    if (versionLabel) versionLabel.textContent = versionText();
     var summaryVersion = form.querySelector('#editorSummaryVersion');
     if (summaryVersion) summaryVersion.textContent = 'v' + expectedVersion;
+  }
+
+  function updateDraftVersion(value) {
+    draftVersion = Math.max(0, parseInt(String(value), 10) || 0);
+    if (draftVersionInput) draftVersionInput.value = String(draftVersion);
+    if (versionLabel) versionLabel.textContent = versionText();
+    var summaryDraft = form.querySelector('#editorSummaryDraft');
+    if (summaryDraft) summaryDraft.textContent = 'd' + draftVersion;
+    if (serverDraftBanner) serverDraftBanner.hidden = draftVersion <= 0;
   }
 
   function updateDocMeta() {
@@ -190,42 +215,52 @@
     });
   }
 
+  function renderHealth(health) {
+    if (!health || !Array.isArray(health.checks) || !checkList) return;
+    checkList.replaceChildren();
+    var passCount = 0;
+    var blockCount = 0;
+    health.checks.forEach(function (check) {
+      var ok = check && check.ok === true;
+      var level = String((check && check.level) || 'warning');
+      var item = document.createElement('span');
+      item.className = 'editor-check ' + (ok ? 'is-pass' : (level === 'blocker' ? 'is-block' : (level === 'warning' ? 'is-warn' : 'is-info')));
+      item.setAttribute('data-check', String((check && check.id) || ''));
+      item.title = String((check && check.message) || '');
+      var icon = document.createElement('i');
+      icon.textContent = ok ? '✓' : (level === 'blocker' ? '!' : (level === 'warning' ? '?' : 'i'));
+      item.appendChild(icon);
+      item.appendChild(document.createTextNode(String((check && check.label) || '')));
+      checkList.appendChild(item);
+      if (ok) passCount += 1;
+      if (!ok && level === 'blocker') blockCount += 1;
+    });
+    if (inspectorSummary) {
+      if (blockCount > 0) inspectorSummary.textContent = passCount + ' 项通过 · ' + blockCount + ' 项阻止发布';
+      else inspectorSummary.textContent = '内容检查通过，可以发布工作稿';
+    }
+  }
+
   function updateChecks() {
+    if (!checkList) return;
     var titleReady = title.value.trim() !== '';
     var slugReady = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.value.trim());
     var bodyReady = mode === 'html'
       ? bodyValue().replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== ''
       : bodyValue().trim() !== '';
-    var excerptReady = excerpt.value.trim() !== '';
-    var tagsReady = tags.value.trim() !== '';
     var states = {
-      title: { state: titleReady ? 'pass' : 'block', pass: titleReady },
+      title: { state: titleReady ? 'pass' : 'warn', pass: titleReady },
       slug: { state: slugReady ? 'pass' : 'block', pass: slugReady },
-      body: { state: bodyReady ? 'pass' : 'block', pass: bodyReady },
-      excerpt: { state: excerptReady ? 'pass' : 'warn', pass: excerptReady },
-      tags: { state: tagsReady ? 'pass' : 'warn', pass: tagsReady }
+      body: { state: bodyReady ? 'pass' : 'block', pass: bodyReady }
     };
-    var passCount = 0;
-    var blockCount = 0;
     Object.keys(states).forEach(function (key) {
-      var el = form.querySelector('[data-check="' + key + '"]');
+      var el = checkList.querySelector('[data-check="' + key + '"]');
       if (!el) return;
-      el.classList.remove('is-pass', 'is-warn', 'is-block');
+      el.classList.remove('is-pass', 'is-warn', 'is-block', 'is-info');
       el.classList.add('is-' + states[key].state);
       var icon = el.querySelector('i');
       if (icon) icon.textContent = states[key].pass ? '✓' : (states[key].state === 'warn' ? '?' : '!');
-      if (states[key].pass) passCount += 1;
-      if (states[key].state === 'block') blockCount += 1;
     });
-    if (inspectorSummary) {
-      if (blockCount > 0) {
-        inspectorSummary.textContent = passCount + ' 项已完成 · ' + blockCount + ' 项待补';
-      } else if (passCount >= 5) {
-        inspectorSummary.textContent = '检查通过，可以保存工作稿';
-      } else {
-        inspectorSummary.textContent = passCount + ' 项已完成 · 提醒可稍后补';
-      }
-    }
   }
 
   function applyMode(next, silent) {
@@ -264,7 +299,9 @@
       dirty = true;
       setStatus('dirty', '有未保存更改');
     }
+    editRevision += 1;
     scheduleDraft();
+    scheduleAutosave();
   }
 
   function validateClient() {
@@ -290,6 +327,7 @@
       status: status ? status.value : 'draft',
       body_format: mode,
       content_version: expectedVersion,
+      draft_version: draftVersion,
       body_source: mode === 'markdown' ? source.value : '',
       body: mode === 'html' ? html.value : ''
     };
@@ -321,8 +359,87 @@
     });
   }
 
+  function scheduleAutosave() {
+    if (!draftUrl || autosavePaused) return;
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(function () { saveDraftNow(false); }, 1800);
+  }
+
+  function saveDraftNow(force) {
+    if (!draftUrl || saving || autosaving) return;
+    if (!dirty && !force) return;
+    if (force && conflictCurrent && conflictCurrent.type === 'draft') {
+      updateDraftVersion(conflictCurrent.draft_version || 0);
+    }
+    var revision = editRevision;
+    autosaving = true;
+    setStatus('saving', '正在保存工作稿…');
+
+    postJson(draftUrl, collectPayload(), 15000).then(function (result) {
+      var response = result.response;
+      var json = result.json;
+
+      if (response.status === 409 && json && json.code === 'draft_conflict') {
+        autosavePaused = true;
+        publishQueued = false;
+        conflictCurrent = {
+          type: 'draft',
+          draft_version: parseInt(String((json.current && json.current.draft_version) || draftVersion), 10) || draftVersion,
+          updated_at: String((json.current && json.current.updated_at) || '')
+        };
+        if (conflictText) conflictText.textContent = '这份工作稿已在另一个窗口更新到 d' + conflictCurrent.draft_version + '。自动保存已暂停。';
+        if (conflict) conflict.hidden = false;
+        setStatus('error', '工作稿冲突，等待你的选择');
+        writeDraft();
+        return;
+      }
+
+      if (!response.ok || !json || !json.ok) {
+        var list = json && Array.isArray(json.errors) ? json.errors : ['自动保存失败，内容已留在本地草稿。'];
+        setErrors(list);
+        setStatus('error', '自动保存失败，稍后重试');
+        writeDraft();
+        return;
+      }
+
+      updateDraftVersion(json.draft_version || draftVersion);
+      if (json.updated_at) {
+        serverUpdatedAt = String(json.updated_at);
+        form.setAttribute('data-updated-at', serverUpdatedAt);
+      }
+      if (json.health) renderHealth(json.health);
+      if (revision === editRevision) dirty = false;
+      clearDraft();
+      var time = formatClock(serverUpdatedAt);
+      setStatus('saved', '工作稿已保存' + (time ? ' ' + time : ''));
+      if (json.stale) setStatus('error', '工作稿已保存，但线上文章已有更新');
+      if (json.stale) autosavePaused = true;
+    }).catch(function (error) {
+      var message = error && error.name === 'AbortError'
+        ? '自动保存超时，内容已留在本地草稿。'
+        : '自动保存失败，内容已留在本地草稿。';
+      setErrors([message]);
+      setStatus('error', '自动保存失败');
+      writeDraft();
+    }).finally(function () {
+      autosaving = false;
+      if (publishQueued && !autosavePaused) {
+        publishQueued = false;
+        save();
+        return;
+      }
+      if (dirty && revision !== editRevision && !autosavePaused) scheduleAutosave();
+    });
+  }
+
   function save() {
     if (saving) return;
+    if (autosaving) {
+      publishQueued = true;
+      setStatus('saving', '正在保存工作稿，马上发布…');
+      return;
+    }
+    publishQueued = false;
     var messages = validateClient();
     if (messages.length) {
       setErrors(messages);
@@ -335,7 +452,7 @@
     }
     setErrors([]);
     setBusy(true);
-    setStatus('saving', '正在保存…');
+    setStatus('saving', '正在发布工作稿…');
 
     postJson(form.getAttribute('action') || window.location.pathname, collectPayload(), 20000).then(function (result) {
       var response = result.response;
@@ -343,6 +460,7 @@
 
       if (response.status === 409 && json && json.current) {
         conflictCurrent = json.current;
+        conflictCurrent.type = 'publish';
         var currentVersion = parseInt(String(json.current.content_version || expectedVersion), 10) || expectedVersion;
         if (conflictText) {
           conflictText.textContent = '这篇文稿已在另一个窗口保存到 v' + currentVersion + '（' + String(json.current.updated_at || '刚刚') + '）。';
@@ -356,7 +474,8 @@
       if (!response.ok || !json || !json.ok) {
         var list = json && Array.isArray(json.errors) ? json.errors : ['保存失败，请检查网络后重试。'];
         setErrors(list);
-        setStatus('error', '保存失败');
+        if (json && json.health) renderHealth(json.health);
+        setStatus('error', json && json.code === 'blocked' ? '内容检查未通过' : '发布失败');
         return;
       }
 
@@ -364,14 +483,17 @@
       conflictCurrent = null;
       if (conflict) conflict.hidden = true;
       if (typeof json.content_version !== 'undefined') updateVersion(json.content_version);
+      updateDraftVersion(0);
       if (json.updated_at) {
         serverUpdatedAt = String(json.updated_at);
         form.setAttribute('data-updated-at', serverUpdatedAt);
         var time = formatClock(serverUpdatedAt);
-        setStatus('saved', '工作稿已保存' + (time ? ' ' + time : ''));
+        setStatus('saved', '已发布 v' + expectedVersion + (time ? ' ' + time : ''));
       } else {
-        setStatus('saved', '工作稿已保存');
+        setStatus('saved', '已发布 v' + expectedVersion);
       }
+      if (json.health) renderHealth(json.health);
+      autosavePaused = false;
       clearDraft();
       updateChecks();
       refreshPreview();
@@ -413,8 +535,13 @@
     var seq = ++previewSeq;
     postJson(previewUrl, {
       _csrf: csrf ? csrf.value : '',
+      post_id: postId,
       format: mode,
-      source: value
+      source: value,
+      title: title.value.trim(),
+      slug: slug.value.trim(),
+      excerpt: excerpt.value.trim(),
+      tags: tags.value.trim()
     }, 12000).then(function (result) {
       if (seq !== previewSeq) return;
       if (!result.response.ok || !result.json || !result.json.ok) {
@@ -431,7 +558,7 @@
       setWarnings(data.warnings || []);
       renderOutline(data.headings || []);
       currentStats(data.stats || { chars: 0, reading_minutes: 1 });
-      updateChecks();
+      if (data.health) renderHealth(data.health);
     }).catch(function () {
       if (seq !== previewSeq) return;
       setWarnings(['预览暂时不可用，保存后以线上页面为准。']);
@@ -633,6 +760,7 @@
     updateSourceCount();
     updateCursor();
     if (target === source || target === html) queuePreview();
+    else queuePreview(700);
   });
 
   form.addEventListener('change', function (event) {
@@ -718,6 +846,19 @@
     if (discardButton) discardButton.addEventListener('click', clearDraft);
   }
 
+  if (draftClear && draftDiscardUrl) {
+    draftClear.addEventListener('click', function () {
+      if (!window.confirm('丢弃后，这份工作稿的修改会从后台移除，线上文章不受影响。')) return;
+      postJson(draftDiscardUrl, { _csrf: csrf ? csrf.value : '' }, 12000).then(function (result) {
+        if (result.response.ok && result.json && result.json.ok) {
+          window.location.reload();
+          return;
+        }
+        setStatus('error', '丢弃工作稿失败');
+      }).catch(function () { setStatus('error', '丢弃工作稿失败'); });
+    });
+  }
+
   if (conflict) {
     conflict.addEventListener('click', function (event) {
       var action = event.target.closest('[data-conflict]');
@@ -726,7 +867,14 @@
       if (kind === 'reload') {
         window.location.reload();
       } else if (kind === 'overwrite') {
-        if (conflictCurrent) {
+        if (conflictCurrent && conflictCurrent.type === 'draft') {
+          var draftCurrent = conflictCurrent;
+          conflictCurrent = null;
+          conflict.hidden = true;
+          autosavePaused = false;
+          updateDraftVersion(draftCurrent.draft_version || draftVersion);
+          saveDraftNow(true);
+        } else if (conflictCurrent) {
           updateVersion(conflictCurrent.content_version || expectedVersion);
           conflict.hidden = true;
           conflictCurrent = null;
@@ -757,7 +905,8 @@
     var meta = event.metaKey || event.ctrlKey;
     if (meta && key === 's') {
       event.preventDefault();
-      save();
+      if (draftUrl) saveDraftNow(true);
+      else save();
       return;
     }
     if (meta && key === 'k') {
@@ -781,6 +930,7 @@
   });
 
   applyMode(mode, true);
+  updateDraftVersion(draftVersion);
   updateChecks();
   updateDocMeta();
   updateStamp();

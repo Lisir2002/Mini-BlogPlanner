@@ -101,4 +101,13 @@ final class PostAdminRepository
     {
         $this->db->execute("UPDATE posts SET status = 'archived', published_at = NULL WHERE id = ?", [$id]);
     }
+
+    public function slugExists(string $slug, ?int $excludeId = null): bool
+    {
+        if ($excludeId === null) {
+            return $this->db->fetchOne('SELECT id FROM posts WHERE slug = ? LIMIT 1', [$slug]) !== null;
+        }
+
+        return $this->db->fetchOne('SELECT id FROM posts WHERE slug = ? AND id <> ? LIMIT 1', [$slug, $excludeId]) !== null;
+    }
 }

@@ -8,6 +8,12 @@ $format = (string) ($body_format ?? ($values['body_format'] ?? 'markdown'));
 $format = in_array($format, ['markdown', 'html'], true) ? $format : 'markdown';
 $contentVersion = max(1, (int) ($values['content_version'] ?? 1));
 $updatedAt = (string) ($values['updated_at'] ?? '');
+$hasDraft = (bool) ($has_draft ?? false);
+$draftVersion = max(0, (int) ($draft_version ?? 0));
+$draftUpdatedAt = (string) ($draft_updated_at ?? '');
+$draftStale = $hasDraft && (int) ($values['draft_base_version'] ?? $contentVersion) !== $contentVersion;
+$healthChecks = is_array($health_checks ?? null) ? $health_checks : [];
+$healthBlockers = is_array($health_blockers ?? null) ? $health_blockers : [];
 $titleValue = (string) ($values['title'] ?? '');
 $slugValue = (string) ($values['slug'] ?? '');
 $excerptValue = (string) ($values['excerpt'] ?? '');
@@ -27,7 +33,9 @@ $excerptReady = trim($excerptValue) !== '';
 $tagsReady = trim($tagsValue) !== '';
 $markdownUnavailable = $format === 'html' && !$hasSource && $postId > 0;
 $published = $statusValue === 'published';
-$saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($updatedAt)) : '新建工作稿';
+$saveLabel = $hasDraft && $draftUpdatedAt !== ''
+    ? '工作稿已保存 ' . date('H:i', strtotime($draftUpdatedAt))
+    : ($updatedAt !== '' ? '线上版本 ' . date('H:i', strtotime($updatedAt)) : '新建工作稿');
 ?>
 <section class="admin-page editor-page">
   <header class="editor-page-head">
@@ -37,14 +45,15 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
       <div class="editor-page-state">
         <span class="editor-save-dot"></span>
         <span id="editorSaveState"><?= cream_e($saveLabel) ?></span>
-        <span class="editor-version">工作稿 v<?= $contentVersion ?></span>
+        <span class="editor-version" id="editorVersionLabel">线上 v<?= $contentVersion ?><?= $hasDraft ? ' · 工作稿 d' . $draftVersion : '' ?></span>
         <?php if ($published): ?><span class="editor-online">线上已发布</span><?php endif; ?>
+        <?php if ($draftStale): ?><span class="editor-online is-warn">工作稿基于旧线上版本</span><?php endif; ?>
       </div>
     </div>
     <div class="editor-page-actions">
       <?php if ($post !== null): ?><a class="admin-button ghost" href="/admin/posts/<?= $postId ?>/preview.html" target="_blank" rel="noopener"><?= cream_icon('external', 'icon-xs') ?> 预览</a><?php endif; ?>
       <a class="admin-button ghost" href="/admin/posts.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 返回列表</a>
-      <button class="admin-button primary" type="submit" form="editorForm" id="editorSaveTop"><?= cream_icon('check', 'icon-xs') ?> 保存工作稿</button>
+      <button class="admin-button primary" type="submit" form="editorForm" id="editorSaveTop"><?= cream_icon('check', 'icon-xs') ?> 发布工作稿</button>
     </div>
   </header>
 
@@ -53,16 +62,27 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
   </div>
 
   <form method="post" action="<?= cream_e($action) ?>" class="editor-form" id="editorForm" data-ajax="off"
-        data-editor data-post-id="<?= $postId ?>" data-updated-at="<?= cream_e($updatedAt) ?>"
-        data-preview-url="/admin/posts/preview-body.html">
+        data-editor data-post-id="<?= $postId ?>" data-updated-at="<?= cream_e($hasDraft ? $draftUpdatedAt : $updatedAt) ?>"
+        data-preview-url="/admin/posts/preview-body.html"
+        data-draft-url="<?= $postId > 0 ? '/admin/posts/' . $postId . '/draft' : '' ?>"
+        data-draft-discard-url="<?= $postId > 0 ? '/admin/posts/' . $postId . '/draft/discard' : '' ?>"
+        data-draft-version="<?= $draftVersion ?>">
     <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
     <input type="hidden" name="body_format" id="bodyFormat" value="<?= cream_e($format) ?>">
     <input type="hidden" name="content_version" id="contentVersion" value="<?= $contentVersion ?>">
+    <input type="hidden" name="draft_version" id="draftVersion" value="<?= $draftVersion ?>">
 
     <div class="editor-draft-banner" id="editorDraftBanner" hidden>
       <span>发现一份本地草稿：<b id="editorDraftTime"></b></span>
       <div><button type="button" class="editor-mini-button" id="editorDraftRestore">恢复草稿</button><button type="button" class="editor-mini-button ghost" id="editorDraftDiscard">丢弃</button></div>
     </div>
+
+    <?php if ($hasDraft): ?>
+    <div class="editor-server-draft" id="editorServerDraft">
+      <span>已恢复未发布工作稿 <b>d<?= $draftVersion ?></b><?= $draftUpdatedAt !== '' ? '，保存于 ' . cream_e(date('m.d H:i', strtotime($draftUpdatedAt))) : '' ?>。线上文章仍保持 v<?= $contentVersion ?>。</span>
+      <div><button type="button" class="editor-mini-button ghost" id="editorDraftClear">丢弃工作稿</button></div>
+    </div>
+    <?php endif; ?>
 
     <div class="editor-conflict" id="editorConflict" hidden role="alert">
       <div><b>版本冲突</b><p id="editorConflictText">这篇文稿已在另一个窗口保存。</p></div>
@@ -75,7 +95,7 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
 
     <div class="editor-workspace">
       <aside class="editor-rail" aria-label="手稿目录">
-        <div class="editor-rail-head"><strong>手稿目录</strong><span>DRAFT <?= str_pad((string) $contentVersion, 2, '0', STR_PAD_LEFT) ?></span></div>
+        <div class="editor-rail-head"><strong>手稿目录</strong><span>WORK DRAFT <?= str_pad((string) $draftVersion, 2, '0', STR_PAD_LEFT) ?></span></div>
         <nav class="editor-outline">
           <a class="is-current" href="#title"><span>01</span><b>标题</b><i></i></a>
           <a href="#editorSource"><span>02</span><b>正文</b><i></i></a>
@@ -159,9 +179,9 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
           <span id="editorCursor">第 1 行，第 1 列</span>
           <span id="editorStats"><?= (int) ($stats['chars'] ?? 0) ?> 字 · 约 <?= (int) ($stats['reading_minutes'] ?? 1) ?> 分钟</span>
           <span class="editor-status-grow"></span>
-          <span class="editor-draft-note">本地草稿只存在这台设备</span>
+          <span class="editor-draft-note">工作稿自动保存到后台</span>
           <span class="editor-save-status" id="editorSaveStatus"><?= cream_e($saveLabel) ?></span>
-          <span class="editor-key"><kbd>Cmd+S</kbd> 保存</span>
+          <span class="editor-key"><kbd>Cmd+S</kbd> 存工作稿</span>
         </div>
       </section>
 
@@ -202,20 +222,20 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
           </div>
           <div class="editor-summary" id="editorSummary">
             <span>当前格式</span><b id="editorSummaryFormat"><?= $format === 'markdown' ? 'Markdown' : 'HTML' ?></b>
-            <span>文稿版本</span><b id="editorSummaryVersion">v<?= $contentVersion ?></b>
+            <span>线上版本</span><b id="editorSummaryVersion">v<?= $contentVersion ?></b>
+            <span>工作稿</span><b id="editorSummaryDraft">d<?= $draftVersion ?></b>
             <span>阅读时长</span><b id="editorSummaryMinutes"><?= (int) ($stats['reading_minutes'] ?? 1) ?> 分钟</b>
           </div>
-          <button class="admin-button primary full editor-save-button" type="submit" id="editorSaveButton">保存工作稿</button>
-          <p class="editor-hint editor-save-hint">发布状态会在保存后写入线上；草稿只更新后台。</p>
+          <button class="admin-button primary full editor-save-button" type="submit" id="editorSaveButton">发布工作稿</button>
+          <p class="editor-hint editor-save-hint">输入会自动保存工作稿；点“发布工作稿”才会写入线上文章。</p>
         </div>
 
         <div data-inspector-panel="check" hidden>
           <div class="editor-check-list" id="editorCheckList">
-            <span class="editor-check<?= $titleReady ? ' is-pass' : ' is-block' ?>" data-check="title"><i><?= $titleReady ? '✓' : '!' ?></i>标题已填写</span>
-            <span class="editor-check<?= $slugReady ? ' is-pass' : ' is-block' ?>" data-check="slug"><i><?= $slugReady ? '✓' : '!' ?></i>固定链接合法</span>
-            <span class="editor-check<?= $bodyReady ? ' is-pass' : ' is-block' ?>" data-check="body"><i><?= $bodyReady ? '✓' : '!' ?></i>正文有内容</span>
-            <span class="editor-check<?= $excerptReady ? ' is-pass' : ' is-warn' ?>" data-check="excerpt"><i><?= $excerptReady ? '✓' : '?' ?></i>摘要已填写</span>
-            <span class="editor-check<?= $tagsReady ? ' is-pass' : ' is-warn' ?>" data-check="tags"><i><?= $tagsReady ? '✓' : '?' ?></i>至少 1 个标签</span>
+            <?php foreach ($healthChecks as $check): ?>
+              <?php $ok = (bool) ($check['ok'] ?? false); $level = (string) ($check['level'] ?? 'warning'); ?>
+              <span class="editor-check<?= $ok ? ' is-pass' : ($level === 'blocker' ? ' is-block' : ($level === 'warning' ? ' is-warn' : ' is-info')) ?>" data-check="<?= cream_e((string) ($check['id'] ?? '')) ?>" title="<?= cream_e((string) ($check['message'] ?? '')) ?>"><i><?= $ok ? '✓' : ($level === 'blocker' ? '!' : ($level === 'warning' ? '?' : 'i')) ?></i><?= cream_e((string) ($check['label'] ?? '')) ?></span>
+            <?php endforeach; ?>
           </div>
           <div class="editor-warning-box" id="editorWarningBox"<?= $warnings === [] ? ' hidden' : '' ?>>
             <b>预览提醒</b>
@@ -229,7 +249,7 @@ $saveLabel = $updatedAt !== '' ? '工作稿已保存 ' . date('H:i', strtotime($
     <div class="editor-mobile-bar" aria-label="手机编辑器操作">
       <button type="button" id="editorMobileOutline"><?= cream_icon('menu', 'icon-xs') ?>目录</button>
       <button type="button" id="editorMobilePreview"><?= cream_icon('external', 'icon-xs') ?><span>预览</span></button>
-      <button type="submit" class="is-primary" form="editorForm"><?= cream_icon('check', 'icon-xs') ?>保存</button>
+      <button type="submit" class="is-primary" form="editorForm"><?= cream_icon('check', 'icon-xs') ?>发布</button>
     </div>
   </form>
 </section>

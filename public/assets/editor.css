@@ -95,6 +95,7 @@
 /* ---------- 草稿 / 冲突 ---------- */
 
 .editor-draft-banner,
+.editor-server-draft,
 .editor-conflict {
   display: flex;
   align-items: center;
@@ -110,6 +111,9 @@
 }
 
 .editor-draft-banner b { font: 700 12px/1 var(--editor-code); color: var(--muted); }
+.editor-server-draft { border-color: oklch(0.86 0.05 150); background: oklch(0.97 0.02 150); }
+.editor-server-draft b { font: 700 12px/1 var(--editor-code); color: oklch(0.42 0.06 150); }
+.editor-online.is-warn { border-color: oklch(0.84 0.07 85); background: oklch(0.97 0.035 90); color: oklch(0.47 0.06 70); }
 .editor-conflict { border-color: oklch(0.78 0.08 30); background: oklch(0.97 0.025 30); align-items: flex-start; }
 .editor-conflict b { display: block; margin-bottom: 3px; }
 .editor-conflict p { margin: 0; color: var(--muted); font-size: 12px; }
@@ -685,6 +689,8 @@ kbd {
 .editor-check.is-warn i { border-color: oklch(0.76 0.10 85); background: oklch(0.92 0.09 92); color: oklch(0.45 0.08 70); }
 .editor-check.is-block { border-color: oklch(0.80 0.07 30); background: oklch(0.97 0.025 30); color: oklch(0.48 0.08 30); }
 .editor-check.is-block i { border-color: oklch(0.72 0.11 30); background: var(--coral-soft); color: oklch(0.48 0.10 30); }
+.editor-check.is-info { border-color: oklch(0.86 0.04 250); background: oklch(0.98 0.015 250); color: oklch(0.46 0.05 250); }
+.editor-check.is-info i { border-color: oklch(0.78 0.06 250); background: oklch(0.93 0.04 250); color: oklch(0.44 0.06 250); }
 
 .editor-warning-box {
   padding: 10px;
@@ -763,6 +769,7 @@ kbd {
   .editor-inspector [data-inspector-panel] > .editor-field:nth-child(2) { grid-column: auto; }
 
   .editor-draft-banner,
+  .editor-server-draft,
   .editor-conflict { flex-direction: column; align-items: flex-start; }
 
   .editor-mobile-bar {
