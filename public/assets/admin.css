@@ -176,6 +176,30 @@
 .admin-empty h2 { margin: 12px 0 6px; font-size: 22px; }
 .admin-empty p { margin: 0; color: var(--muted); }
 
+.admin-login-body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.admin-login-body .admin-header { flex: 0 0 auto; }
+
+.admin-login-body .admin-main {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.admin-login-body .admin-auth {
+  min-height: 0;
+  height: 100%;
+  padding: 14px 16px 18px;
+  overflow: hidden;
+}
+
 .admin-auth {
   min-height: calc(100vh - 62px);
   display: grid;
@@ -439,6 +463,19 @@
 @media (max-width: 840px) {
   .admin-auth-layout { grid-template-columns: 1fr; width: min(480px, 100%); }
   .admin-auth-note { display: none; }
+}
+
+@media (max-height: 640px) {
+  .admin-login-body .admin-auth { padding: 8px 12px; }
+  .admin-login-body .admin-auth-card { padding: 16px 16px 12px; }
+  .admin-login-body .admin-auth-card-index { display: none; }
+  .admin-login-body .admin-auth-head h1 { margin: 8px 0 4px; font-size: 27px; }
+  .admin-login-body .admin-lead { display: none; }
+  .admin-login-body .admin-login-form { gap: 10px; }
+  .admin-login-body .tape-field { gap: 4px; }
+  .admin-login-body .tape-input input { min-height: 42px; padding: 9px 18px; }
+  .admin-login-body .admin-login-form .admin-button { min-height: 42px; }
+  .admin-login-body .admin-foot { margin-top: 10px; }
 }
 
 @media (max-width: 460px) {

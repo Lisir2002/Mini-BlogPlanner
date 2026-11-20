@@ -18,7 +18,7 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
 <link rel="stylesheet" href="<?= cream_asset('admin.css') ?>" fetchpriority="high">
 <link rel="icon" href="<?= cream_asset('favicon.svg') ?>" type="image/svg+xml">
 </head>
-<body class="admin-body">
+<body class="admin-body<?= $current === 'login' ? ' admin-login-body' : '' ?>">
 <?php require dirname(__DIR__) . '/partials/loader.php'; ?>
 <a class="skip-link" href="#admin-main">跳到正文</a>
 <header class="admin-header">

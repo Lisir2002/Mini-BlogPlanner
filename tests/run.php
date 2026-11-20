@@ -765,6 +765,8 @@ check('Admin login uses a taped desk layout', function (): void {
     $login = file_get_contents($root . '/themes/cream/templates/admin/login.php');
     $css = file_get_contents($root . '/public/assets/admin.css');
     truthy($login !== false && str_contains($login, 'admin-auth-layout'), 'Login needs the two-column desk layout');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    truthy($layout !== false && str_contains($layout, "admin-login-body"), 'Login page needs its own body class');
     truthy($login !== false && str_contains($login, 'admin-auth-note'), 'Login needs the private desk note');
     truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
     truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
@@ -772,6 +774,9 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '.tape-input::before') && str_contains($css, 'clip-path: polygon(1% 0'), 'Credential fields need a torn tape surface');
     truthy($css !== false && str_contains($css, 'appearance: none') && preg_match('/\.tape-input input:focus \{[^}]*background: transparent;[^}]*box-shadow: none;/s', $css) === 1, 'Credential inputs must keep the tape surface when focused');
     truthy($css !== false && !str_contains($css, 'width: min(430px'), 'Login must no longer use the old single narrow card');
+    truthy($css !== false && str_contains($css, '.admin-login-body .admin-main') && str_contains($css, 'flex: 1 1 auto'), 'Login main must fill the remaining viewport');
+    truthy($css !== false && str_contains($css, '.admin-login-body .admin-auth') && str_contains($css, 'overflow: hidden'), 'Login page must not scroll');
+    truthy($css !== false && str_contains($css, '@media (max-height: 640px)'), 'Short screens need a compact login layout');
 });
 
 check('Compressed assets match their source files', function (): void {
