@@ -94,6 +94,29 @@
     }
   }
 
+  var activeToast = null;
+
+  function showToast(message, kind) {
+    if (activeToast) {
+      activeToast.remove();
+      activeToast = null;
+    }
+    var el = document.createElement('div');
+    el.className = 'cream-toast editor-toast' + (kind === 'error' ? ' is-error' : '');
+    el.setAttribute('role', 'status');
+    el.textContent = message;
+    document.body.appendChild(el);
+    activeToast = el;
+    window.requestAnimationFrame(function () { el.classList.add('is-visible'); });
+    window.setTimeout(function () {
+      el.classList.remove('is-visible');
+      window.setTimeout(function () {
+        el.remove();
+        if (activeToast === el) activeToast = null;
+      }, 240);
+    }, kind === 'error' ? 4200 : 3200);
+  }
+
   function setErrors(messages) {
     if (!errorsBox) return;
     errorsBox.replaceChildren();
@@ -109,14 +132,23 @@
     errorsBox.hidden = false;
   }
 
+  var saveTopHtml = saveTop ? saveTop.innerHTML : '';
+  var saveButtonText = saveButton ? saveButton.textContent : '发布笔记';
+
   function setBusy(value) {
     saving = value;
     form.setAttribute('aria-busy', value ? 'true' : 'false');
     form.querySelectorAll('button[type="submit"]').forEach(function (button) {
       button.disabled = value;
     });
-    if (saveTop) saveTop.disabled = value;
-    if (saveButton) saveButton.disabled = value;
+    if (saveTop) {
+      saveTop.disabled = value;
+      saveTop.innerHTML = value ? '发布中…' : saveTopHtml;
+    }
+    if (saveButton) {
+      saveButton.disabled = value;
+      saveButton.textContent = value ? '发布中…' : saveButtonText;
+    }
   }
 
   function versionText() {
@@ -237,7 +269,7 @@
     });
     if (inspectorSummary) {
       if (blockCount > 0) inspectorSummary.textContent = passCount + ' 项通过 · ' + blockCount + ' 项阻止发布';
-      else inspectorSummary.textContent = '内容检查通过，可以发布工作稿';
+      else inspectorSummary.textContent = '内容检查通过，可以发布笔记';
     }
   }
 
@@ -437,6 +469,7 @@
     if (autosaving) {
       publishQueued = true;
       setStatus('saving', '正在保存工作稿，马上发布…');
+      showToast('正在保存工作稿，完成后会自动发布。');
       return;
     }
     publishQueued = false;
@@ -444,15 +477,17 @@
     if (messages.length) {
       setErrors(messages);
       setStatus('error', '请先补齐检查项');
+      showToast(messages[0] || '请先补齐检查项。', 'error');
       if (errorsBox) {
         errorsBox.setAttribute('tabindex', '-1');
         errorsBox.focus();
+        errorsBox.scrollIntoView({ block: 'nearest' });
       }
       return;
     }
     setErrors([]);
     setBusy(true);
-    setStatus('saving', '正在发布工作稿…');
+    setStatus('saving', '正在发布笔记…');
 
     postJson(form.getAttribute('action') || window.location.pathname, collectPayload(), 20000).then(function (result) {
       var response = result.response;
@@ -468,6 +503,7 @@
         if (conflict) conflict.hidden = false;
         setStatus('error', '版本冲突，等待你的选择');
         setErrors([]);
+        showToast('线上已有更新，请在冲突面板选择载入最新或覆盖发布。', 'error');
         return;
       }
 
@@ -476,12 +512,14 @@
         setErrors(list);
         if (json && json.health) renderHealth(json.health);
         setStatus('error', json && json.code === 'blocked' ? '内容检查未通过' : '发布失败');
+        showToast(list[0] || '发布失败，请检查网络后重试。', 'error');
         return;
       }
 
       dirty = false;
       conflictCurrent = null;
       if (conflict) conflict.hidden = true;
+      var publishedVersion = typeof json.content_version !== 'undefined' ? json.content_version : expectedVersion;
       if (typeof json.content_version !== 'undefined') updateVersion(json.content_version);
       updateDraftVersion(0);
       if (json.updated_at) {
@@ -493,6 +531,7 @@
         setStatus('saved', '已发布 v' + expectedVersion);
       }
       if (json.health) renderHealth(json.health);
+      showToast('已发布 v' + publishedVersion + '，线上笔记已更新。');
       autosavePaused = false;
       clearDraft();
       updateChecks();
@@ -507,6 +546,7 @@
         : '保存失败，请确认网络后重试。';
       setErrors([message]);
       setStatus('error', '保存失败');
+      showToast(message, 'error');
     }).finally(function () {
       setBusy(false);
     });

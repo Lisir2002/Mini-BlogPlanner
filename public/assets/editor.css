@@ -833,3 +833,6 @@ kbd {
   .editor-page.is-outline-open .editor-outline a { min-height: 40px; }
   .editor-page.is-outline-open .editor-rail-note { margin-bottom: 12px; }
 }
+
+.editor-toast{position:fixed;z-index:12000}
+@media (max-width:640px){.editor-toast{top:76px;bottom:auto}}

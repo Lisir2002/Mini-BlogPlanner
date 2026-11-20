@@ -54,7 +54,7 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
       <?php if ($post !== null): ?><a class="admin-button ghost" href="/admin/posts/<?= $postId ?>/revisions.html"><?= cream_icon('layers', 'icon-xs') ?> 版本历史</a><?php endif; ?>
       <?php if ($post !== null): ?><a class="admin-button ghost" href="/admin/posts/<?= $postId ?>/preview.html" target="_blank" rel="noopener"><?= cream_icon('external', 'icon-xs') ?> 预览</a><?php endif; ?>
       <a class="admin-button ghost" href="/admin/posts.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 返回列表</a>
-      <button class="admin-button primary" type="submit" form="editorForm" id="editorSaveTop"><?= cream_icon('check', 'icon-xs') ?> 发布工作稿</button>
+      <button class="admin-button primary" type="submit" form="editorForm" id="editorSaveTop"><?= cream_icon('check', 'icon-xs') ?> 发布笔记</button>
     </div>
   </header>
 
@@ -227,8 +227,8 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
             <span>工作稿</span><b id="editorSummaryDraft">d<?= $draftVersion ?></b>
             <span>阅读时长</span><b id="editorSummaryMinutes"><?= (int) ($stats['reading_minutes'] ?? 1) ?> 分钟</b>
           </div>
-          <button class="admin-button primary full editor-save-button" type="submit" id="editorSaveButton">发布工作稿</button>
-          <p class="editor-hint editor-save-hint">输入会自动保存工作稿；点“发布工作稿”才会写入线上文章。</p>
+          <button class="admin-button primary full editor-save-button" type="submit" id="editorSaveButton">发布笔记</button>
+          <p class="editor-hint editor-save-hint">输入会自动保存工作稿；点“发布笔记”才会写入线上文章。</p>
         </div>
 
         <div data-inspector-panel="check" hidden>

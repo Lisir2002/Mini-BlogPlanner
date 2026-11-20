@@ -576,7 +576,7 @@ check('Working draft migration and editor contract are wired', function (): void
     truthy(str_contains($migration, 'DROP TABLE IF EXISTS post_drafts'), 'Draft migration must be reversible');
     $template = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
     truthy($template !== false && str_contains($template, 'data-draft-url') && str_contains($template, 'name="draft_version"'), 'Editor must expose the draft endpoint and version');
-    truthy(str_contains($template, '发布工作稿') && str_contains($template, 'editorServerDraft'), 'Editor must separate publish from autosave');
+    truthy(str_contains($template, '发布笔记') && str_contains($template, 'editorServerDraft'), 'Editor must separate publish from autosave');
     $script = file_get_contents($root . '/public/assets/editor.js');
     truthy($script !== false && str_contains($script, 'saveDraftNow') && str_contains($script, 'scheduleAutosave'), 'Editor script must autosave working drafts');
 });
