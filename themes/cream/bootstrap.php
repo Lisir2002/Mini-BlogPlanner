@@ -48,6 +48,22 @@ if (!function_exists('cream_icon')) {
     }
 }
 
+if (!function_exists('cream_word_count')) {
+    function cream_word_count(string $body): int
+    {
+        $text = preg_replace('/<[^>]+>/u', ' ', $body);
+        $text = is_string($text) ? html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8') : '';
+        $text = preg_replace('/\s+/u', ' ', trim($text));
+        if (!is_string($text) || $text === '') {
+            return 0;
+        }
+        $cjk = preg_match_all('/[\x{3400}-\x{4DBF}\x{4E00}-\x{9FFF}]/u', $text);
+        $words = preg_match_all('/[A-Za-z0-9]+(?:[\x{2019}\'-][A-Za-z0-9]+)*/u', $text);
+
+        return (int) $cjk + (int) $words;
+    }
+}
+
 if (!function_exists('cream_date')) {
     function cream_date(string $value): string
     {

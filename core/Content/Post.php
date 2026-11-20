@@ -16,6 +16,7 @@ final class Post
         public readonly string $excerpt,
         public readonly string $body,
         public readonly string $publishedAt,
+        public readonly string $updatedAt,
         public readonly int $readingMinutes,
         public readonly array $tags = [],
     ) {}

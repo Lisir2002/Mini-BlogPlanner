@@ -18,10 +18,7 @@ $posts = is_array($posts ?? null) ? $posts : [];
   <div class="post-list">
 <?php foreach ($posts as $post): ?>
     <article class="post-card">
-      <div class="post-meta">
-        <time datetime="<?= cream_e($post->publishedAt) ?>"><?= cream_e(cream_date($post->publishedAt)) ?></time>
-        <span><?= (int) $post->readingMinutes ?> 分钟</span>
-      </div>
+      <?php $compact = true; $show_updated = false; require __DIR__ . '/partials/post-meta.php'; ?>
       <h2><a href="/posts/<?= cream_e($post->slug) ?>.html"><?= cream_e($post->title) ?></a></h2>
       <p><?= cream_e($post->excerpt) ?></p>
       <a class="text-link" href="/posts/<?= cream_e($post->slug) ?>.html">继续读 <?= cream_icon('arrow-right', 'icon-xs') ?></a>

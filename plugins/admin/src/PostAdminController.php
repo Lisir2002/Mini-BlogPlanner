@@ -149,6 +149,7 @@ final class PostAdminController
             (string) $post['excerpt'],
             (string) $post['body'],
             (string) ($post['published_at'] ?? $post['updated_at'] ?? date('Y-m-d H:i:s')),
+            (string) ($post['updated_at'] ?? $post['published_at'] ?? date('Y-m-d H:i:s')),
             (int) $post['reading_minutes'],
             $tags,
         );

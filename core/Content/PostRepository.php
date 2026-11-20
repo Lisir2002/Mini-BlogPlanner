@@ -15,7 +15,7 @@ final class PostRepository
     {
         $limit = max(1, min(50, $limit));
         $rows = $this->db->fetchAll(
-            "SELECT id, slug, title, excerpt, body, published_at, reading_minutes
+            "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
              FROM posts
              WHERE status = 'published' AND published_at <= NOW()
              ORDER BY published_at DESC, id DESC
@@ -30,7 +30,7 @@ final class PostRepository
     {
         $limit = max(1, min(50, $limit));
         $rows = $this->db->fetchAll(
-            "SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, p.reading_minutes
+            "SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, p.updated_at, p.reading_minutes
              FROM posts p
              JOIN post_tags pt ON pt.post_id = p.id
              JOIN tags t ON t.id = pt.tag_id
@@ -72,6 +72,7 @@ final class PostRepository
             $post->excerpt,
             $post->body,
             $post->publishedAt,
+            $post->updatedAt,
             $post->readingMinutes,
             $byPost[$post->id] ?? [],
         ), $posts);
@@ -80,7 +81,7 @@ final class PostRepository
     public function findPublished(string $slug): ?Post
     {
         $row = $this->db->fetchOne(
-            "SELECT id, slug, title, excerpt, body, published_at, reading_minutes
+            "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
              FROM posts
              WHERE status = 'published' AND published_at <= NOW() AND slug = ?
              LIMIT 1",
@@ -103,6 +104,7 @@ final class PostRepository
             $post->excerpt,
             $post->body,
             $post->publishedAt,
+            $post->updatedAt,
             $post->readingMinutes,
             array_map(static fn (array $tag): string => (string) $tag['name'], $tags),
         );
@@ -118,6 +120,7 @@ final class PostRepository
             (string) $row['excerpt'],
             (string) $row['body'],
             (string) $row['published_at'],
+            (string) ($row['updated_at'] ?? $row['published_at']),
             (int) $row['reading_minutes'],
         );
     }

@@ -63,15 +63,66 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  color: var(--muted);
+  gap: 7px;
+  margin: 2px 0 0;
 }
 
-.post-meta span {
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 4px 9px 4px 4px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 62%, var(--paper));
+  border-radius: 8px 11px 7px 10px / 10px 7px 11px 8px;
+  background: color-mix(in oklch, var(--cream-1) 78%, var(--paper));
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.72) inset, 1px 2px 0 oklch(0.45 0.02 75 / 0.05);
 }
+
+.meta-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  border-radius: 7px 9px 6px 8px;
+  color: var(--ink-soft);
+  background: var(--butter);
+}
+
+.meta-icon--butter { background: color-mix(in oklch, var(--butter) 78%, var(--paper)); }
+.meta-icon--mint { background: color-mix(in oklch, var(--mint) 72%, var(--paper)); }
+.meta-icon--blue { background: color-mix(in oklch, var(--sky) 74%, var(--paper)); }
+.meta-icon--peach { background: color-mix(in oklch, var(--coral-soft) 76%, var(--paper)); }
+.meta-icon--lavender { background: color-mix(in oklch, oklch(0.88 0.045 305) 72%, var(--paper)); }
+
+.meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.12;
+}
+
+.meta-label {
+  color: var(--muted);
+  font: 8px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.12em;
+}
+
+.meta-text time,
+.meta-data {
+  color: var(--ink-soft);
+  font: 11.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.post-meta--compact .meta-label { display: none; }
+.post-meta--compact .meta-item { min-height: 29px; padding: 3px 8px 3px 3px; gap: 5px; }
+.post-meta--compact .meta-icon { width: 22px; height: 22px; }
+.post-meta--compact .meta-text time,
+.post-meta--compact .meta-data { font-size: 11px; }
 
 .empty-note {
   padding: 44px 24px;

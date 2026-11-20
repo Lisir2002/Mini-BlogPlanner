@@ -11,10 +11,7 @@ if (!is_object($post)) {
   <?php endif; ?>
   <header class="post-head">
     <a class="back-link" href="/posts.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 回到文章列表</a>
-    <div class="post-meta">
-      <time datetime="<?= cream_e($post->publishedAt) ?>"><?= cream_e(cream_date($post->publishedAt)) ?></time>
-      <span><?= (int) $post->readingMinutes ?> 分钟</span>
-    </div>
+    <?php require __DIR__ . '/partials/post-meta.php'; ?>
     <h1><?= cream_e($post->title) ?></h1>
     <?php if ($post->excerpt !== ''): ?><p class="post-lead"><?= cream_e($post->excerpt) ?></p><?php endif; ?>
     <?php if ($post->tags !== []): ?>

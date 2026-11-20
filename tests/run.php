@@ -584,6 +584,19 @@ check('Comment templates and assets are present', function (): void {
     truthy(str_contains($partial, 'comment-honeypot'), 'Comment form must render the honeypot');
 });
 
+check('Article metadata pairs every value with an icon', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $posts = file_get_contents($root . '/public/assets/posts.css');
+    truthy($partial !== false && substr_count($partial, 'meta-item') >= 5, 'Metadata must expose five items');
+    truthy($partial !== false && str_contains($partial, "cream_icon('calendar'"), 'Publish date needs an icon');
+    truthy($partial !== false && str_contains($partial, "cream_icon('comment'"), 'Comment count needs an icon');
+    truthy($partial !== false && str_contains($partial, 'cream_word_count'), 'Metadata must include computed word count');
+    truthy($post !== false && str_contains($post, 'partials/post-meta.php'), 'Article must use the shared metadata component');
+    truthy($posts !== false && str_contains($posts, '.meta-icon'), 'Metadata icons must be themed');
+});
+
 check('Compressed assets match their source files', function (): void {
     $assets = dirname(__DIR__) . '/public/assets';
     foreach (glob($assets . '/*.gz') ?: [] as $gz) {
