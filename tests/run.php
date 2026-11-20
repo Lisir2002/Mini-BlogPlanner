@@ -749,6 +749,31 @@ check('Article metadata pairs every value with an icon', function (): void {
     truthy($posts !== false && str_contains($posts, '.post-meta .meta-item { min-height: 24px;'), 'Mobile metadata must stay compact');
 });
 
+check('Admin entry is reachable from public navigation', function (): void {
+    $root = dirname(__DIR__);
+    $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $css = file_get_contents($root . '/public/assets/cream.css');
+    truthy($footer !== false && str_contains($footer, 'href="/admin/login.html"'), 'Footer needs an admin login link');
+    truthy($footer !== false && str_contains($footer, 'footer-admin'), 'Footer admin link needs its own style');
+    truthy($header !== false && str_contains($header, 'nav-drawer-admin') && str_contains($header, 'href="/admin/login.html"'), 'Mobile drawer needs an admin login link');
+    truthy($css !== false && str_contains($css, '.footer-admin') && str_contains($css, '.nav-drawer-admin'), 'Admin entry links must be themed');
+});
+
+check('Admin login uses a taped desk layout', function (): void {
+    $root = dirname(__DIR__);
+    $login = file_get_contents($root . '/themes/cream/templates/admin/login.php');
+    $css = file_get_contents($root . '/public/assets/admin.css');
+    truthy($login !== false && str_contains($login, 'admin-auth-layout'), 'Login needs the two-column desk layout');
+    truthy($login !== false && str_contains($login, 'admin-auth-note'), 'Login needs the private desk note');
+    truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
+    truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
+    truthy($css !== false && str_contains($css, 'grid-template-columns: minmax(0, 0.88fr) minmax(390px, 1.12fr)'), 'Login desk must be split into two columns');
+    truthy($css !== false && str_contains($css, '.tape-input::before') && str_contains($css, 'clip-path: polygon(1% 0'), 'Credential fields need a torn tape surface');
+    truthy($css !== false && str_contains($css, 'appearance: none') && preg_match('/\.tape-input input:focus \{[^}]*background: transparent;[^}]*box-shadow: none;/s', $css) === 1, 'Credential inputs must keep the tape surface when focused');
+    truthy($css !== false && !str_contains($css, 'width: min(430px'), 'Login must no longer use the old single narrow card');
+});
+
 check('Compressed assets match their source files', function (): void {
     $assets = dirname(__DIR__) . '/public/assets';
     foreach (glob($assets . '/*.gz') ?: [] as $gz) {

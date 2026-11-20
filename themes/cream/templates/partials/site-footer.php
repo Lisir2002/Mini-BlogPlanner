@@ -9,6 +9,7 @@ $schema = (string) ($schema ?? '');
     <p class="footer-note"><?= cream_icon('planner', 'icon-sm') ?> <strong><?= cream_e($siteTitle) ?></strong> · 把日子写进计划里。</p>
     <p class="footer-meta">
       Mini-BlogPlanner v<?= cream_e($app) ?><?php if ($schema !== ''): ?> · schema <?= cream_e($schema) ?><?php endif; ?>
+      · <a class="footer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?> 后台</a>
       · <a href="/api.html">API</a>
       · <a href="/healthz">healthz</a>
     </p>

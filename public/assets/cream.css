@@ -938,6 +938,9 @@ body.nav-open { overflow: hidden; }
 .footer-note strong { color: var(--cream-1); font-weight: 750; }
 
 .footer-meta a { color: var(--butter); text-underline-offset: 3px; }
+.footer-admin { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.nav-drawer-admin { display: inline-flex; align-items: center; gap: 3px; color: var(--coral); text-decoration: none; }
+.nav-drawer-admin:hover { color: var(--ink); }
 
 /* 纸张层：评论区与文章页共用同一套纤维、叠边和胶带语言。 */
 .comment-item, .comment-form {

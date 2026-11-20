@@ -68,7 +68,7 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
           </div>
           <div class="nav-drawer-foot">
             <span>MINI-BLOGPLANNER</span>
-            <span><?= cream_e($siteTitle) ?></span>
+            <a class="nav-drawer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?> 后台入口</a>
           </div>
         </div>
       </nav>
