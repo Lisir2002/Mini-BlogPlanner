@@ -107,6 +107,7 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
 <?= $content ?>
 </main>
 <script src="<?= cream_asset('cream.js') ?>" defer onerror="document.getElementById('cream-loader').hidden=true"></script>
+<script src="<?= cream_asset('admin-select.js') ?>" defer></script>
 <?php foreach (($page_scripts ?? []) as $script): ?>
 <script src="<?= cream_e(str_starts_with((string) $script, '/') ? (string) $script : cream_asset((string) $script)) ?>" defer></script>
 <?php endforeach; ?>

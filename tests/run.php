@@ -645,6 +645,11 @@ check('Revision migration and history page are wired', function (): void {
     $editorJs = file_get_contents($root . '/public/assets/editor.js');
     truthy($editorJs !== false && str_contains($editorJs, 'richToMarkdown') && str_contains($editorJs, 'runRichCommand'), 'Writing mode must serialize back to Markdown');
     truthy(!str_contains($editorJs, 'toggleCommandMenu'), 'Command palette must stay removed');
+    $adminLayout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    truthy($adminLayout !== false && str_contains($adminLayout, 'admin-select.js'), 'Admin pages must load the self-drawn select layer');
+    $selectJs = file_get_contents($root . '/public/assets/admin-select.js');
+    truthy($selectJs !== false && str_contains($selectJs, 'aria-haspopup') && str_contains($selectJs, 'admin-select-menu'), 'Admin selects must render a custom paper menu');
+    truthy(str_contains($editor, 'data-select-variant="status"') && str_contains($editor, 'data-hint="设为草稿'), 'Editor status must use the self-drawn status picker');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {

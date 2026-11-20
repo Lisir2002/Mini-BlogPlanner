@@ -214,9 +214,9 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
           </div>
           <div class="editor-field">
             <label for="status">线上状态</label>
-            <select id="status" name="status">
-              <option value="draft" <?= $statusValue === 'draft' ? 'selected' : '' ?>>草稿</option>
-              <option value="published" <?= $statusValue === 'published' ? 'selected' : '' ?>>发布</option>
+            <select id="status" name="status" data-select-variant="status">
+              <option value="draft" data-hint="设为草稿，读者暂不可见" <?= $statusValue === 'draft' ? 'selected' : '' ?>>草稿</option>
+              <option value="published" data-hint="设为发布，保存后公开" <?= $statusValue === 'published' ? 'selected' : '' ?>>发布</option>
             </select>
             <span class="editor-hint">保存为草稿不会改变线上文章。</span>
           </div>

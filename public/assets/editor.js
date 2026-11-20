@@ -880,6 +880,7 @@
     excerpt.value = String(draft.excerpt || '');
     tags.value = String(draft.tags || '');
     if (status) status.value = String(draft.status || 'draft');
+    if (window.AdminSelect && status) window.AdminSelect.sync(status);
     source.value = String(draft.source || '');
     html.value = String(draft.html || '');
     var draftMode = String(draft.mode || 'markdown');
