@@ -199,6 +199,10 @@ final class PostAdminController
         }
 
         $preview = $this->renderer->render($format, $source);
+        $writing = ($payload['writing'] ?? false) === true && $format === 'markdown';
+        $writingHtml = $writing
+            ? (new BodyRenderer(new MarkdownRenderer(1, 6), new HtmlSanitizer(true)))->render('markdown', $source)['html']
+            : $preview['html'];
         $headings = $this->renderer->headings($preview['html']);
         $postId = (int) ($payload['post_id'] ?? 0);
         $health = $this->healthReport([
@@ -211,7 +215,7 @@ final class PostAdminController
         ], $preview, $postId > 0 ? $postId : null);
 
         return $this->jsonSuccess([
-            'html' => $preview['html'],
+            'html' => $writingHtml,
             'warnings' => $preview['warnings'],
             'headings' => $headings,
             'stats' => $this->renderer->stats($preview['html']),

@@ -38,11 +38,12 @@
 |---|---|---|
 | ADR-001 | 发布稿继续存规范 HTML，Markdown 另存源文 | 公开渲染零改动，搜索、摘要、阅读时长不受影响 |
 | ADR-002 | Markdown 与 HTML 分成两种明确模式 | 避免“Markdown 里混 HTML”带来的语义和安全歧义 |
-| ADR-003 | 首版源码编辑器用 CodeMirror 6，写作态后续用 Tiptap/ProseMirror | 先解决格式兼容与安全，再引入块级富文本 |
+| ADR-003 | 源码编辑器保持 Markdown/HTML 文本域，写作态用原生 contenteditable 与 Markdown 序列化 | 不引入额外富文本运行时，写作态与双源共用保存契约 |
 | ADR-004 | 预览由服务端生成，复用保存管线 | 保证“预览所见 = 发布所得” |
 | ADR-005 | 保存使用版本号做乐观锁 | 防止两个窗口互相覆盖 |
 | ADR-006 | 自动保存只写工作稿，不直接改发布稿 | 避免输入过程中把半成品推到线上 |
 | ADR-007 | 历史文章保持 HTML，不批量转 Markdown | 避免不可逆转换与标签损失 |
+| ADR-008 | 不做命令面板 | 格式动作只通过常驻工具栏和选区工具条，减少浮层与快捷键状态 |
 | ADR-008 | 首版不做暗色主题，但 token 预留主题映射 | 控制范围，保持后续可扩展 |
 
 ## 2. 目标与非目标
@@ -125,10 +126,9 @@ editor.php（textarea）
 | 产品/技术 | 学习点 | 取舍 |
 |---|---|---|
 | Ghost | 写作面优先、发布设置分离、卡片插入 | 不引入完整卡片生态 |
-| Notion | 块结构、斜杠命令、块悬浮操作 | 块级编辑放第二阶段 |
+| Notion | 块结构、块悬浮操作 | 只借鉴块级排版，不做命令面板 |
 | Bear | 专注模式、排版控制、标签自然 | 不复制其 Markdown 方言 |
 | Obsidian / Typora | 源码与实时预览的连续感 | 预览改为服务端统一管线 |
-| Tiptap / ProseMirror | Schema、事务、输入规则、选区工具条 | 第二阶段接入 |
 | CodeMirror 6 | 模块化源码编辑、语法高亮、搜索、撤销 | 首版核心依赖 |
 | CommonMark | 明确 Markdown 语义 | 原始 HTML 默认转义 |
 | WCAG 2.2 / ATAG 2.0 | 键盘、焦点、创作工具可达性 | 作为验收门槛 |
@@ -283,7 +283,7 @@ EditorShell（页面壳、动作、状态）
   ├─ EditorStage
   │   ├─ SourceAdapter（CodeMirror 6）
   │   ├─ PreviewPane（服务端 HTML）
-  │   └─ RichTextAdapter（第二阶段）
+  │   └─ RichTextAdapter（写作态）
   ├─ PublishInspector（状态、摘要、检查）
   └─ StatusBar（字数、位置、保存状态）
 ```
@@ -309,7 +309,7 @@ const EditorAdapter = {
 - `getValue()` 永远返回当前模式的源文，不返回渲染后 HTML。
 - 模式切换由 `EditorController` 协调，不由编辑器组件自己保存全局状态。
 - `EditorController` 持有 `mode`、`format`、`dirty`、`version`、`saveQueue`。
-- 命令通过 `CommandBus` 分发，按钮、快捷键、斜杠命令调用同一条命令。
+- 格式动作由工具栏和选区工具条触发，统一写入 Markdown 源文。
 
 ### 6.3 保存状态机
 
@@ -414,7 +414,7 @@ const EditorAdapter = {
 1. 文档状态：工作稿 / 已发布 / 有未发布修改 / 冲突。
 2. 写作区：标题、正文、预览。
 3. 发布区：状态、slug、标签、摘要、检查清单。
-4. 辅助区：命令面板、选区工具条、冲突面板、恢复提示。
+4. 辅助区：选区工具条、冲突面板、恢复提示。
 
 ## 8. 设计系统
 
@@ -487,7 +487,6 @@ primitive（原始值）
 | `OutlineRail` | expanded / collapsed | 标题、正文、标签、发布 |
 | `PublishInspector` | draft / published / dirty | 状态、字段、检查 |
 | `Checklist` | pass / warn / block | 发布前检查 |
-| `CommandPalette` | closed / open / filtering | 斜杠与 `Cmd+K` |
 | `SelectionToolbar` | hidden / visible | 选区上方 |
 | `ConflictBanner` | hidden / visible | 409 冲突 |
 | `RecoveryPrompt` | hidden / visible | 本地草稿恢复 |
@@ -522,32 +521,17 @@ primitive（原始值）
 - 切换前有未保存修改：先保存工作稿或提示。
 - Markdown → HTML：确认“Markdown 源文将不再保留”。
 - HTML → Markdown：提示“复杂标签可能被简化”，生成后可撤销。
-- 写作态不可用时，不隐藏按钮，而是显示“第二阶段”标签并禁用。
+- 写作态不可用时（旧 HTML 文章没有 Markdown 源文）保留按钮并禁用，同时说明原因。
 
 ### 9.2 工具栏
 
 - 常驻：撤销、重做、标题、粗体、斜体、链接、引用、代码、插入。
-- 选区工具条：粗体、斜体、链接、代码、引用、更多。
+- 选区工具条：粗体、斜体、链接、行内代码。
 - 按钮 44×44 触控目标；桌面可用 32×32 视觉尺寸，点击区扩大。
 - 图标按钮必须有 `aria-label` 与 `title`。
 - 工具栏分组之间用 8px 间距，不滥用分隔线。
 
-### 9.3 命令面板
-
-`Cmd/Ctrl + K` 或编辑器内输入 `/` 打开：
-
-| 分组 | 命令 |
-|---|---|
-| 插入 | 标题、引用、列表、代码块、表格、图片、分割线 |
-| 格式 | 粗体、斜体、删除线、链接、行内代码 |
-| 文档 | 保存、预览、专注模式、切换格式 |
-| 导航 | 跳到标题、跳到发布检查、打开版本历史 |
-
-- 输入过滤，↑↓ 选择，Enter 执行，Esc 关闭。
-- 命令面板不抢焦点超过一帧；关闭后焦点回到编辑区。
-- 单字符 `/` 只在编辑器聚焦时生效，符合 WCAG 2.1.4。
-
-### 9.4 预览
+### 9.3 预览
 
 - 桌面 58/42 分栏，可拖拽；也支持全屏预览。
 - 手机编辑/预览切换。
@@ -555,7 +539,7 @@ primitive（原始值）
 - 预览与发布共用 `post-body` 样式。
 - 预览为空时显示“还没有正文”，不显示空白纸。
 
-### 9.5 保存与发布
+### 9.4 保存与发布
 
 - `Cmd/Ctrl + S` 保存工作稿。
 - `Cmd/Ctrl + Shift + Enter` 打开发布确认，不直接发布。
@@ -563,27 +547,26 @@ primitive（原始值）
 - 警告项：缺摘要、缺标签、图片缺 alt、标题层级跳跃。
 - 发布按钮文案：`发布笔记`，成功后显示线上版本号和固定位置提示条。
 
-### 9.6 专注模式
+### 9.5 专注模式
 
 - `Cmd/Ctrl + Shift + F`。
 - 隐藏左右栏、标签、摘要；保留标题、正文、保存状态。
 - `Esc` 退出；退出后焦点回到正文。
 - 手机专注模式进入全屏编辑，不显示底部发布区。
 
-### 9.7 快捷键
+### 9.6 快捷键
 
 | 动作 | macOS | Windows/Linux |
 |---|---|---|
 | 保存 | `Cmd+S` | `Ctrl+S` |
 | 预览 | `Cmd+Shift+P` | `Ctrl+Shift+P` |
 | 专注 | `Cmd+Shift+F` | `Ctrl+Shift+F` |
-| 命令面板 | `Cmd+K` | `Ctrl+K` |
 | 粗体/斜体 | `Cmd+B` / `I` | `Ctrl+B` / `I` |
-| 链接 | `Cmd+K`（选区） | `Ctrl+K` |
+| 链接 | `Cmd+K`（写作态选区） | `Ctrl+K` |
 | 发布确认 | `Cmd+Shift+Enter` | `Ctrl+Shift+Enter` |
-| 退出面板 | `Esc` | `Esc` |
+| 关闭工具条 | `Esc` | `Esc` |
 
-### 9.8 内容健康检查
+### 9.7 内容健康检查
 
 | 编号 | 检查 | 级别 | 处理 |
 |---|---|---|---|
@@ -624,7 +607,7 @@ primitive（原始值）
 | A11Y-07 | 对比度 | 正文 4.5:1，控件 3:1 |
 | A11Y-08 | 200% 缩放可用 | 不重叠、不截断 |
 | A11Y-09 | 减少动效 | `prefers-reduced-motion` |
-| A11Y-10 | 输入法安全 | composition 期间不触发斜杠/快捷键 |
+| A11Y-10 | 输入法安全 | composition 期间不触发布局与格式快捷键 |
 | A11Y-11 | 中文断行 | 正文 `line-break: strict`，不出现孤字 |
 | A11Y-12 | 语义结构 | 标题层级、landmark、表单 label 完整 |
 
@@ -688,7 +671,7 @@ primitive（原始值）
 | Phase 0 | 规范、原型、迁移设计 | 本文档评审通过 |
 | Phase 1 | `body_format/body_source/content_version`、Markdown/HTML 双源、服务端预览、新布局、本地恢复 | 双源往返不丢内容，60+ 测试全绿 |
 | Phase 2 | `post_drafts`、自动保存工作稿、内容健康、发布门禁 | 自动保存不污染线上，冲突可恢复 |
-| Phase 3 | Tiptap 写作态、块命令、选区工具条、拖拽 | 写作态与双源共用保存契约 |
+| Phase 3 | 原生写作态、块级格式、选区工具条 | 写作态与双源共用保存契约 |
 | Phase 4 | 版本历史、差异对比、恢复、协作预留 | 每次发布可追溯；快照、对比与恢复已落地 |
 
 ## 16. 验收条件
@@ -735,8 +718,6 @@ primitive（原始值）
 - ATAG 2.0 中文：https://www.w3.org/Translations/ATAG20-zh/
 - OWASP XSS 预防：https://cheatsheetseries.owasp.ac.cn/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
 - OWASP HTML Sanitizer：https://owasp.org/www-project-java-html-sanitizer/
-- ProseMirror Schema/Transaction：https://prosemirror.net/docs/guide/
-- Tiptap Markdown：https://tiptap.dev/docs/editor/markdown
 - CodeMirror 6：https://codemirror.net/docs/
 - CommonMark：https://spec.commonmark.org/0.31.2/
 - Ghost Editor：https://ghost.org/help/editing-posts/

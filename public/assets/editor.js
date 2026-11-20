@@ -46,14 +46,15 @@
   var checkList = form.querySelector('#editorCheckList');
   var conflict = form.querySelector('#editorConflict');
   var conflictText = form.querySelector('#editorConflictText');
-  var commandMenu = form.querySelector('#editorCommandMenu');
-  var commandButton = form.querySelector('#editorCommandBtn');
   var htmlNote = form.querySelector('[data-html-note]');
   var stamp = form.querySelector('#editorStamp');
   var inspectorSummary = form.querySelector('#editorInspectorSummary');
   var mobilePreview = form.querySelector('#editorMobilePreview');
   var mobileOutline = form.querySelector('#editorMobileOutline');
   var markdownTools = form.querySelectorAll('[data-markdown-tools] button');
+  var rich = form.querySelector('#editorRich');
+  var richNote = form.querySelector('#editorRichNote');
+  var selectionBar = document.querySelector('#editorSelectionBar');
 
   var postId = parseInt(form.getAttribute('data-post-id') || '0', 10) || 0;
   var previewUrl = form.getAttribute('data-preview-url') || '/admin/posts/preview-body.html';
@@ -65,6 +66,11 @@
   var draftVersion = parseInt(form.getAttribute('data-draft-version') || '0', 10) || 0;
   var dirty = false;
   var saving = false;
+  var richReady = true;
+  var richStale = false;
+  var richSource = source ? source.value : '';
+  var richSeq = 0;
+  var lastRichRange = null;
   var autosaving = false;
   var autosavePaused = false;
   var publishQueued = false;
@@ -82,8 +88,151 @@
   }
 
   function activeTextarea() {
-    return mode === 'html' ? html : source;
+    if (mode === 'html') return html;
+    if (mode === 'markdown') return source;
+    return null;
   }
+
+  function payloadFormat() {
+    return mode === 'html' ? 'html' : 'markdown';
+  }
+
+  function escapeMarkdownText(value) {
+    return String(value)
+      .replace(/\u00a0/g, ' ')
+      .replace(/([\\`*_\[\]<>])/g, '\\$1');
+  }
+
+  function inlineMarkdown(node) {
+    if (!node) return '';
+    if (node.nodeType === 3) return escapeMarkdownText(node.nodeValue || '');
+    if (node.nodeType !== 1) return '';
+    var tag = node.tagName.toLowerCase();
+    var inner = function () {
+      var text = '';
+      node.childNodes.forEach(function (child) { text += inlineMarkdown(child); });
+      return text;
+    };
+    if (tag === 'strong' || tag === 'b') return '**' + inner() + '**';
+    if (tag === 'em' || tag === 'i') return '*' + inner() + '*';
+    if (tag === 'del' || tag === 's' || tag === 'strike') return '~~' + inner() + '~~';
+    if (tag === 'code') {
+      var codeText = node.textContent || '';
+      var tick = codeText.indexOf('`') >= 0 ? '``' : '`';
+      return tick + codeText + tick;
+    }
+    if (tag === 'a') {
+      var href = String(node.getAttribute('href') || '');
+      return '[' + inner() + '](' + href + ')';
+    }
+    if (tag === 'img') {
+      return '![' + String(node.getAttribute('alt') || '') + '](' + String(node.getAttribute('src') || '') + ')';
+    }
+    if (tag === 'br') return '\n';
+    if (tag === 'pre') return '\n' + (node.textContent || '') + '\n';
+    return inner();
+  }
+
+  function listMarkdown(node, depth) {
+    var ordered = node.tagName.toLowerCase() === 'ol';
+    var lines = [];
+    var index = 1;
+    Array.from(node.children).forEach(function (item) {
+      if (!item || item.tagName.toLowerCase() !== 'li') return;
+      var text = '';
+      var nested = [];
+      item.childNodes.forEach(function (child) {
+        var childTag = child.nodeType === 1 ? child.tagName.toLowerCase() : '';
+        if (childTag === 'ul' || childTag === 'ol') nested.push(child);
+        else text += inlineMarkdown(child);
+      });
+      var marker = ordered ? (index++) + '.' : '-';
+      lines.push('  '.repeat(depth) + marker + ' ' + text.trim());
+      nested.forEach(function (list) { lines.push(listMarkdown(list, depth + 1)); });
+    });
+    return lines.join('\n');
+  }
+
+  function tableMarkdown(node) {
+    var rows = Array.from(node.querySelectorAll('tr'));
+    if (rows.length === 0) return '';
+    var lines = rows.map(function (row) {
+      var cells = Array.from(row.children).filter(function (cell) {
+        return cell.tagName.toLowerCase() === 'td' || cell.tagName.toLowerCase() === 'th';
+      });
+      return '| ' + cells.map(function (cell) {
+        return inlineMarkdown(cell).trim().replace(/\|/g, '\\|').replace(/\n/g, ' ');
+      }).join(' | ') + ' |';
+    });
+    if (lines.length > 1) lines.splice(1, 0, '| ' + Array.from(rows[0].children).map(function () { return '---'; }).join(' | ') + ' |');
+    return lines.join('\n');
+  }
+
+  function blockMarkdown(node) {
+    if (!node) return '';
+    if (node.nodeType === 3) {
+      var text = String(node.nodeValue || '').trim();
+      return text === '' ? '' : escapeMarkdownText(text);
+    }
+    if (node.nodeType !== 1) return '';
+    var tag = node.tagName.toLowerCase();
+    if (tag === 'h1') return '# ' + inlineMarkdown(node).trim();
+    if (tag === 'h2') return '## ' + inlineMarkdown(node).trim();
+    if (tag === 'h3') return '### ' + inlineMarkdown(node).trim();
+    if (tag === 'h4') return '#### ' + inlineMarkdown(node).trim();
+    if (tag === 'h5' || tag === 'h6') return '##### ' + inlineMarkdown(node).trim();
+    if (tag === 'blockquote') {
+      return blockChildren(node).split('\n').map(function (line) {
+        return line === '' ? '>' : '> ' + line;
+      }).join('\n');
+    }
+    if (tag === 'ul' || tag === 'ol') return listMarkdown(node, 0);
+    if (tag === 'pre') {
+      var codeText = String(node.textContent || '').replace(/\u00a0/g, ' ').replace(/\n$/, '');
+      var language = '';
+      var codeNode = node.querySelector('code');
+      if (codeNode && codeNode.className) {
+        var match = String(codeNode.className).match(/language-([A-Za-z0-9+#._-]+)/);
+        if (match) language = match[1];
+      }
+      var fence = codeText.indexOf('```') >= 0 ? '~~~' : '```';
+      return fence + language + '\n' + codeText + '\n' + fence;
+    }
+    if (tag === 'hr') return '---';
+    if (tag === 'table') return tableMarkdown(node);
+    if (tag === 'img') return inlineMarkdown(node);
+    if (tag === 'p' || tag === 'div' || tag === 'section' || tag === 'article') {
+      var hasBlock = Array.from(node.children).some(function (child) {
+        return ['p', 'div', 'section', 'article', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'blockquote', 'table', 'hr'].indexOf(child.tagName.toLowerCase()) >= 0;
+      });
+      return hasBlock ? blockChildren(node) : inlineMarkdown(node).trim();
+    }
+    return inlineMarkdown(node).trim();
+  }
+
+  function blockChildren(node) {
+    var blocks = [];
+    node.childNodes.forEach(function (child) {
+      var block = blockMarkdown(child);
+      if (block !== '') blocks.push(block);
+    });
+    return blocks.join('\n\n');
+  }
+
+  function richToMarkdown() {
+    if (!rich) return source.value;
+    return blockChildren(rich).replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function syncRichToSource() {
+    if (!rich) return;
+    var markdown = richToMarkdown();
+    source.value = markdown;
+    html.value = rich.innerHTML;
+    richSource = markdown;
+    richStale = false;
+  }
+
 
   function setStatus(kind, message) {
     if (saveState) saveState.textContent = message;
@@ -159,7 +308,7 @@
     expectedVersion = Math.max(1, parseInt(String(value), 10) || 1);
     if (contentVersion) contentVersion.value = String(expectedVersion);
     if (versionLabel) versionLabel.textContent = versionText();
-    var summaryVersion = form.querySelector('#editorSummaryVersion');
+    var summaryVersion = document.querySelector('#editorSummaryVersion');
     if (summaryVersion) summaryVersion.textContent = 'v' + expectedVersion;
   }
 
@@ -167,7 +316,7 @@
     draftVersion = Math.max(0, parseInt(String(value), 10) || 0);
     if (draftVersionInput) draftVersionInput.value = String(draftVersion);
     if (versionLabel) versionLabel.textContent = versionText();
-    var summaryDraft = form.querySelector('#editorSummaryDraft');
+    var summaryDraft = document.querySelector('#editorSummaryDraft');
     if (summaryDraft) summaryDraft.textContent = 'd' + draftVersion;
     if (serverDraftBanner) serverDraftBanner.hidden = draftVersion <= 0;
   }
@@ -185,8 +334,24 @@
   }
 
   function updateCursor() {
-    if (!cursorLabel || !activeTextarea()) return;
+    if (!cursorLabel) return;
+    if (mode === 'write') {
+      var selection = window.getSelection();
+      if (!rich || !selection || selection.rangeCount === 0 || !rich.contains(selection.anchorNode)) {
+        cursorLabel.textContent = '写作模式';
+        return;
+      }
+      var range = selection.getRangeAt(0);
+      var beforeRange = range.cloneRange();
+      beforeRange.selectNodeContents(rich);
+      beforeRange.setEnd(range.startContainer, range.startOffset);
+      var text = beforeRange.toString().replace(/\u00a0/g, ' ');
+      var lines = text.split('\n');
+      cursorLabel.textContent = '第 ' + lines.length + ' 行，第 ' + (lines[lines.length - 1].length + 1) + ' 列';
+      return;
+    }
     var field = activeTextarea();
+    if (!field) return;
     var position = typeof field.selectionStart === 'number' ? field.selectionStart : 0;
     var before = field.value.slice(0, position);
     var lines = before.split('\n');
@@ -207,7 +372,7 @@
     if (railChars) railChars.textContent = String(chars);
     if (railMinutes) railMinutes.textContent = String(minutes);
     if (summaryMinutes) summaryMinutes.textContent = minutes + ' 分钟';
-    if (sourceStats && mode === 'markdown') sourceStats.textContent = chars + ' 字';
+    if (sourceStats && mode !== 'html') sourceStats.textContent = chars + ' 字';
   }
 
   function setWarnings(items) {
@@ -296,11 +461,18 @@
   }
 
   function applyMode(next, silent) {
-    next = next === 'html' ? 'html' : 'markdown';
+    next = next === 'html' ? 'html' : (next === 'write' ? 'write' : 'markdown');
+    var previousMode = mode;
     var markdownButton = form.querySelector('[data-editor-mode="markdown"]');
-    if (next === 'markdown' && markdownButton && markdownButton.disabled) return;
+    var writeButton = form.querySelector('[data-editor-mode="write"]');
+    if ((next === 'markdown' || next === 'write') && markdownButton && markdownButton.disabled) return;
+    if (next === 'write' && writeButton && writeButton.disabled) return;
+    if (mode === 'write' && next !== 'write') {
+      richSeq += 1;
+      if (richReady) syncRichToSource();
+    }
     mode = next;
-    if (bodyFormat) bodyFormat.value = mode;
+    if (bodyFormat) bodyFormat.value = payloadFormat();
     form.querySelectorAll('[data-editor-mode]').forEach(function (button) {
       var active = button.getAttribute('data-editor-mode') === mode;
       button.classList.toggle('is-active', active);
@@ -308,17 +480,19 @@
     });
     source.hidden = mode !== 'markdown';
     html.hidden = mode !== 'html';
-    if (paneLabel) paneLabel.textContent = mode === 'html' ? 'HTML' : 'MARKDOWN';
-    if (formatLabel) formatLabel.textContent = mode === 'html' ? 'HTML' : 'MARKDOWN';
-    if (formatChip) formatChip.textContent = mode === 'html' ? 'HTML' : 'Markdown';
-    if (summaryFormat) summaryFormat.textContent = mode === 'html' ? 'HTML' : 'Markdown';
+    if (rich) rich.hidden = mode !== 'write';
+    if (richNote) richNote.hidden = mode !== 'write';
+    if (paneLabel) paneLabel.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? 'WRITE' : 'MARKDOWN');
+    if (formatLabel) formatLabel.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? 'WRITE' : 'MARKDOWN');
+    if (formatChip) formatChip.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? '写作' : 'Markdown');
+    if (summaryFormat) summaryFormat.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? '写作' : 'Markdown');
     if (htmlNote) htmlNote.hidden = mode !== 'html';
     markdownTools.forEach(function (button) { button.disabled = mode === 'html'; });
-    if (commandButton) {
-      commandButton.disabled = mode === 'html';
-      commandButton.title = mode === 'html' ? 'HTML 模式直接输入标签' : '打开插入命令';
+    if (mode !== 'write') hideSelectionBar();
+    if (mode === 'write') {
+      if (!silent && previousMode !== 'write') hydrateRich();
+      else if (richStale || !richReady || richSource !== source.value) hydrateRich();
     }
-    if (mode === 'html' && commandMenu) commandMenu.hidden = true;
     if (!silent) {
       markDirty();
       updateChecks();
@@ -357,11 +531,11 @@
       excerpt: excerpt.value.trim(),
       tags: tags.value.trim(),
       status: status ? status.value : 'draft',
-      body_format: mode,
+      body_format: payloadFormat(),
       content_version: expectedVersion,
       draft_version: draftVersion,
-      body_source: mode === 'markdown' ? source.value : '',
-      body: mode === 'html' ? html.value : ''
+      body_source: payloadFormat() === 'markdown' ? source.value : '',
+      body: payloadFormat() === 'html' ? html.value : ''
     };
   }
 
@@ -576,7 +750,7 @@
     postJson(previewUrl, {
       _csrf: csrf ? csrf.value : '',
       post_id: postId,
-      format: mode,
+      format: payloadFormat(),
       source: value,
       title: title.value.trim(),
       slug: slug.value.trim(),
@@ -626,6 +800,7 @@
       mode: mode,
       source: source.value,
       html: html.value,
+      rich: rich ? rich.innerHTML : '',
       updatedAt: new Date().toISOString(),
       serverUpdatedAt: serverUpdatedAt
     };
@@ -657,7 +832,8 @@
       || String(draft.status || 'draft') !== (status ? status.value : 'draft')
       || String(draft.mode || 'markdown') !== mode
       || String(draft.source || '') !== source.value
-      || String(draft.html || '') !== html.value;
+      || String(draft.html || '') !== html.value
+      || (String(draft.mode || '') === 'write' && mode === 'write' && String(draft.rich || '') !== (rich ? rich.innerHTML : ''));
   }
 
   function loadDraft() {
@@ -706,7 +882,15 @@
     if (status) status.value = String(draft.status || 'draft');
     source.value = String(draft.source || '');
     html.value = String(draft.html || '');
-    applyMode(String(draft.mode || 'markdown') === 'html' ? 'html' : 'markdown', true);
+    var draftMode = String(draft.mode || 'markdown');
+    richSeq += 1;
+    if (rich) {
+      rich.innerHTML = String(draft.rich || '');
+      richSource = source.value;
+      richReady = String(draft.rich || '') !== '';
+      richStale = !richReady;
+    }
+    applyMode(draftMode === 'html' ? 'html' : (draftMode === 'write' ? 'write' : 'markdown'), true);
     dirty = false;
     markDirty();
     updateChecks();
@@ -718,7 +902,178 @@
     setStatus('dirty', '已恢复本地草稿');
   }
 
+  function escapeHtml(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function safeLink(value) {
+    var url = String(value || '').trim();
+    return /^(https?:\/\/|mailto:|\/|#)/i.test(url) ? url : '';
+  }
+
+  function hideSelectionBar() {
+    if (selectionBar) selectionBar.hidden = true;
+  }
+
+  function refreshSelectionBar() {
+    if (!selectionBar || mode !== 'write' || !rich || rich.hidden) {
+      hideSelectionBar();
+      return;
+    }
+    var selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed || !rich.contains(selection.anchorNode)) {
+      hideSelectionBar();
+      return;
+    }
+    var range = selection.getRangeAt(0);
+    var rect = range.getClientRects()[0] || range.getBoundingClientRect();
+    if (!rect || (rect.width === 0 && rect.height === 0) || !paper) {
+      hideSelectionBar();
+      return;
+    }
+    selectionBar.hidden = false;
+    var paperRect = paper.getBoundingClientRect();
+    var half = (selectionBar.offsetWidth || 160) / 2;
+    var left = rect.left - paperRect.left + rect.width / 2;
+    var top = rect.top - paperRect.top - 8;
+    left = Math.max(half + 8, Math.min(paperRect.width - half - 8, left));
+    top = Math.max(8, top);
+    selectionBar.style.left = left + 'px';
+    selectionBar.style.top = top + 'px';
+  }
+
+  function rememberRichSelection() {
+    if (!rich || mode !== 'write') {
+      lastRichRange = null;
+      hideSelectionBar();
+      return;
+    }
+    var selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !rich.contains(selection.anchorNode)) {
+      lastRichRange = null;
+      hideSelectionBar();
+      return;
+    }
+    lastRichRange = selection.getRangeAt(0).cloneRange();
+    if (lastRichRange.collapsed) hideSelectionBar();
+    else refreshSelectionBar();
+    updateCursor();
+  }
+
+  function restoreRichSelection() {
+    if (!rich) return;
+    if (!lastRichRange) {
+      rich.focus();
+      return;
+    }
+    var selection = window.getSelection();
+    if (!selection) return;
+    selection.removeAllRanges();
+    selection.addRange(lastRichRange);
+  }
+
+  function hydrateRich() {
+    if (!rich || !source) return;
+    var seq = ++richSeq;
+    richReady = false;
+    richStale = true;
+    rich.setAttribute('contenteditable', 'false');
+    rich.setAttribute('aria-busy', 'true');
+    rich.innerHTML = '<p class="editor-rich-loading">正在把 Markdown 排成纸面…</p>';
+    var fail = function () {
+      if (seq !== richSeq) return;
+      richReady = false;
+      richStale = true;
+      rich.innerHTML = '';
+      rich.setAttribute('contenteditable', 'true');
+      rich.removeAttribute('aria-busy');
+      if (mode === 'write') applyMode('markdown', true);
+      setStatus('error', '写作态暂时不可用');
+      showToast('写作态暂时不可用，已切回 Markdown。', 'error');
+    };
+    postJson(previewUrl, {
+      _csrf: csrf ? csrf.value : '',
+      post_id: postId,
+      format: 'markdown',
+      writing: true,
+      source: source.value,
+      title: title.value.trim(),
+      slug: slug.value.trim(),
+      excerpt: excerpt.value.trim(),
+      tags: tags.value.trim()
+    }, 12000).then(function (result) {
+      if (seq !== richSeq) return;
+      if (!result.response.ok || !result.json || !result.json.ok) {
+        fail();
+        return;
+      }
+      var data = result.json;
+      rich.innerHTML = typeof data.html === 'string' ? data.html : '';
+      richReady = true;
+      richStale = false;
+      richSource = source.value;
+      rich.setAttribute('contenteditable', 'true');
+      rich.removeAttribute('aria-busy');
+      if (data.stats) currentStats(data.stats);
+    }).catch(fail);
+  }
+
+  function runRichCommand(kind, inlineOnly) {
+    if (!rich || !richReady || mode !== 'write') return;
+    var selection = window.getSelection();
+    if (!selection) return;
+    restoreRichSelection();
+    var selectedText = selection.toString();
+    if (kind === 'link') {
+      var href = window.prompt('链接地址', 'https://');
+      if (href === null) return;
+      var safe = safeLink(href);
+      if (safe === '') {
+        showToast('链接只支持 http、https、mailto、站内路径或锚点。', 'error');
+        return;
+      }
+      if (selection.isCollapsed) {
+        document.execCommand('insertHTML', false, '<a href="' + escapeHtml(safe) + '">' + escapeHtml(safe) + '</a>');
+      } else {
+        document.execCommand('createLink', false, safe);
+      }
+    } else if (kind === 'bold' || kind === 'italic') {
+      document.execCommand(kind, false, null);
+    } else if (kind === 'code' && inlineOnly === true) {
+      var codeText = selectedText || '代码';
+      document.execCommand('insertHTML', false, '<code>' + escapeHtml(codeText) + '</code>');
+    } else if (kind === 'code') {
+      var blockText = selectedText || '代码';
+      document.execCommand('insertHTML', false, '<pre><code>' + escapeHtml(blockText) + '</code></pre>');
+    } else if (kind === 'h2') {
+      document.execCommand('formatBlock', false, '<h2>');
+    } else if (kind === 'quote') {
+      document.execCommand('formatBlock', false, '<blockquote>');
+    } else if (kind === 'list') {
+      document.execCommand('insertUnorderedList', false, null);
+    } else if (kind === 'hr') {
+      document.execCommand('insertHTML', false, '<hr>');
+    } else if (kind === 'table') {
+      document.execCommand('insertHTML', false, '<table><thead><tr><th>列一</th><th>列二</th></tr></thead><tbody><tr><td>内容</td><td></td></tr></tbody></table>');
+    } else {
+      return;
+    }
+    syncRichToSource();
+    markDirty();
+    updateChecks();
+    updateDocMeta();
+    updateStamp();
+    updateSourceCount();
+    updateCursor();
+    queuePreview(120);
+    hideSelectionBar();
+  }
+
   function insertSnippet(kind) {
+    if (mode === 'write') {
+      runRichCommand(kind, false);
+      return;
+    }
     var field = activeTextarea();
     if (!field) return;
     var start = field.selectionStart;
@@ -757,18 +1112,6 @@
     field.setSelectionRange(start + before.length, start + before.length + content.length);
     field.focus();
     field.dispatchEvent(new Event('input', { bubbles: true }));
-    if (commandMenu) commandMenu.hidden = true;
-  }
-
-  function toggleCommandMenu(open) {
-    if (!commandMenu || !commandButton || commandButton.disabled) return;
-    var shouldOpen = typeof open === 'boolean' ? open : commandMenu.hidden;
-    commandMenu.hidden = !shouldOpen;
-    commandButton.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-    if (shouldOpen) {
-      var first = commandMenu.querySelector('button');
-      if (first) first.focus();
-    }
   }
 
   function toggleMobilePreview() {
@@ -799,6 +1142,7 @@
     updateStamp();
     updateSourceCount();
     updateCursor();
+    if (target === source) richStale = true;
     if (target === source || target === html) queuePreview();
     else queuePreview(700);
   });
@@ -843,13 +1187,42 @@
     });
   });
 
-  if (commandButton) {
-    commandButton.addEventListener('click', function (event) {
-      event.preventDefault();
-      toggleCommandMenu();
+  if (rich) {
+    rich.addEventListener('input', function () {
+      if (mode !== 'write' || !richReady) return;
+      syncRichToSource();
+      markDirty();
+      updateChecks();
+      updateDocMeta();
+      updateStamp();
+      updateSourceCount();
+      updateCursor();
+      queuePreview();
     });
-    commandButton.setAttribute('aria-expanded', 'false');
-    commandButton.setAttribute('aria-controls', 'editorCommandMenu');
+    rich.addEventListener('keyup', updateCursor);
+    rich.addEventListener('click', updateCursor);
+    rich.addEventListener('paste', function (event) {
+      if (!richReady) return;
+      event.preventDefault();
+      var clipboard = event.clipboardData || window.clipboardData;
+      var text = clipboard ? clipboard.getData('text/plain') : '';
+      if (text !== '') document.execCommand('insertText', false, text);
+    });
+  }
+
+  document.addEventListener('selectionchange', rememberRichSelection);
+  document.addEventListener('mousedown', function (event) {
+    if (mode === 'write' && event.target.closest('[data-editor-insert], [data-rich-format]')) event.preventDefault();
+  });
+
+  if (selectionBar) {
+    selectionBar.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-rich-format]');
+      if (!button) return;
+      event.preventDefault();
+      var kind = button.getAttribute('data-rich-format');
+      runRichCommand(kind, kind === 'code');
+    });
   }
 
   if (mobilePreview) mobilePreview.addEventListener('click', function (event) { event.preventDefault(); toggleMobilePreview(); });
@@ -935,9 +1308,6 @@
       page.classList.remove('is-outline-open');
       if (mobileOutline) mobileOutline.setAttribute('aria-expanded', 'false');
     }
-    if (!commandMenu || commandMenu.hidden) return;
-    if (event.target.closest('#editorCommandMenu') || event.target.closest('#editorCommandBtn')) return;
-    toggleCommandMenu(false);
   });
 
   document.addEventListener('keydown', function (event) {
@@ -949,17 +1319,20 @@
       else save();
       return;
     }
-    if (meta && key === 'k') {
-      if (mode === 'markdown') {
-        event.preventDefault();
-        toggleCommandMenu();
-      }
+    if (meta && key === 'k' && mode === 'write') {
+      event.preventDefault();
+      runRichCommand('link', false);
+      return;
+    }
+    if (meta && mode === 'write' && (key === 'b' || key === 'i')) {
+      event.preventDefault();
+      runRichCommand(key === 'b' ? 'bold' : 'italic', false);
       return;
     }
     if (key === 'escape') {
-      if (commandMenu && !commandMenu.hidden) toggleCommandMenu(false);
       var page = form.closest('.editor-page');
       if (page) page.classList.remove('is-outline-open');
+      hideSelectionBar();
     }
   });
 

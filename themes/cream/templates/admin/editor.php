@@ -127,6 +127,7 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
 
         <div class="editor-toolbar" role="toolbar" aria-label="正文工具">
           <div class="editor-modes" role="tablist" aria-label="正文格式">
+            <button type="button" class="editor-mode" data-editor-mode="write" role="tab" aria-selected="false"<?= $markdownUnavailable ? ' disabled title="旧 HTML 文章没有可用的 Markdown 源文"' : ' title="在纸面上直接排版，保存为 Markdown"' ?>>写作</button>
             <button type="button" class="editor-mode<?= $format === 'markdown' ? ' is-active' : '' ?>" data-editor-mode="markdown" role="tab" aria-selected="<?= $format === 'markdown' ? 'true' : 'false' ?>"<?= $markdownUnavailable ? ' disabled title="旧 HTML 文章保持 HTML 模式"' : '' ?>>Markdown</button>
             <button type="button" class="editor-mode<?= $format === 'html' ? ' is-active' : '' ?>" data-editor-mode="html" role="tab" aria-selected="<?= $format === 'html' ? 'true' : 'false' ?>">HTML</button>
           </div>
@@ -141,17 +142,13 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
             <button type="button" class="editor-tool" data-editor-insert="code" title="插入代码块" aria-label="插入代码块">&lt;/&gt;</button>
           </div>
           <div class="editor-toolbar-right">
-            <button type="button" class="editor-command-button" id="editorCommandBtn" title="打开插入命令"><kbd>Cmd K</kbd> 命令</button>
             <span class="editor-format-label" id="editorFormatLabel"><?= strtoupper($format) ?></span>
           </div>
-          <div class="editor-command-menu" id="editorCommandMenu" hidden>
-            <button type="button" data-editor-insert="h2"><span>##</span>二级标题</button>
-            <button type="button" data-editor-insert="quote"><span>&gt;</span>引用</button>
-            <button type="button" data-editor-insert="list"><span>-</span>列表</button>
-            <button type="button" data-editor-insert="code"><span>```</span>代码块</button>
-            <button type="button" data-editor-insert="table"><span>|</span>表格</button>
-            <button type="button" data-editor-insert="hr"><span>---</span>分割线</button>
-            <button type="button" data-editor-insert="link"><span>[]()</span>链接</button>
+          <div class="editor-selection-bar" id="editorSelectionBar" hidden aria-label="选区格式">
+            <button type="button" data-rich-format="bold" title="加粗" aria-label="加粗"><strong>B</strong></button>
+            <button type="button" data-rich-format="italic" title="斜体" aria-label="斜体"><em>I</em></button>
+            <button type="button" data-rich-format="link" title="链接" aria-label="链接"><?= cream_icon('link', 'icon-xs') ?></button>
+            <button type="button" data-rich-format="code" title="行内代码" aria-label="行内代码">&lt;/&gt;</button>
           </div>
         </div>
 
@@ -163,7 +160,9 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
               <textarea id="bodySource" name="body_source" class="editor-textarea" spellcheck="false" placeholder="# 从这里开始写&#10;&#10;正文支持 Markdown：**加粗**、引用、列表、代码块和表格。"><?= cream_e($sourceValue) ?></textarea>
               <label class="sr-only" for="bodyHtml">HTML 正文</label>
               <textarea id="bodyHtml" name="body" class="editor-textarea editor-textarea-html" spellcheck="false" placeholder="&lt;p&gt;这里编辑 HTML 正文&lt;/p&gt;"><?= cream_e($bodyHtmlValue) ?></textarea>
+              <div id="editorRich" class="editor-rich post-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="写作态正文" spellcheck="true" hidden><?= $previewHtml ?></div>
             </div>
+            <div class="editor-pane-note editor-rich-note" id="editorRichNote" hidden>写作态排版会转换成 Markdown 保存；切回 Markdown 可以检查源文。</div>
             <div class="editor-pane-note" data-html-note hidden>HTML 模式只保留白名单内的标签；脚本、样式、表单和内嵌页面会被移除。</div>
           </div>
           <div class="editor-pane editor-preview-pane" data-editor-pane="preview">

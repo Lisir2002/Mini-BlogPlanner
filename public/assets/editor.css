@@ -199,6 +199,7 @@
 /* ---------- 手稿纸 ---------- */
 
 .editor-paper {
+  position: relative;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -340,69 +341,6 @@
 
 .editor-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-.editor-command-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--paper);
-  color: var(--ink-soft);
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.editor-command-button:hover { border-color: var(--line-strong); color: var(--ink); }
-
-kbd {
-  padding: 1px 5px;
-  border: 1px solid var(--line-strong);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  background: var(--cream-1);
-  color: var(--muted);
-  font: 600 9px/1.4 var(--editor-code);
-}
-
-.editor-format-label { color: var(--muted); font: 700 9px/1 var(--editor-code); letter-spacing: 0.13em; }
-
-.editor-command-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 14px;
-  z-index: 40;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  width: 250px;
-  padding: 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 11px;
-  background: var(--paper);
-  box-shadow: 0 14px 34px -18px oklch(0.25 0.02 70 / 0.5), var(--shadow);
-}
-
-.editor-command-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 9px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 11px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.editor-command-menu button:hover { background: var(--cream-1); color: var(--ink); }
-.editor-command-menu button span { width: 28px; color: var(--coral); font: 700 9px/1 var(--editor-code); }
-
 /* ---------- 编辑与预览 ---------- */
 
 .editor-stage {
@@ -469,6 +407,53 @@ kbd {
 .editor-textarea::placeholder { color: color-mix(in oklch, var(--muted) 52%, transparent); }
 .editor-textarea:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklch, var(--coral) 34%, transparent) inset; }
 .editor-textarea-html { color: oklch(0.36 0.03 260); }
+
+.editor-rich.post-body h1 { margin: 0 0 22px; color: var(--ink); font-size: 32px; line-height: 1.28; letter-spacing: -.03em; }
+.editor-rich.post-body {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 20px 24px 60px;
+  border-top: 0;
+  outline: none;
+  overflow: auto;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1.9;
+}
+.editor-rich:empty::before { content: '从第一段开始写，选中文字会出现格式工具条。'; color: color-mix(in oklch, var(--muted) 55%, transparent); pointer-events: none; }
+.editor-rich:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklch, var(--coral) 26%, transparent) inset; }
+.editor-rich[contenteditable="false"] { opacity: .65; }
+.editor-rich-note { display: block; }
+
+.editor-selection-bar {
+  position: absolute;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--paper);
+  box-shadow: 0 10px 24px -14px oklch(0.25 0.02 70 / .55), var(--shadow);
+  transform: translate(-50%, -100%);
+}
+.editor-selection-bar[hidden] { display: none; }
+.editor-selection-bar button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  min-height: 30px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+}
+.editor-selection-bar button:hover, .editor-selection-bar button:focus-visible { background: var(--cream-1); color: var(--ink); }
 
 .editor-pane-note {
   padding: 8px 16px;
@@ -754,7 +739,6 @@ kbd {
   .editor-format-tools { flex: 1 1 100%; order: 4; overflow-x: auto; padding: 2px 0; }
   .editor-format-label { display: none; }
   .editor-toolbar-right { margin-left: auto; }
-  .editor-command-menu { left: 12px; right: 12px; width: auto; }
   .editor-draft-note { display: none; }
   .editor-statusbar { gap: 8px; padding: 0 12px; }
   .editor-key { display: none; }

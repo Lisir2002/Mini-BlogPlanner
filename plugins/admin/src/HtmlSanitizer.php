@@ -16,6 +16,8 @@ use DOMNode;
  */
 final class HtmlSanitizer
 {
+    public function __construct(private readonly bool $allowH1 = false) {}
+
     /** @var array<string, list<string>> */
     private const ALLOWED = [
         'p' => [],
@@ -53,6 +55,17 @@ final class HtmlSanitizer
         'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button',
         'textarea', 'select', 'option', 'link', 'meta', 'base', 'svg', 'math',
     ];
+
+    /** @return array<string, list<string>> */
+    private function allowed(): array
+    {
+        $allowed = self::ALLOWED;
+        if ($this->allowH1) {
+            $allowed['h1'] = [];
+        }
+
+        return $allowed;
+    }
 
     public function clean(string $html): string
     {
@@ -96,6 +109,7 @@ final class HtmlSanitizer
 
     private function cleanChildren(DOMNode $parent): void
     {
+        $allowed = $this->allowed();
         $child = $parent->firstChild;
         while ($child !== null) {
             $next = $child->nextSibling;
@@ -105,11 +119,11 @@ final class HtmlSanitizer
 
                 if (in_array($tag, self::DROP, true)) {
                     $parent->removeChild($child);
-                } elseif (!array_key_exists($tag, self::ALLOWED)) {
+                } elseif (!array_key_exists($tag, $allowed)) {
                     $this->cleanChildren($child);
                     $this->unwrap($child);
                 } else {
-                    $this->cleanAttributes($child, self::ALLOWED[$tag]);
+                    $this->cleanAttributes($child, $allowed[$tag]);
                     $this->cleanChildren($child);
                 }
             }

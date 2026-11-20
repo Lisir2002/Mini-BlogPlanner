@@ -460,6 +460,11 @@ check('MarkdownRenderer renders safe blocks and keeps unsupported links as text'
     truthy(str_contains($result['html'], '[坏链接](javascript:alert(1))'), 'Unsafe link should stay literal');
 });
 
+check('MarkdownRenderer can preserve heading levels for writing mode', function (): void {
+    $html = (new MarkdownRenderer(1, 6))->render("# 一级\n\n#### 四级")['html'];
+    truthy(str_contains($html, '<h1>一级</h1>') && str_contains($html, '<h4>四级</h4>'), 'Writing mode must keep heading levels');
+});
+
 check('MarkdownRenderer warns on unclosed fences and mismatched table columns', function (): void {
     $fence = (new MarkdownRenderer())->render("```html\n<span>没有闭合");
     truthy(str_contains($fence['html'], '&lt;span&gt;'), 'Unclosed fence content must be escaped');
@@ -467,6 +472,11 @@ check('MarkdownRenderer warns on unclosed fences and mismatched table columns', 
     $table = (new MarkdownRenderer())->render("| A | B |\n| --- | --- |\n| 1 | 2 | 3 |");
     truthy(str_contains($table['html'], '<table>'), 'Table must still render');
     truthy(count($table['warnings']) === 1 && str_contains($table['warnings'][0], '列数'), 'Expected a table column warning');
+});
+
+check('HtmlSanitizer can keep h1 only for writing mode', function (): void {
+    truthy(str_contains((new HtmlSanitizer(true))->clean('<h1>一级</h1>'), '<h1>一级</h1>'), 'Writing sanitizer must allow h1');
+    truthy(!str_contains((new HtmlSanitizer())->clean('<h1>一级</h1>'), '<h1>'), 'Default sanitizer must still unwrap h1');
 });
 
 check('BodyRenderer sanitizes HTML and reports removed markup', function (): void {
@@ -630,6 +640,11 @@ check('Revision migration and history page are wired', function (): void {
     truthy($revisionController !== false && str_contains($revisionController, "query()['compare']"), 'Revision controller must read compare target');
     $editor = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
     truthy($editor !== false && str_contains($editor, '/revisions.html'), 'Editor must link to version history');
+    truthy(str_contains($editor, 'data-editor-mode="write"') && str_contains($editor, 'id="editorRich"'), 'Editor must expose writing mode');
+    truthy(!str_contains($editor, 'editorCommand'), 'Command palette must stay removed');
+    $editorJs = file_get_contents($root . '/public/assets/editor.js');
+    truthy($editorJs !== false && str_contains($editorJs, 'richToMarkdown') && str_contains($editorJs, 'runRichCommand'), 'Writing mode must serialize back to Markdown');
+    truthy(!str_contains($editorJs, 'toggleCommandMenu'), 'Command palette must stay removed');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {

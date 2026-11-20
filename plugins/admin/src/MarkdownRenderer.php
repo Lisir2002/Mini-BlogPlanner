@@ -13,6 +13,12 @@ namespace Plugin\Admin;
  */
 final class MarkdownRenderer
 {
+    public function __construct(
+        private readonly int $minHeadingLevel = 2,
+        private readonly int $maxHeadingLevel = 4,
+    ) {
+    }
+
     /** @var list<string> */
     private array $warnings = [];
 
@@ -71,7 +77,7 @@ final class MarkdownRenderer
             }
 
             if (preg_match('/^ {0,3}(#{1,6})[ \t]+(.*)$/', $line, $match) === 1) {
-                $level = max(2, min(4, strlen($match[1])));
+                $level = max($this->minHeadingLevel, min($this->maxHeadingLevel, strlen($match[1])));
                 $out[] = '<h' . $level . '>' . $this->inline(trim($match[2])) . '</h' . $level . '>';
                 $i++;
                 continue;
