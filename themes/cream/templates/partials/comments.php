@@ -17,6 +17,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
 ?>
 <section class="comments" id="comments" aria-labelledby="comments-title">
   <header class="comments-head">
+    <span class="tape tape-butter comments-tape" aria-hidden="true"></span>
     <div>
       <span class="eyebrow"><?= cream_icon('heart', 'icon-sm') ?> MARGIN NOTES</span>
       <h2 id="comments-title">留言与回复</h2>
@@ -72,6 +73,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
   <?php endif; ?>
 
   <form class="comment-form" id="comment-form" method="post" action="/posts/<?= $slug ?>/comments.html" novalidate>
+    <span class="tape tape-mint comment-form-tape" aria-hidden="true"></span>
     <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
     <input type="hidden" name="_form_at" value="<?= cream_e($formAt) ?>">
     <input type="hidden" name="parent_id" value="<?= $replyTo !== null ? (int) $replyTo : '' ?>">

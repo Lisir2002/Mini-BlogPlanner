@@ -584,6 +584,17 @@ check('Comment templates and assets are present', function (): void {
     truthy(str_contains($partial, 'comment-honeypot'), 'Comment form must render the honeypot');
 });
 
+check('Comment cards use layered paper texture', function (): void {
+    $root = dirname(__DIR__);
+    $css = file_get_contents($root . '/public/assets/comments.css');
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    truthy($css !== false && str_contains($css, '--paper-fiber'), 'Comment cards must use paper fiber');
+    truthy($css !== false && str_contains($css, '.comment-item::before'), 'Comment cards need a tape tab');
+    truthy($css !== false && str_contains($css, '.comment-replies::before'), 'Replies need a bound-thread marker');
+    truthy($css !== false && str_contains($css, 'repeating-linear-gradient(180deg'), 'Comment body must use ruled lines');
+    truthy($partial !== false && str_contains($partial, 'comment-form-tape'), 'Comment form needs a tape decoration');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');
