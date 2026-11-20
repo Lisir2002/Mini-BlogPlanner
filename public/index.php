@@ -18,10 +18,13 @@ require $root . '/bootstrap/autoload.php';
 require $root . '/bootstrap/storage.php';
 Env::loadWithFallback($root);
 $storage = cream_storage_path($root);
-Session::start();
+$request = Request::fromGlobals();
+$statelessPaths = ['/feed', '/feed.xml', '/atom.xml', '/feed.json', '/sitemap.xml', '/robots.txt', '/healthz'];
+if (!in_array($request->path(), $statelessPaths, true)) {
+    Session::start();
+}
 
 $version = Version::fromFile($root . '/version.json');
-$request = Request::fromGlobals();
 $emitter = new ResponseEmitter();
 
 $gate = new InstallGate($storage . '/installed.lock', $root . '/public/install.php');

@@ -958,6 +958,16 @@ check('Atom and JSON Feed publish the same posts', function (): void {
     truthy(is_file($root . '/docs/api/feeds.md'), 'Feed documentation must exist');
 });
 
+check('Feed and SEO endpoints skip sessions', function (): void {
+    $root = dirname(__DIR__);
+    $index = file_get_contents($root . '/public/index.php');
+    truthy($index !== false && str_contains($index, '$statelessPaths'), 'Front controller needs a stateless path list');
+    truthy($index !== false && str_contains($index, "'/feed.xml'") && str_contains($index, "'/sitemap.xml'"), 'Feed and sitemap must be stateless');
+    $session = $index === false ? false : strpos($index, 'Session::start()');
+    $guard = $index === false ? false : strpos($index, 'if (!in_array($request->path(), $statelessPaths, true))');
+    truthy($session !== false && $guard !== false && $guard < $session, 'Session startup must be skipped for stateless endpoints');
+});
+
 check('Article share card, RSS and social metadata are wired', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-share.php');
