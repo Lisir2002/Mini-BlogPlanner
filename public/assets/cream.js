@@ -70,6 +70,39 @@
   });
   window.setTimeout(hideLoader, 4000);
 
+  const mobileNav = document.querySelector('.nav-mobile');
+  if (mobileNav instanceof HTMLDetailsElement) {
+    const summary = mobileNav.querySelector('summary');
+    const closeNav = () => {
+      if (!mobileNav.open) return;
+      mobileNav.open = false;
+    };
+    mobileNav.addEventListener('toggle', () => {
+      const open = mobileNav.open;
+      document.body.classList.toggle('nav-open', open);
+      if (summary) summary.setAttribute('aria-label', open ? '收起导航菜单' : '打开导航菜单');
+    });
+    document.addEventListener('click', (event) => {
+      if (!mobileNav.open) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.nav-mobile-panel') || target.closest('.nav-mobile summary')) return;
+      closeNav();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !mobileNav.open) return;
+      closeNav();
+      if (summary instanceof HTMLElement) summary.focus();
+    });
+    mobileNav.querySelectorAll('.nav-mobile-panel a').forEach((link) => {
+      link.addEventListener('click', closeNav);
+    });
+    const desktopNav = window.matchMedia('(min-width: 721px)');
+    desktopNav.addEventListener('change', (event) => {
+      if (event.matches) closeNav();
+    });
+  }
+
   if (!body.classList.contains('admin-body')) return;
 
   const isHtml = (text, type) => type.includes('text/html') || /^\s*<(?:!doctype|html)/i.test(text);

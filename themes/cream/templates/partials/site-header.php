@@ -22,14 +22,55 @@ $siteTitle = (string) ($site['title'] ?? '日记Planner');
     </nav>
 
     <details class="nav-mobile">
-      <summary aria-label="打开导航"><?= cream_icon('menu') ?></summary>
+      <summary aria-label="打开导航菜单">
+        <span class="nav-icon-open"><?= cream_icon('menu') ?></span>
+        <span class="nav-icon-close"><?= cream_icon('close') ?></span>
+      </summary>
+      <span class="nav-mobile-scrim" aria-hidden="true"></span>
       <nav class="nav-mobile-panel" aria-label="移动导航">
-        <a href="/">首页</a>
-        <a href="/posts.html">文章</a>
-        <a href="/tags.html">标签</a>
-        <a href="/about.html">关于</a>
-        <a href="/api.html">接口文档</a>
-        <a href="/healthz">站点状态</a>
+        <div class="nav-mobile-sheet">
+          <div class="nav-drawer-head">
+            <span class="nav-drawer-eyebrow">NAVIGATION</span>
+            <strong class="nav-drawer-title">目录</strong>
+            <p class="nav-drawer-sub">挑一页，继续翻。</p>
+          </div>
+          <div class="nav-drawer-links">
+            <a class="nav-drawer-link<?= $current === 'home' ? ' is-current' : '' ?>" href="/">
+              <span class="nav-drawer-icon"><?= cream_icon('planner', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">首页</span>
+              <span class="nav-drawer-index">01</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html">
+              <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">文章</span>
+              <span class="nav-drawer-index">02</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html">
+              <span class="nav-drawer-icon"><?= cream_icon('tag', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">标签</span>
+              <span class="nav-drawer-index">03</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html">
+              <span class="nav-drawer-icon"><?= cream_icon('heart', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">关于</span>
+              <span class="nav-drawer-index">04</span>
+            </a>
+            <a class="nav-drawer-link" href="/api.html">
+              <span class="nav-drawer-icon"><?= cream_icon('plug', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">接口文档</span>
+              <span class="nav-drawer-index">05</span>
+            </a>
+            <a class="nav-drawer-link" href="/healthz">
+              <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">站点状态</span>
+              <span class="nav-drawer-index">06</span>
+            </a>
+          </div>
+          <div class="nav-drawer-foot">
+            <span>MINI-BLOGPLANNER</span>
+            <span><?= cream_e($siteTitle) ?></span>
+          </div>
+        </div>
       </nav>
     </details>
   </div>

@@ -691,6 +691,19 @@ check('Reaction totals reach admin and API', function (): void {
     truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
 });
 
+check('Mobile navigation uses a torn right drawer', function (): void {
+    $root = dirname(__DIR__);
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $css = file_get_contents($root . '/public/assets/cream.css');
+    $js = file_get_contents($root . '/public/assets/cream.js');
+    truthy($header !== false && str_contains($header, 'nav-mobile-sheet'), 'Mobile nav needs a paper sheet');
+    truthy($header !== false && substr_count($header, 'nav-drawer-link') >= 6, 'Mobile nav needs six drawer links');
+    truthy($header !== false && str_contains($header, 'nav-mobile-scrim'), 'Mobile nav needs a dismiss scrim');
+    truthy($css !== false && str_contains($css, '--drawer-tear: polygon('), 'Drawer needs a torn edge');
+    truthy($css !== false && str_contains($css, 'clip-path: var(--drawer-tear)'), 'Drawer sheet must use the torn edge');
+    truthy($js !== false && str_contains($js, 'nav-open') && str_contains($js, "event.key !== 'Escape'"), 'Drawer needs scroll lock and Escape dismiss');
+});
+
 check('Article back link is a themed paper tab', function (): void {
     $root = dirname(__DIR__);
     $posts = file_get_contents($root . '/public/assets/posts.css');
