@@ -697,8 +697,10 @@ check('Article lead is a labeled summary slip', function (): void {
     $posts = file_get_contents($root . '/public/assets/posts.css');
     truthy($post !== false && str_contains($post, 'class="post-lead"'), 'Article lead must use the summary slip');
     truthy($post !== false && str_contains($post, '文章概览'), 'Summary slip needs a visible label');
+    truthy($post !== false && str_contains($post, 'post-lead-tape'), 'Summary slip needs a taped edge');
     truthy($posts !== false && str_contains($posts, '.post-lead-label'), 'Summary label must be themed');
-    truthy($posts !== false && str_contains($posts, 'border-left: 3px solid var(--coral)'), 'Summary slip needs the coral edge');
+    truthy($posts !== false && str_contains($posts, '--torn-edge: polygon('), 'Summary slip needs a torn edge');
+    truthy($posts !== false && str_contains($posts, 'font-size: 14.5px'), 'Summary must use smaller type than the article body');
     truthy($posts !== false && str_contains($posts, '.post-lead-text'), 'Summary body must use its own type style');
 });
 

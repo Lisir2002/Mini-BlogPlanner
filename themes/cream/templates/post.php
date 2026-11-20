@@ -15,8 +15,11 @@ if (!is_object($post)) {
     <h1><?= cream_e($post->title) ?></h1>
     <?php if ($post->excerpt !== ''): ?>
       <aside class="post-lead" aria-label="文章概览">
-        <span class="post-lead-label"><?= cream_icon('spark', 'icon-xs') ?> 文章概览</span>
-        <p class="post-lead-text"><?= cream_e($post->excerpt) ?></p>
+        <span class="post-lead-tape" aria-hidden="true"></span>
+        <div class="post-lead-paper">
+          <span class="post-lead-label"><?= cream_icon('spark', 'icon-xs') ?> 文章概览</span>
+          <p class="post-lead-text"><?= cream_e($post->excerpt) ?></p>
+        </div>
       </aside>
     <?php endif; ?>
     <?php if ($post->tags !== []): ?>
