@@ -8,7 +8,6 @@ use Core\Config\Env;
 use Core\Content\CommentRepository;
 use Core\Content\PostRepository;
 use Core\Content\ReactionRepository;
-use Core\Content\SeriesRepository;
 use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
@@ -49,13 +48,6 @@ final class PostController
         }
         if ($post === null) {
             return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
-        }
-
-        $series = null;
-        try {
-            $series = (new SeriesRepository($db))->forPost($post->id);
-        } catch (Throwable) {
-            // 系列读取失败不能阻断文章正文。
         }
 
         try {
@@ -148,7 +140,6 @@ final class PostController
             ),
             'current' => 'posts',
             'post' => $post,
-            'series' => $series,
             'comment_threads' => $threads,
             'comment_count' => $commentCount,
             'comment_form_at' => CommentForm::issue(),
@@ -163,7 +154,7 @@ final class PostController
             'reaction_mine' => $reactionState['mine'],
             'reaction_csrf' => $csrf,
             'reaction_notice' => $reactionNotice,
-            'page_styles' => ['posts.css', 'comments.css', 'reactions.css', 'receipt.css', 'series.css'],
+            'page_styles' => ['posts.css', 'comments.css', 'reactions.css', 'receipt.css'],
             'page_scripts' => ['receipt.js', 'comments.js', 'reactions.js', 'share.js'],
         ]);
 

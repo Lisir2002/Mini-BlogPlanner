@@ -3,7 +3,6 @@ $post = $post ?? null;
 if (!is_object($post)) {
     return;
 }
-$series = is_array($series ?? null) ? $series : null;
 ?>
 <article class="post-page">
   <span class="tape tape-butter article-tape" aria-hidden="true"></span>
@@ -29,13 +28,6 @@ $series = is_array($series ?? null) ? $series : null;
         <span class="tag-pill"><?= cream_icon('tag', 'icon-xs') ?> <?= cream_e($tag) ?></span>
       <?php endforeach; ?>
       </div>
-    <?php endif; ?>
-    <?php if ($series !== null): ?>
-      <a class="post-series-link" href="/series/<?= cream_e($series['slug']) ?>.html">
-        <span class="post-series-kicker">SERIES</span>
-        <strong><?= cream_e($series['name']) ?></strong>
-        <span>查看系列 <?= cream_icon('arrow-right', 'icon-xs') ?></span>
-      </a>
     <?php endif; ?>
   </header>
   <div class="post-body">

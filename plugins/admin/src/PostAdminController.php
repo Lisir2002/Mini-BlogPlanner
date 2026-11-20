@@ -10,7 +10,6 @@ use Core\Config\Env;
 use Core\Content\Post;
 use Core\Content\PostAdminRepository;
 use Core\Content\ReactionRepository;
-use Core\Content\SeriesRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
 use Core\Database\ConnectionInterface;
@@ -269,22 +268,13 @@ final class PostAdminController
             'body' => '',
             'status' => 'draft',
             'tags' => '',
-            'series_id' => null,
         ]);
-
-        $seriesOptions = [];
-        try {
-            $seriesOptions = (new SeriesRepository(Connection::fromEnv()))->adminAll();
-        } catch (Throwable) {
-            // 系列读取失败时仍允许保存文章。
-        }
 
         return $this->render('admin/editor', $admin, [
             'title' => preg_match('#^/admin/posts/[1-9]#', $action) === 1 ? '编辑文章' : '写新文章',
             'current' => 'posts',
             'post' => $post,
             'values' => $data,
-            'series_options' => $seriesOptions,
             'errors' => $errors,
             'action' => $action,
         ], $status);
@@ -311,8 +301,6 @@ final class PostAdminController
         $status = (string) ($_POST['status'] ?? 'draft');
         $tagRaw = trim((string) ($_POST['tags'] ?? ''));
         $tags = TagRepository::normalize(preg_split('/[,，]/u', $tagRaw) ?: []);
-        $seriesRaw = trim((string) ($_POST['series_id'] ?? ''));
-        $seriesId = null;
         $errors = [];
 
         if ($title === '' || mb_strlen($title) > 200) {
@@ -333,18 +321,6 @@ final class PostAdminController
         if (mb_strlen($tagRaw) > 500) {
             $errors[] = '标签总长度不能超过 500 个字符。';
         }
-        if ($seriesRaw !== '') {
-            if (preg_match('/^[1-9][0-9]*$/', $seriesRaw) !== 1) {
-                $errors[] = '系列选择无效。';
-            } else {
-                $candidate = (int) $seriesRaw;
-                if (!(new SeriesRepository(Connection::fromEnv()))->exists($candidate)) {
-                    $errors[] = '系列选择无效。';
-                } else {
-                    $seriesId = $candidate;
-                }
-            }
-        }
 
         $minutes = max(1, min(120, (int) ceil(mb_strlen(strip_tags($body)) / 500)));
 
@@ -356,7 +332,6 @@ final class PostAdminController
             'status' => $status,
             'reading_minutes' => $minutes,
             'tags' => implode(', ', $tags),
-            'series_id' => $seriesId,
         ], $errors, $tags];
     }
 

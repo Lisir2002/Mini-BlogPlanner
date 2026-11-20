@@ -89,7 +89,7 @@ $title = (string) ($site['title'] ?? '日记Planner');
       <h2>这本手账接下来写什么</h2>
     </div>
     <ul class="journal-list">
-      <li><span class="check-dot"></span><span>文章、标签与系列，先让内容有地方住。</span></li>
+      <li><span class="check-dot"></span><span>文章与标签，先让内容有地方住。</span></li>
       <li><span class="check-dot"></span><span>独立页面接入站长自己的 PHP 与样式。</span></li>
       <li><span class="check-dot"></span><span>后台编辑、媒体库与每日备份。</span></li>
       <li><span class="check-dot"></span><span>把 40 枚自绘图标、字体和动效接进主题。</span></li>

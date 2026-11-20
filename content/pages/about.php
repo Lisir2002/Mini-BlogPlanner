@@ -29,7 +29,7 @@ return static function (PageContext $context): array {
     <article class="about-card">
       <span class="about-icon">{$bookIcon}</span>
       <h2>内容为主</h2>
-      <p>文章、标签、系列和独立页面都围绕“好读”设计。没有弹窗，没有命令面板，也没有追着你跑的推荐。</p>
+      <p>文章、标签和独立页面都围绕“好读”设计。没有弹窗，没有命令面板，也没有追着你跑的推荐。</p>
     </article>
     <article class="about-card">
       <span class="about-icon">{$codeIcon}</span>

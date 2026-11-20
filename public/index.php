@@ -21,7 +21,7 @@ $storage = cream_storage_path($root);
 $request = Request::fromGlobals();
 $statelessPaths = ['/feed', '/feed.xml', '/atom.xml', '/feed.json', '/sitemap.xml', '/robots.txt', '/healthz'];
 $path = $request->path();
-$stateless = in_array($path, $statelessPaths, true) || $path === '/archive' || $path === '/archive.html' || str_starts_with($path, '/archive/') || $path === '/series' || $path === '/series.html' || str_starts_with($path, '/series/');
+$stateless = in_array($path, $statelessPaths, true) || $path === '/archive' || $path === '/archive.html' || str_starts_with($path, '/archive/');
 if (!$stateless) {
     Session::start();
 }

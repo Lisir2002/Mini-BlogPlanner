@@ -1,7 +1,7 @@
 {
   "id": "posts",
   "name": "Posts",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "priority": 25,
   "class": "Plugin\\Posts\\PostsPlugin",
   "runtime": true,
@@ -15,8 +15,7 @@
     "tags",
     "search",
     "feed",
-    "archive",
-    "series"
+    "archive"
   ],
   "routes": [
     "/archive",
@@ -29,15 +28,12 @@
     "/feed.json",
     "/search",
     "/posts",
-    "/posts/{slug}",
-    "/series",
-    "/series/{slug}"
+    "/posts/{slug}"
   ],
   "route_prefixes": [
     "/archive",
     "/posts",
-    "/search",
-    "/series"
+    "/search"
   ],
   "migrations": false,
   "hooks": []

@@ -11,7 +11,6 @@ GET /sitemap.xml
 - 首页 `/`
 - 文章列表 `/posts.html`
 - 标签列表 `/tags.html`
-- 系列列表 `/series.html`，以及有已发布文章的系列详情
 - 归档总览 `/archive.html`，以及年归档和月归档第一页
 - 独立页面 `/{slug}.html`，由 `content/pages/` 下的文件自动发现
 - 已发布文章 `/posts/{slug}.html`，带 `lastmod`
@@ -38,7 +37,6 @@ GET /robots.txt
 - 首页
 - 文章列表
 - 标签列表与标签页
-- 系列列表与系列页
 - 独立页面
 - 文章页
 
@@ -50,7 +48,7 @@ GET /robots.txt
 
 - 首页：`WebSite`，带 `SearchAction`，指向 `/search?q={search_term_string}`。
 - 文章：`BlogPosting`，包含标题、摘要、发布时间、修改时间、作者/发布者、主页面和标签关键词。
-- 文章列表与标签、系列：`CollectionPage`。
+- 文章列表与标签：`CollectionPage`。
 - 独立页面：`WebPage`。
 
 作者与发布者使用站点名，避免凭空编造个人身份。JSON 编码启用 `JSON_HEX_TAG`，标题或摘要中的 `<` 不会提前闭合脚本标签。

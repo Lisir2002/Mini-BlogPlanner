@@ -6,7 +6,6 @@ namespace Plugin\Web;
 
 use Core\Config\Env;
 use Core\Content\PostRepository;
-use Core\Content\SeriesRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
 use Core\Http\Request;
@@ -27,7 +26,6 @@ final class SeoController
         $pages = (new PageRepository($root, $this->version))->slugs();
         $posts = [];
         $tags = [];
-        $series = [];
         $months = [];
 
         try {
@@ -36,7 +34,6 @@ final class SeoController
             $posts = $repository->publishedForSitemap();
             $months = $repository->archiveMonths();
             $tags = (new TagRepository($db))->all();
-            $series = (new SeriesRepository($db))->all();
         } catch (Throwable) {
             // 数据库不可用时仍返回静态入口，避免整份 sitemap 失效。
         }
@@ -45,7 +42,6 @@ final class SeoController
             ['loc' => $baseUrl . '/', 'changefreq' => 'daily', 'priority' => 1.0],
             ['loc' => $baseUrl . '/posts.html', 'changefreq' => 'daily', 'priority' => 0.8],
             ['loc' => $baseUrl . '/tags.html', 'changefreq' => 'weekly', 'priority' => 0.6],
-            ['loc' => $baseUrl . '/series.html', 'changefreq' => 'weekly', 'priority' => 0.6],
             ['loc' => $baseUrl . '/archive.html', 'changefreq' => 'weekly', 'priority' => 0.5],
         ];
 
@@ -70,14 +66,6 @@ final class SeoController
         foreach ($tags as $tag) {
             $entries[] = [
                 'loc' => $baseUrl . '/tags/' . rawurlencode($tag['slug']) . '.html',
-                'changefreq' => 'monthly',
-                'priority' => 0.5,
-            ];
-        }
-
-        foreach ($series as $item) {
-            $entries[] = [
-                'loc' => $baseUrl . '/series/' . rawurlencode($item['slug']) . '.html',
                 'changefreq' => 'monthly',
                 'priority' => 0.5,
             ];

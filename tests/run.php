@@ -969,7 +969,6 @@ check('Feed and SEO endpoints skip sessions', function (): void {
     truthy($session !== false && $guard !== false && $guard < $session, 'Session startup must be skipped for stateless endpoints');
     truthy($index !== false && str_contains($index, "str_starts_with(\$path, '/archive/')"), 'Archive pages must be stateless too');
     truthy($index !== false && str_contains($index, "'/archive.html'"), 'Archive index HTML alias must be stateless');
-    truthy($index !== false && str_contains($index, "'/series.html'") && str_contains($index, "str_starts_with(\$path, '/series/')"), 'Series pages must be stateless too');
     truthy($controller !== false && str_contains($controller, "'Cache-Control'") && str_contains($controller, "'public, max-age=300'"), 'Archive pages need explicit public caching');
 });
 
@@ -996,50 +995,6 @@ check('Archive index and period pages are wired', function (): void {
     truthy($css !== false && str_contains($css, '.archive-ledger') && str_contains($css, '.archive-pagination'), 'Archive styles must cover ledger and pagination');
     truthy($seo !== false && str_contains($seo, '/archive.html') && str_contains($seo, "archiveMonths"), 'Sitemap must include archive pages');
     truthy(is_file($root . '/docs/ARCHIVE.md'), 'Archive documentation must exist');
-});
-
-check('Series pages, admin management and article membership are wired', function (): void {
-    $root = dirname(__DIR__);
-    $migration = file_get_contents($root . '/database/migrations/2026112101_create_series.php');
-    $repository = file_get_contents($root . '/core/Content/SeriesRepository.php');
-    $controller = file_get_contents($root . '/plugins/posts/src/SeriesController.php');
-    $plugin = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
-    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
-    $index = file_get_contents($root . '/themes/cream/templates/series.php');
-    $detail = file_get_contents($root . '/themes/cream/templates/series-detail.php');
-    $post = file_get_contents($root . '/themes/cream/templates/post.php');
-    $css = file_get_contents($root . '/public/assets/series.css');
-    $admin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
-    $adminSeries = file_get_contents($root . '/plugins/admin/src/SeriesAdminController.php');
-    $adminTemplate = file_get_contents($root . '/themes/cream/templates/admin/series.php');
-    $postAdmin = file_get_contents($root . '/core/Content/PostAdminRepository.php');
-    $postAdminController = file_get_contents($root . '/plugins/admin/src/PostAdminController.php');
-    $postEditor = file_get_contents($root . '/themes/cream/templates/admin/editor.php');
-    $seo = file_get_contents($root . '/plugins/web/src/SeoController.php');
-    $apiPlugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
-    $apiSeries = file_get_contents($root . '/plugins/api/src/SeriesApiController.php');
-    $openapi = file_get_contents($root . '/public/docs/openapi.yaml');
-
-    truthy($migration !== false && str_contains($migration, 'CREATE TABLE IF NOT EXISTS series') && str_contains($migration, 'series_id') && str_contains($migration, 'fk_posts_series'), 'Series migration must create the table and post link');
-    truthy($repository !== false && str_contains($repository, 'postsForSeries') && str_contains($repository, 'forPost') && str_contains($repository, 'adminAll'), 'Series repository needs public and admin reads');
-    truthy($controller !== false && str_contains($controller, 'public, max-age=300') && str_contains($controller, 'StructuredData::collectionPage'), 'Series pages need public caching and collection data');
-    truthy($plugin !== false && str_contains($plugin, "'/series'") && str_contains($plugin, "'/series/{slug}'"), 'Posts plugin must route series pages');
-    truthy($header !== false && str_contains($header, 'href="/series.html"') && str_contains($header, 'nav-drawer-index">04'), 'Navigation needs a series link and mobile index');
-    truthy($index !== false && str_contains($index, 'series-grid'), 'Series overview needs a card grid');
-    truthy($detail !== false && str_contains($detail, 'series-timeline') && str_contains($detail, 'series-step-number'), 'Series detail needs an ordered timeline');
-    truthy($post !== false && str_contains($post, 'post-series-link'), 'Article header needs a series link');
-    truthy($css !== false && str_contains($css, '.series-grid') && str_contains($css, '.series-step'), 'Series styles must cover cards and timeline');
-    truthy($admin !== false && str_contains($admin, 'SeriesAdminController') && str_contains($admin, "'/admin/series'"), 'Admin plugin must route series management');
-    truthy($adminSeries !== false && str_contains($adminSeries, 'public function create') && str_contains($adminSeries, 'public function delete'), 'Series admin controller needs create and delete');
-    truthy($adminTemplate !== false && str_contains($adminTemplate, 'series-create-form') && str_contains($adminTemplate, 'series-admin-edit'), 'Series admin template needs create and edit forms');
-    truthy($postAdmin !== false && str_contains($postAdmin, 'series_id'), 'Post admin repository must persist the series link');
-    truthy(str_contains($postAdminController, '->exists($candidate)'), 'Post editor must reject unknown series ids');
-    truthy($postEditor !== false && str_contains($postEditor, 'name="series_id"'), 'Post editor must expose the series select');
-    truthy($seo !== false && str_contains($seo, '/series.html') && str_contains($seo, 'SeriesRepository'), 'Sitemap must include series pages');
-    truthy($apiPlugin !== false && str_contains($apiPlugin, 'SeriesApiController') && str_contains($apiPlugin, "'/api/v1/series'"), 'API plugin must route series reads');
-    truthy($apiSeries !== false && str_contains($apiSeries, 'postsForSeries') && str_contains($apiSeries, 'series-not-found'), 'Series API must list ordered posts and explain 404');
-    truthy($openapi !== false && str_contains($openapi, '/api/v1/series') && str_contains($openapi, 'SeriesDetail'), 'OpenAPI must document series reads');
-    truthy(is_file($root . '/docs/SERIES.md'), 'Series documentation must exist');
 });
 
 check('Article share card, RSS and social metadata are wired', function (): void {
@@ -1145,7 +1100,6 @@ check('Public SEO routes expose sitemap, robots and structured data', function (
     $posts = file_get_contents($root . '/plugins/posts/src/PostListController.php');
     $post = file_get_contents($root . '/plugins/posts/src/PostController.php');
     $tags = file_get_contents($root . '/plugins/posts/src/TagController.php');
-    $series = file_get_contents($root . '/plugins/posts/src/SeriesController.php');
     $pages = file_get_contents($root . '/plugins/pages/src/PageController.php');
     $pageRepository = file_get_contents($root . '/core/Page/PageRepository.php');
     $postRepository = file_get_contents($root . '/core/Content/PostRepository.php');
@@ -1158,11 +1112,23 @@ check('Public SEO routes expose sitemap, robots and structured data', function (
     truthy($posts !== false && str_contains($posts, 'StructuredData::collectionPage'), 'Post list must expose collection data');
     truthy($post !== false && str_contains($post, 'StructuredData::blogPosting'), 'Articles must expose BlogPosting data');
     truthy($tags !== false && str_contains($tags, 'StructuredData::collectionPage'), 'Tags must expose collection data');
-    truthy($series !== false && str_contains($series, 'StructuredData::collectionPage'), 'Series must expose collection data');
     truthy($pages !== false && str_contains($pages, 'StructuredData::webPage'), 'Pages must expose WebPage data');
     truthy($pageRepository !== false && str_contains($pageRepository, 'public function slugs'), 'Page repository must list page slugs');
     truthy($postRepository !== false && str_contains($postRepository, 'publishedForSitemap'), 'Post repository must list sitemap posts');
     truthy(is_file($root . '/docs/SEO.md'), 'SEO documentation must exist');
+});
+
+check('Series feature is removed from routes, templates and schema', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112102_drop_series.php');
+    truthy($migration !== false && str_contains($migration, 'DROP FOREIGN KEY fk_posts_series'), 'Drop migration must remove the foreign key');
+    truthy($migration !== false && str_contains($migration, 'DROP TABLE IF EXISTS series'), 'Drop migration must remove the series table');
+    foreach (['posts', 'admin', 'api', 'web'] as $plugin) {
+        $manifest = file_get_contents($root . '/plugins/' . $plugin . '/plugin.json');
+        truthy($manifest !== false && !str_contains($manifest, '/series'), 'Plugin still exposes series routes: ' . $plugin);
+    }
+    truthy(!is_file($root . '/themes/cream/templates/series.php'), 'Series template must be gone');
+    truthy(!is_file($root . '/themes/cream/templates/admin/series.php'), 'Series admin template must be gone');
 });
 
 check('Compressed assets match their source files', function (): void {

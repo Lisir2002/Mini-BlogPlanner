@@ -1,9 +1,7 @@
 <?php
 $values = is_array($values ?? null) ? $values : [];
-$seriesOptions = is_array($series_options ?? null) ? $series_options : [];
 $errors = is_array($errors ?? null) ? $errors : [];
 $action = (string) ($action ?? '/admin/posts.html');
-$selectedSeries = isset($values['series_id']) ? (int) $values['series_id'] : 0;
 ?>
 <section class="admin-page admin-editor">
   <header class="admin-page-head">
@@ -34,15 +32,6 @@ $selectedSeries = isset($values['series_id']) ? (int) $values['series_id'] : 0;
           <option value="draft" <?= ($values['status'] ?? 'draft') === 'draft' ? 'selected' : '' ?>>草稿</option>
           <option value="published" <?= ($values['status'] ?? 'draft') === 'published' ? 'selected' : '' ?>>发布</option>
         </select>
-      </div>
-      <div class="field"><label for="series_id">系列</label>
-        <select id="series_id" name="series_id">
-          <option value="">不加入系列</option>
-          <?php foreach ($seriesOptions as $item): ?>
-          <option value="<?= (int) $item['id'] ?>" <?= $selectedSeries === (int) $item['id'] ? 'selected' : '' ?>><?= cream_e($item['name']) ?>（<?= (int) $item['count'] ?> 篇）</option>
-          <?php endforeach; ?>
-        </select>
-        <span class="field-hint">一篇只归一个系列；公开页按发布时间从早到晚排列。<a href="/admin/series.html">管理系列</a></span>
       </div>
       <button class="admin-button primary full" type="submit">保存</button>
       <p class="admin-hint">发布时会写入发布时间；改回草稿会清空发布时间。</p>
