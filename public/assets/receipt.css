@@ -98,6 +98,7 @@
 .post-receipt .reaction-controls { margin-top: 11px; }
 
 .post-receipt .post-share {
+  position: static;
   display: block;
   width: 100%;
   margin: 0;
@@ -141,7 +142,7 @@
   }
   .post-receipt-share {
     display: block;
-    padding: 9px 14px 11px;
+    padding: 9px 14px 21px;
     border-left: 0;
   }
   .post-receipt .post-reactions {
@@ -203,7 +204,7 @@
   .post-receipt .post-share-status {
     position: absolute;
     right: 14px;
-    bottom: 1px;
+    bottom: 4px;
     margin: 0;
     font-size: 9px;
     line-height: 1.25;
@@ -340,7 +341,7 @@
 }
 .post-receipt[data-receipt-floating="true"] .post-receipt-share {
   display: block;
-  padding: 9px 14px 11px;
+  padding: 9px 14px 21px;
   border-left: 0;
 }
 .post-receipt[data-receipt-floating="true"][data-receipt-open="true"] .post-receipt-panel {
