@@ -28,7 +28,7 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
       <span class="admin-brand-copy"><small>MINI-BLOGPLANNER</small><strong><?= cream_e($siteTitle) ?> 后台</strong></span>
     </a>
     <?php if ($admin !== null): ?>
-    <nav class="admin-nav" aria-label="后台导航">
+    <nav class="admin-nav nav-desktop" aria-label="后台导航">
       <a class="<?= $current === 'posts' ? 'is-current' : '' ?>" href="/admin/posts.html">文章</a>
       <a class="<?= $current === 'tags' ? 'is-current' : '' ?>" href="/admin/tags.html">标签</a>
       <a class="<?= $current === 'comments' ? 'is-current' : '' ?>" href="/admin/comments.html">评论</a>
@@ -41,6 +41,62 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
         <button class="link-button" type="submit">退出</button>
       </form>
     </nav>
+
+    <details class="nav-mobile admin-mobile">
+      <summary aria-label="打开后台菜单">
+        <span class="nav-icon-open"><?= cream_icon('menu') ?></span>
+        <span class="nav-icon-close"><?= cream_icon('close') ?></span>
+      </summary>
+      <span class="nav-mobile-scrim admin-mobile-scrim" aria-hidden="true"></span>
+      <nav class="nav-mobile-panel admin-mobile-panel" aria-label="后台移动导航">
+        <div class="nav-mobile-sheet admin-mobile-sheet">
+          <div class="nav-drawer-head">
+            <span class="nav-drawer-eyebrow">BACKSTAGE · <?= cream_e($admin->username) ?></span>
+            <strong class="nav-drawer-title">后台目录</strong>
+            <p class="nav-drawer-sub">选一项，继续写。</p>
+          </div>
+          <div class="nav-drawer-links">
+            <a class="nav-drawer-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/admin/posts.html"<?= $current === 'posts' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">文章</span>
+              <span class="nav-drawer-index">01</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/admin/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('tag', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">标签</span>
+              <span class="nav-drawer-index">02</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'comments' ? ' is-current' : '' ?>" href="/admin/comments.html"<?= $current === 'comments' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('comment', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">评论</span>
+              <span class="nav-drawer-index">03</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'media' ? ' is-current' : '' ?>" href="/admin/media.html"<?= $current === 'media' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('layers', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">媒体</span>
+              <span class="nav-drawer-index">04</span>
+            </a>
+            <a class="nav-drawer-link<?= $current === 'audit' ? ' is-current' : '' ?>" href="/admin/audit.html"<?= $current === 'audit' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">审计</span>
+              <span class="nav-drawer-index">05</span>
+            </a>
+            <a class="nav-drawer-link" href="/" target="_blank" rel="noopener">
+              <span class="nav-drawer-icon"><?= cream_icon('external', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">查看站点</span>
+              <span class="nav-drawer-index">06</span>
+            </a>
+          </div>
+          <div class="nav-drawer-foot admin-mobile-foot">
+            <span>MINI-BLOGPLANNER</span>
+            <form method="post" action="/admin/logout.html" class="admin-mobile-logout" data-ajax-full>
+              <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
+              <button type="submit"><?= cream_icon('arrow-left', 'icon-xs') ?> 退出登录</button>
+            </form>
+          </div>
+        </div>
+      </nav>
+    </details>
     <?php endif; ?>
   </div>
 </header>

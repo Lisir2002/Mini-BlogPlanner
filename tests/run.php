@@ -779,6 +779,20 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '@media (max-height: 640px)'), 'Short screens need a compact login layout');
 });
 
+check('Admin mobile menu uses a torn drawer', function (): void {
+    $root = dirname(__DIR__);
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    $css = file_get_contents($root . '/public/assets/admin.css');
+    truthy($layout !== false && str_contains($layout, 'admin-mobile'), 'Admin header needs a mobile drawer');
+    truthy($layout !== false && substr_count($layout, 'nav-drawer-link') >= 6, 'Admin drawer needs six destinations');
+    truthy($layout !== false && str_contains($layout, 'nav-drawer-foot') && str_contains($layout, 'admin-mobile-logout'), 'Admin drawer needs a logout footer');
+    truthy($layout !== false && str_contains($layout, 'nav-icon-close'), 'Admin drawer needs a single close icon state');
+    truthy($css !== false && str_contains($css, '.admin-nav.nav-desktop { display: none; }'), 'Desktop admin nav must hide on mobile');
+    truthy($css !== false && str_contains($css, '.admin-mobile { display: block; }'), 'Admin drawer must show on mobile');
+    truthy($css !== false && str_contains($css, '.admin-mobile-scrim, .admin-mobile-panel { top: 59px; }'), 'Admin drawer must start below the shorter header');
+    truthy($css !== false && !str_contains($css, 'backdrop-filter: blur(12px)'), 'Admin header must not trap fixed drawers');
+});
+
 check('Compressed assets match their source files', function (): void {
     $assets = dirname(__DIR__) . '/public/assets';
     foreach (glob($assets . '/*.gz') ?: [] as $gz) {
