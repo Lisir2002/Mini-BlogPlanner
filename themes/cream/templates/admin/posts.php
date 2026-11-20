@@ -18,12 +18,13 @@
 <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
-      <thead><tr><th>标题</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
+      <thead><tr><th>标题</th><th>状态</th><th>回声</th><th>更新时间</th><th>操作</th></tr></thead>
       <tbody>
       <?php foreach ($posts as $post): ?>
         <tr>
           <td><strong><?= cream_e($post['title'] ?? '') ?></strong><span class="admin-slug">/<?= cream_e($post['slug'] ?? '') ?>.html</span></td>
           <td><span class="status-badge status-<?= cream_e($post['status'] ?? 'draft') ?>"><?= cream_e(match ((string) ($post['status'] ?? 'draft')) { 'published' => '已发布', 'archived' => '已归档', default => '草稿' }) ?></span></td>
+          <td class="admin-mono reaction-stat">赞 <?= (int) ($post['reaction_likes'] ?? 0) ?> · 踩 <?= (int) ($post['reaction_dislikes'] ?? 0) ?></td>
           <td class="admin-mono"><?= cream_e((string) ($post['updated_at'] ?? '')) ?></td>
           <td class="admin-actions">
             <a href="/admin/posts/<?= (int) ($post['id'] ?? 0) ?>.html">编辑</a>

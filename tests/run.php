@@ -639,6 +639,58 @@ check('Comment replies open in place without a page reload', function (): void {
     truthy($script !== false && str_contains($script, 'history.replaceState'), 'Reply state must stay shareable without reloading');
 });
 
+check('Post reactions store one anonymous attitude per visitor', function (): void {
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112006_create_post_reactions.php');
+    $repository = file_get_contents($root . '/core/Content/ReactionRepository.php');
+    truthy($migration !== false && str_contains($migration, 'CREATE TABLE IF NOT EXISTS post_reactions'), 'Missing post_reactions table');
+    truthy($migration !== false && str_contains($migration, 'visitor_hash CHAR(64)'), 'Reaction visitor must be hashed');
+    truthy($migration !== false && str_contains($migration, 'ip_hash CHAR(64)'), 'Reaction IP must be hashed');
+    truthy($migration !== false && str_contains($migration, 'uq_post_reactions_visitor'), 'Reaction visitor must be unique per post');
+    truthy($migration !== false && str_contains($migration, 'idx_post_reactions_tally'), 'Reaction tally needs an index');
+    truthy($repository !== false && str_contains($repository, 'ON DUPLICATE KEY UPDATE'), 'Reaction writes must be idempotent');
+    truthy($repository !== false && str_contains($repository, 'CASE WHEN value = 1'), 'Repository must aggregate likes');
+    truthy($repository !== false && str_contains($repository, 'CASE WHEN value = -1'), 'Repository must aggregate dislikes');
+});
+
+check('Post reactions render themed controls and stay in place', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/reactions.php');
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/ReactionController.php');
+    $plugin = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    $view = file_get_contents($root . '/plugins/posts/src/PostController.php');
+    $css = file_get_contents($root . '/public/assets/reactions.css');
+    $script = file_get_contents($root . '/public/assets/reactions.js');
+    $icons = file_get_contents($root . '/public/assets/icons.svg');
+    truthy($partial !== false && str_contains($partial, 'data-reaction-widget'), 'Reaction section needs a script hook');
+    truthy($partial !== false && str_contains($partial, 'aria-pressed='), 'Reaction buttons need pressed state');
+    truthy($partial !== false && str_contains($partial, 'data-reaction-count="likes"'), 'Reaction likes need a live count');
+    truthy($partial !== false && str_contains($partial, 'data-reaction-count="dislikes"'), 'Reaction dislikes need a live count');
+    truthy($partial !== false && str_contains($partial, 'action="/posts/'), 'Reaction forms need a no-script fallback');
+    truthy($post !== false && str_contains($post, 'partials/reactions.php'), 'Post template must include reactions');
+    truthy($plugin !== false && str_contains($plugin, "'/posts/{slug}/reaction'"), 'Reaction endpoint must be routed');
+    truthy($controller !== false && str_contains($controller, 'Csrf::validate'), 'Reaction endpoint must validate CSRF');
+    truthy($controller !== false && str_contains($controller, 'Set-Cookie'), 'Reaction endpoint must issue the visitor cookie');
+    truthy($controller !== false && str_contains($controller, "wantsJson()"), 'Reaction endpoint must support JSON responses');
+    truthy($view !== false && str_contains($view, "'reactions.css'"), 'Post pages must load reaction styles');
+    truthy($view !== false && str_contains($view, "'reactions.js'"), 'Post pages must load reaction behavior');
+    truthy($css !== false && str_contains($css, '.reaction-like.is-active'), 'Reaction active state must be themed');
+    truthy($script !== false && str_contains($script, 'event.preventDefault()'), 'Reaction must not reload the page');
+    truthy($script !== false && str_contains($script, 'optimistic'), 'Reaction must update optimistically');
+    truthy($icons !== false && str_contains($icons, 'i-thumb-up'), 'Reaction needs a themed thumb icon');
+});
+
+check('Reaction totals reach admin and API', function (): void {
+    $root = dirname(__DIR__);
+    $admin = file_get_contents($root . '/plugins/admin/src/PostAdminController.php');
+    $adminView = file_get_contents($root . '/themes/cream/templates/admin/posts.php');
+    $api = file_get_contents($root . '/plugins/api/src/PostApiController.php');
+    truthy($admin !== false && str_contains($admin, 'ReactionRepository'), 'Admin must load reaction totals');
+    truthy($adminView !== false && str_contains($adminView, '赞 ') && str_contains($adminView, '踩 '), 'Admin list must show reaction totals');
+    truthy($api !== false && str_contains($api, "'reactions'"), 'Post API detail must expose reaction totals');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');

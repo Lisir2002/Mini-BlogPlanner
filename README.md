@@ -8,7 +8,7 @@
 
 - 原生 PHP 微内核，无 Twig、Laravel 等重型框架
 - 插件化路由与主题模板，公开页和后台共用仓储
-- 文章、标签、独立页面、媒体库、评论与审计
+- 文章、标签、独立页面、媒体库、评论、赞踩回声与审计
 - 评论先审后发，带 CSRF、蜜罐、频率限制与重复拦截
 - 完整错误页、`.html` 伪静态、响应式布局
 - 带哈希清单的发布包，支持升级、回退与数据库备份
@@ -77,6 +77,7 @@ tests/      契约测试
 
 - [安装](docs/INSTALL.md)
 - [升级与回退](docs/UPGRADE.md)
+- [文章回声](docs/REACTIONS.md)
 - [版本规范](docs/VERSIONING.md)
 - [品牌规范](docs/BRAND.md)
 - [安全边界](docs/SECURITY.md)

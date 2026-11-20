@@ -5,7 +5,7 @@ info:
   description: |
     所有响应均为 JSON。错误使用 RFC 9457 problem+json。
     版本号与 version.json 的 `api` 轴保持一致。
-  version: 1.1.0
+  version: 1.2.0
   contact:
     name: Mini-BlogPlanner
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
@@ -223,11 +223,17 @@ components:
       allOf:
         - $ref: "#/components/schemas/PostSummary"
         - type: object
-          required: [body_html]
+          required: [body_html, reactions]
           properties:
             body_html:
               type: string
               description: 已通过白名单过滤的 HTML；调用方仍需按自己的上下文转义。
+            reactions:
+              type: object
+              required: [likes, dislikes]
+              properties:
+                likes: { type: integer, minimum: 0 }
+                dislikes: { type: integer, minimum: 0 }
     Health:
       type: object
       required: [status, app, api, schema]
@@ -240,10 +246,10 @@ components:
           examples: ["0.6.0"]
         api:
           type: string
-          examples: ["1.1.0"]
+          examples: ["1.2.0"]
         schema:
           type: integer
-          examples: [2026112004]
+          examples: [2026112006]
     Problem:
       type: object
       required: [type, title, status, detail, instance]

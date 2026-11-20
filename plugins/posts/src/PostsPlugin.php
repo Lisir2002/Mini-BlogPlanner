@@ -38,11 +38,13 @@ final class PostsPlugin implements PluginInterface
     {
         $tags = new TagController($this->version, $this->theme);
         $comments = new CommentController($this->version, $this->theme);
+        $reactions = new ReactionController($this->version, $this->theme);
 
         return [
             new Route(['GET'], '/posts', new PostListController($this->version, $this->theme), 'posts.index'),
             new Route(['GET'], '/posts/{slug}', new PostController($this->version, $this->theme), 'posts.show'),
             new Route(['POST'], '/posts/{slug}/comments', static fn (Request $request, array $params): Response => $comments->submit($request, $params), 'posts.comments.store'),
+            new Route(['POST'], '/posts/{slug}/reaction', static fn (Request $request, array $params): Response => $reactions->submit($request, $params), 'posts.reactions.store'),
             new Route(['GET'], '/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'tags.index'),
             new Route(['GET'], '/tags/{slug}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'tags.show'),
         ];

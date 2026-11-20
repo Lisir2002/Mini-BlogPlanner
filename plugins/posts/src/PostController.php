@@ -7,6 +7,7 @@ namespace Plugin\Posts;
 use Core\Config\Env;
 use Core\Content\CommentRepository;
 use Core\Content\PostRepository;
+use Core\Content\ReactionRepository;
 use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
@@ -54,6 +55,17 @@ final class PostController
             return ErrorPage::page($this->theme, $request, 503, '暂时无法读取留言，请稍后再试。', $this->version, $this->site());
         }
 
+        $reactionState = ['likes' => 0, 'dislikes' => 0, 'mine' => 0];
+        $visitorToken = ReactionVisitor::current();
+        try {
+            $reactionState = (new ReactionRepository($db))->state(
+                $post->id,
+                $visitorToken === null ? null : ReactionVisitor::visitorHash($visitorToken),
+            );
+        } catch (Throwable) {
+            // 回声读取失败不能阻断文章和留言。
+        }
+
         $errors = is_array($commentState['errors'] ?? null) ? $commentState['errors'] : [];
         $values = is_array($commentState['values'] ?? null) ? $commentState['values'] : [
             'author_name' => '',
@@ -87,6 +99,13 @@ final class PostController
             'spam' => '留言已移入垃圾箱。',
             default => null,
         };
+        $reactionNotice = match ((string) ($request->query()['reaction'] ?? '')) {
+            'liked' => '已记下这一赞。',
+            'disliked' => '已记下这一踩。',
+            'cleared' => '已撤回。',
+            default => null,
+        };
+        $csrf = Csrf::token();
 
         $html = $this->theme->render('post', [
             'site' => $this->site(),
@@ -98,14 +117,19 @@ final class PostController
             'comment_threads' => $threads,
             'comment_count' => $commentCount,
             'comment_form_at' => CommentForm::issue(),
-            'comment_csrf' => Csrf::token(),
+            'comment_csrf' => $csrf,
             'comment_errors' => $errors,
             'comment_values' => $values,
             'comment_notice' => $notice,
             'comment_reply_to' => $replyTo,
             'comment_reply_name' => $replyName,
-            'page_styles' => ['posts.css', 'comments.css'],
-            'page_scripts' => ['comments.js'],
+            'reaction_likes' => $reactionState['likes'],
+            'reaction_dislikes' => $reactionState['dislikes'],
+            'reaction_mine' => $reactionState['mine'],
+            'reaction_csrf' => $csrf,
+            'reaction_notice' => $reactionNotice,
+            'page_styles' => ['posts.css', 'comments.css', 'reactions.css'],
+            'page_scripts' => ['comments.js', 'reactions.js'],
         ]);
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');

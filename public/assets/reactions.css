@@ -1,0 +1,154 @@
+.post-reactions {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
+  margin-top: 34px;
+  padding-top: 20px;
+  border-top: 1px dashed color-mix(in oklch, var(--line-strong) 58%, var(--paper));
+}
+
+.reaction-tape {
+  top: -8px;
+  right: 24px;
+  width: 54px;
+  height: 15px;
+  opacity: 0.7;
+  transform: rotate(3deg);
+}
+
+.reaction-head { min-width: 0; }
+.reaction-head .eyebrow { color: var(--muted); font-size: 9px; letter-spacing: 0.15em; }
+.reaction-head h2 {
+  margin: 6px 0 3px;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+.reaction-head p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+.reaction-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.reaction-form { display: flex; margin: 0; }
+
+.reaction-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 92px;
+  min-height: 46px;
+  padding: 7px 10px 7px 8px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 62%, var(--paper));
+  border-radius: 8px 13px 9px 11px / 11px 8px 13px 9px;
+  background-color: color-mix(in oklch, var(--cream-1) 64%, var(--paper));
+  background-image: var(--paper-fiber);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.7) inset, 2px 3px 0 -1px var(--cream-1), 2px 3px 0 0 oklch(0.78 0.02 80 / 0.34);
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.reaction-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.7) inset, 3px 4px 0 -1px var(--cream-1), 3px 4px 0 0 oklch(0.78 0.02 80 / 0.44);
+}
+
+.reaction-button:active { transform: translateY(1px) scale(0.985); box-shadow: 1px 1px 0 var(--cream-1); }
+.reaction-button:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
+.reaction-button:disabled { cursor: wait; opacity: 0.72; }
+
+.reaction-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 34%, var(--paper));
+  border-radius: 7px 10px 8px 9px;
+  background: color-mix(in oklch, var(--paper) 86%, var(--cream-1));
+  color: var(--muted);
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.reaction-mark .icon { width: 14px; height: 14px; }
+.reaction-mark-down .icon { transform: rotate(180deg); }
+.reaction-label { color: var(--ink-soft); font-size: 12px; font-weight: 700; }
+.reaction-count {
+  min-width: 18px;
+  padding-left: 5px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-align: right;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.reaction-like.is-active {
+  border-color: color-mix(in oklch, var(--coral) 46%, var(--line-strong));
+  background-color: color-mix(in oklch, var(--butter) 28%, var(--paper));
+}
+.reaction-like.is-active .reaction-mark {
+  border-color: color-mix(in oklch, var(--coral) 36%, var(--line));
+  background: color-mix(in oklch, var(--butter) 70%, var(--paper));
+  color: var(--coral);
+}
+.reaction-like.is-active .reaction-count { color: var(--coral); }
+
+.reaction-dislike.is-active {
+  border-color: color-mix(in oklch, var(--ink-soft) 34%, var(--line-strong));
+  background-color: color-mix(in oklch, var(--cream-1) 82%, var(--paper));
+}
+.reaction-dislike.is-active .reaction-mark {
+  border-color: color-mix(in oklch, var(--ink-soft) 32%, var(--line));
+  background: color-mix(in oklch, var(--ink-soft) 12%, var(--paper));
+  color: var(--ink-soft);
+}
+.reaction-dislike.is-active .reaction-count { color: var(--ink-soft); }
+
+.reaction-button.is-bumping .reaction-count { animation: reaction-bump 220ms ease; }
+
+.reaction-status {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  color: var(--muted);
+  font: 10.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.reaction-status[hidden] { display: none; }
+.reaction-status.is-error { color: var(--coral); }
+
+@keyframes reaction-bump {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+@media (max-width: 700px) {
+  .post-reactions {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 13px;
+    margin-top: 28px;
+    padding-top: 18px;
+  }
+  .reaction-tape { right: 18px; width: 46px; height: 13px; }
+  .reaction-head h2 { margin-top: 5px; font-size: 17px; }
+  .reaction-head p { font-size: 10.5px; }
+  .reaction-controls { width: 100%; gap: 7px; }
+  .reaction-form { flex: 1 1 0; }
+  .reaction-button { width: 100%; min-height: 44px; padding: 6px 8px; }
+  .reaction-mark { width: 26px; height: 26px; }
+  .reaction-status { margin-top: -2px; font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-button, .reaction-mark, .reaction-count { transition: none; }
+  .reaction-button.is-bumping .reaction-count { animation: none; }
+}

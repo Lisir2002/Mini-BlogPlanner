@@ -8,6 +8,7 @@ use Core\Config\Env;
 use Core\Content\Post;
 use Core\Content\PostResource;
 use Core\Content\PostRepository;
+use Core\Content\ReactionRepository;
 use Core\Database\Connection;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -33,7 +34,8 @@ final class PostApiController
     public function show(Request $request, array $params): Response
     {
         try {
-            $post = (new PostRepository(Connection::fromEnv()))->findPublished((string) ($params['slug'] ?? ''));
+            $db = Connection::fromEnv();
+            $post = (new PostRepository($db))->findPublished((string) ($params['slug'] ?? ''));
         } catch (Throwable) {
             return $this->unavailable($request);
         }
@@ -47,7 +49,15 @@ final class PostApiController
             ], 404);
         }
 
-        return Response::json(['data' => PostResource::detail($post)]);
+        try {
+            $state = (new ReactionRepository($db))->state($post->id);
+            $data = PostResource::detail($post);
+            $data['reactions'] = ['likes' => $state['likes'], 'dislikes' => $state['dislikes']];
+        } catch (Throwable) {
+            return $this->unavailable($request);
+        }
+
+        return Response::json(['data' => $data]);
     }
 
     private function unavailable(Request $request): Response

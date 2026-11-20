@@ -9,6 +9,7 @@ use Core\Auth\Admin;
 use Core\Config\Env;
 use Core\Content\Post;
 use Core\Content\PostAdminRepository;
+use Core\Content\ReactionRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
 use Core\Database\ConnectionInterface;
@@ -40,10 +41,23 @@ final class PostAdminController
         }
 
         try {
-            $posts = (new PostAdminRepository(Connection::fromEnv()))->all();
+            $db = Connection::fromEnv();
+            $posts = (new PostAdminRepository($db))->all();
+            $reactions = (new ReactionRepository($db))->summariesForPosts(array_map(
+                static fn (array $post): int => (int) ($post['id'] ?? 0),
+                $posts,
+            ));
         } catch (Throwable) {
             return $this->adminError($request, 503, '后台暂时无法连接数据库。');
         }
+
+        $posts = array_map(static function (array $post) use ($reactions): array {
+            $id = (int) ($post['id'] ?? 0);
+            $post['reaction_likes'] = $reactions[$id]['likes'] ?? 0;
+            $post['reaction_dislikes'] = $reactions[$id]['dislikes'] ?? 0;
+
+            return $post;
+        }, $posts);
 
         return $this->render('admin/posts', $admin, [
             'title' => '文章管理',

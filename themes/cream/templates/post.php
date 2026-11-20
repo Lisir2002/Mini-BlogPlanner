@@ -25,6 +25,9 @@ if (!is_object($post)) {
   <div class="post-body">
 <?= $post->body ?>
   </div>
+  <?php if (($preview ?? false) !== true): ?>
+  <?php require __DIR__ . '/partials/reactions.php'; ?>
+  <?php endif; ?>
 </article>
 
 <?php require __DIR__ . '/partials/comments.php'; ?>

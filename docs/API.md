@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.1.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.2.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -24,8 +24,8 @@
 {
   "status": "ok",
   "app": "0.6.0",
-  "api": "1.1.0",
-  "schema": 2026112004
+  "api": "1.2.0",
+  "schema": 2026112006
 }
 ```
 
@@ -71,10 +71,12 @@
 
 ### `GET /api/v1/posts/{slug}`
 
-返回单篇文章，额外包含 `body_html`。`slug` 只允许小写字母、数字、短横线。
+返回单篇文章，额外包含 `body_html` 和 `reactions` 汇总。`slug` 只允许小写字母、数字、短横线。
 
 - `404 /problems/post-not-found`：不存在或未发布。
 - `503 /problems/service-unavailable`：数据库不可用。
+
+`reactions` 包含公开的 `likes` 与 `dislikes` 计数，不包含访客身份。
 
 正文 `body_html` 已经过后台 HTML 白名单过滤；第三方调用方如果直接渲染，仍应结合自己的上下文做转义或二次白名单。
 
