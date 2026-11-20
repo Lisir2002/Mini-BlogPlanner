@@ -668,7 +668,7 @@ check('Post reactions render themed controls and stay in place', function (): vo
     truthy($partial !== false && str_contains($partial, 'data-reaction-count="likes"'), 'Reaction likes need a live count');
     truthy($partial !== false && str_contains($partial, 'data-reaction-count="dislikes"'), 'Reaction dislikes need a live count');
     truthy($partial !== false && str_contains($partial, 'action="/posts/'), 'Reaction forms need a no-script fallback');
-    truthy($post !== false && str_contains($post, 'partials/reactions.php'), 'Post template must include reactions');
+    truthy($post !== false && str_contains($post, 'partials/post-receipt.php'), 'Post template must include the reader receipt');
     truthy($plugin !== false && str_contains($plugin, "'/posts/{slug}/reaction'"), 'Reaction endpoint must be routed');
     truthy($controller !== false && str_contains($controller, 'Csrf::validate'), 'Reaction endpoint must validate CSRF');
     truthy($controller !== false && str_contains($controller, 'Set-Cookie'), 'Reaction endpoint must issue the visitor cookie');
@@ -838,6 +838,7 @@ check('RSS feed publishes escaped posts with absolute links', function (): void 
 check('Article share card, RSS and social metadata are wired', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-share.php');
+    $receipt = file_get_contents($root . '/themes/cream/templates/partials/post-receipt.php');
     $post = file_get_contents($root . '/themes/cream/templates/post.php');
     $layout = file_get_contents($root . '/themes/cream/templates/layout.php');
     $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
@@ -850,7 +851,8 @@ check('Article share card, RSS and social metadata are wired', function (): void
     truthy($partial !== false && str_contains($partial, 'data-share-card'), 'Share strip needs a script hook');
     truthy($partial !== false && str_contains($partial, 'data-share-copy') && str_contains($partial, 'data-share-native'), 'Share strip needs copy and native buttons');
     truthy($partial !== false && str_contains($partial, 'aria-live="polite"'), 'Share feedback must be announced');
-    truthy($post !== false && str_contains($post, 'partials/post-share.php'), 'Post template must include the share strip');
+    truthy($receipt !== false && str_contains($receipt, "'/post-share.php'"), 'Receipt must include the share strip');
+    truthy($post !== false && str_contains($post, 'partials/post-receipt.php'), 'Post template must include the receipt');
     truthy($layout !== false && str_contains($layout, 'application/rss+xml'), 'Layout needs an RSS discovery link');
     truthy($layout !== false && str_contains($layout, '<link rel="canonical"'), 'Article pages need a canonical URL');
     truthy($layout !== false && str_contains($layout, 'property="og:image"'), 'Sharing needs an Open Graph image');
@@ -864,6 +866,35 @@ check('Article share card, RSS and social metadata are wired', function (): void
     truthy($script !== false && str_contains($script, 'navigator.share'), 'Native sharing must be feature-detected');
     truthy($icons !== false && str_contains($icons, 'i-link') && str_contains($icons, 'i-share'), 'Share controls need themed icons');
     truthy(is_file($root . '/public/assets/social-card.png'), 'Open Graph image asset is missing');
+});
+
+check('Reader receipt merges reactions and sharing into a floater', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/post-receipt.php');
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/PostController.php');
+    $css = file_get_contents($root . '/public/assets/receipt.css');
+    $script = file_get_contents($root . '/public/assets/receipt.js');
+    truthy($partial !== false && str_contains($partial, 'data-post-receipt'), 'Receipt needs a script hook');
+    truthy($partial !== false && str_contains($partial, 'data-receipt-tab') && str_contains($partial, 'hidden'), 'Floating tab must start hidden for no-script fallback');
+    truthy($partial !== false && str_contains($partial, 'aria-controls="post-receipt-panel"'), 'Receipt tab must control the panel');
+    truthy($partial !== false && str_contains($partial, "'/reactions.php'"), 'Receipt must embed reactions');
+    truthy($partial !== false && str_contains($partial, "'/post-share.php'"), 'Receipt must embed sharing');
+    truthy($post !== false && !str_contains($post, 'partials/post-share.php') && str_contains($post, 'partials/post-receipt.php'), 'Post must use one unified receipt');
+    truthy($controller !== false && str_contains($controller, "'receipt.css'") && str_contains($controller, "'receipt.js'"), 'Post pages must load the receipt layer');
+    truthy($css !== false && str_contains($css, '.post-receipt-panel') && str_contains($css, 'grid-template-columns: minmax(0, 1fr) minmax(244px, 0.78fr)'), 'Desktop receipt must use two compartments');
+    truthy($css !== false && str_contains($css, '.post-receipt[data-receipt-floating="true"]'), 'Receipt needs a floating state');
+    truthy($css !== false && str_contains($css, 'top: var(--receipt-y, 62vh)'), 'Floating receipt must remember its edge position');
+    truthy($css !== false && str_contains($css, 'transform: translate(0, -50%)'), 'Receipt panel must slide out from the edge');
+    truthy($script !== false && str_contains($script, "matchMedia('(max-width: 700px)')"), 'Floating receipt must be narrow-screen only');
+    truthy($script !== false && str_contains($script, "data-receipt-floating"), 'Script must toggle the floating state');
+    truthy($script !== false && str_contains($script, 'pointermove') && str_contains($script, 'setPointerCapture'), 'Tape tab must support vertical dragging');
+    truthy($script !== false && str_contains($script, 'localStorage.getItem(storageKey)'), 'Tape position must persist locally');
+    truthy($script !== false && str_contains($script, "event.key !== 'Escape'"), 'Receipt must close with Escape');
+    truthy($script !== false && str_contains($script, "setAttribute('inert'"), 'Closed receipt must leave the focus order');
+    truthy($script !== false && str_contains($script, "classList.add('receipt-script')"), 'Script must mark enhanced layout');
+    truthy($script !== false && str_contains($script, 'document.body.appendChild(receipt)'), 'Floating receipt must escape article stacking context');
+    truthy($css !== false && str_contains($css, 'html.receipt-script'), 'Enhanced share layout must be scoped to script mode');
 });
 
 check('Compressed assets match their source files', function (): void {

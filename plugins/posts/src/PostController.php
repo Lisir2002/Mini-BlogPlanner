@@ -145,8 +145,8 @@ final class PostController
             'reaction_mine' => $reactionState['mine'],
             'reaction_csrf' => $csrf,
             'reaction_notice' => $reactionNotice,
-            'page_styles' => ['posts.css', 'comments.css', 'reactions.css'],
-            'page_scripts' => ['comments.js', 'reactions.js', 'share.js'],
+            'page_styles' => ['posts.css', 'comments.css', 'reactions.css', 'receipt.css'],
+            'page_scripts' => ['receipt.js', 'comments.js', 'reactions.js', 'share.js'],
         ]);
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');

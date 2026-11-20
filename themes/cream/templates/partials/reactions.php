@@ -12,7 +12,7 @@ $dislikeActive = $mine === -1;
   <span class="tape tape-mint reaction-tape" aria-hidden="true"></span>
   <header class="reaction-head">
     <span class="eyebrow"><?= cream_icon('heart', 'icon-xs') ?> READER ECHO</span>
-    <h2 id="echo-title">这张便签，合你口味吗？</h2>
+    <h2 id="echo-title"><span class="reaction-title-long">这张便签，合你口味吗？</span><span class="reaction-title-short">合口味吗？</span></h2>
     <p>赞或踩只记一次，可以改，也可以撤回。</p>
   </header>
   <div class="reaction-controls">
