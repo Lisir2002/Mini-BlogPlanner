@@ -595,6 +595,17 @@ check('Comment cards use layered paper texture', function (): void {
     truthy($partial !== false && str_contains($partial, 'comment-form-tape'), 'Comment form needs a tape decoration');
 });
 
+check('Comment composer starts collapsed and opens only when needed', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $css = file_get_contents($root . '/public/assets/comments.css');
+    truthy($partial !== false && str_contains($partial, '<details class="comment-composer" id="comment-form"'), 'Composer must be a details sheet');
+    truthy($partial !== false && str_contains($partial, '$composerOpen ?'), 'Composer must honour the open condition');
+    truthy($partial !== false && str_contains($partial, 'comment-composer-toggle'), 'Composer needs a themed summary');
+    truthy($partial !== false && !str_contains($partial, 'id="comment-form" method="post"'), 'Form id must move to the details sheet');
+    truthy($css !== false && str_contains($css, '.comment-composer[open] .comment-form'), 'Open composer must join its form sheet');
+});
+
 check('Article metadata pairs every value with an icon', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/post-meta.php');

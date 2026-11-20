@@ -12,6 +12,7 @@ $replyTo = isset($comment_reply_to) && is_int($comment_reply_to) ? $comment_repl
 $replyName = is_string($comment_reply_name ?? null) ? $comment_reply_name : '';
 $formAt = (string) ($comment_form_at ?? '');
 $csrf = (string) ($comment_csrf ?? '');
+$composerOpen = $replyTo !== null || $errors !== [];
 $slug = rawurlencode((string) $post->slug);
 $value = static fn (string $key): string => (string) ($values[$key] ?? '');
 ?>
@@ -72,7 +73,20 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
   </div>
   <?php endif; ?>
 
-  <form class="comment-form" id="comment-form" method="post" action="/posts/<?= $slug ?>/comments.html" novalidate>
+  <details class="comment-composer" id="comment-form"<?= $composerOpen ? ' open' : '' ?>>
+    <summary class="comment-composer-toggle">
+      <span class="comment-composer-mark"><?= cream_icon('pen', 'icon-sm') ?></span>
+      <span class="comment-composer-copy">
+        <strong>写一张留言便签</strong>
+        <small><?= $replyTo !== null ? '回复 ' . cream_e($replyName) : '审核后显示 · 邮箱不会公开' ?></small>
+      </span>
+      <span class="comment-composer-action">
+        <span class="composer-open-label">写留言</span>
+        <span class="composer-close-label">收起</span>
+        <?= cream_icon('arrow-right', 'icon-xs') ?>
+      </span>
+    </summary>
+  <form class="comment-form" method="post" action="/posts/<?= $slug ?>/comments.html" novalidate>
     <span class="tape tape-mint comment-form-tape" aria-hidden="true"></span>
     <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
     <input type="hidden" name="_form_at" value="<?= cream_e($formAt) ?>">
@@ -82,15 +96,12 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
       <input id="comment-website" name="website" type="text" tabindex="-1" autocomplete="off">
     </div>
 
-    <div class="comment-form-head">
-      <div>
-        <span class="eyebrow">WRITE A NOTE</span>
-        <h3><?= $replyTo !== null ? '回复 ' . cream_e($replyName) : '写一张留言便签' ?></h3>
-      </div>
-      <?php if ($replyTo !== null): ?>
+    <?php if ($replyTo !== null): ?>
+    <div class="comment-reply-context">
+      <span><?= cream_icon('arrow-right', 'icon-xs') ?> 正在回复 <strong><?= cream_e($replyName) ?></strong></span>
       <a class="link-button" href="/posts/<?= $slug ?>.html#comment-form">取消回复</a>
-      <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="comment-fields">
       <label class="field">
@@ -104,11 +115,12 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
     </div>
     <label class="field">
       <span>留言</span>
-      <textarea name="body" rows="6" maxlength="1000" placeholder="写下想说的话，最多 1000 字。" aria-invalid="<?= in_array('留言内容至少需要 2 个字。', $errors, true) ? 'true' : 'false' ?>"><?= cream_e($value('body')) ?></textarea>
+      <textarea name="body" rows="4" maxlength="1000" placeholder="写下想说的话，最多 1000 字。" aria-invalid="<?= in_array('留言内容至少需要 2 个字。', $errors, true) ? 'true' : 'false' ?>"><?= cream_e($value('body')) ?></textarea>
     </label>
     <div class="comment-form-foot">
       <p>留言会在审核后显示。邮箱只用于回复提醒，不会公开。</p>
       <button class="button button-primary" type="submit"><?= cream_icon('pen', 'icon-sm') ?> 提交留言</button>
     </div>
   </form>
+  </details>
 </section>
