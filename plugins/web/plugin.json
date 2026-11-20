@@ -1,7 +1,7 @@
 {
   "id": "web",
   "name": "Public Web",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "priority": 20,
   "requires": {
     "php": ">=8.5.0",

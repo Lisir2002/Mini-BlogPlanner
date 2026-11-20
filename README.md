@@ -9,6 +9,7 @@
 - 原生 PHP 微内核，无 Twig、Laravel 等重型框架
 - 插件化路由与主题模板，公开页和后台共用仓储
 - 文章、标签、全站搜索、独立页面、媒体库、评论、赞踩回声与审计
+- 按年份和月份的公开归档，月归档支持分页
 - 站点地图、canonical 与 schema.org 结构化数据
 - RSS、Atom 与 JSON Feed 三种订阅格式，输出全文与标签
 - 评论先审后发，带 CSRF、蜜罐、频率限制与重复拦截
@@ -81,6 +82,7 @@ tests/      契约测试
 - [升级与回退](docs/UPGRADE.md)
 - [文章回声](docs/REACTIONS.md)
 - [搜索](docs/SEARCH.md)
+- [归档页](docs/ARCHIVE.md)
 - [SEO 与站点地图](docs/SEO.md)
 - [订阅 Feed](docs/api/feeds.md)
 - [版本规范](docs/VERSIONING.md)

@@ -20,7 +20,9 @@ Env::loadWithFallback($root);
 $storage = cream_storage_path($root);
 $request = Request::fromGlobals();
 $statelessPaths = ['/feed', '/feed.xml', '/atom.xml', '/feed.json', '/sitemap.xml', '/robots.txt', '/healthz'];
-if (!in_array($request->path(), $statelessPaths, true)) {
+$path = $request->path();
+$stateless = in_array($path, $statelessPaths, true) || $path === '/archive' || str_starts_with($path, '/archive/');
+if (!$stateless) {
     Session::start();
 }
 

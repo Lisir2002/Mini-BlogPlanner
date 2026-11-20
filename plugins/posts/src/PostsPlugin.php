@@ -41,8 +41,13 @@ final class PostsPlugin implements PluginInterface
         $reactions = new ReactionController($this->version, $this->theme);
         $search = new SearchController($this->version, $this->theme);
         $feed = new FeedController($this->version);
+        $archive = new ArchiveController($this->version, $this->theme);
 
         return [
+            new Route(['GET'], '/archive', static fn (Request $request, array $params): Response => $archive->index($request), 'archive.index'),
+            new Route(['GET'], '/archive/{year}', static fn (Request $request, array $params): Response => $archive->year($request, $params), 'archive.year'),
+            new Route(['GET'], '/archive/{year}/{month}', static fn (Request $request, array $params): Response => $archive->month($request, $params), 'archive.month'),
+            new Route(['GET'], '/archive/{year}/{month}/page/{page}', static fn (Request $request, array $params): Response => $archive->month($request, $params), 'archive.month.page'),
             new Route(['GET'], '/feed.xml', $feed, 'feed.xml'),
             new Route(['GET'], '/atom.xml', static fn (Request $request, array $params): Response => $feed->atom($request), 'feed.atom'),
             new Route(['GET'], '/feed.json', static fn (Request $request, array $params): Response => $feed->json($request), 'feed.json'),

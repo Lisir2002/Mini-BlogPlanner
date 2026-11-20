@@ -1,0 +1,275 @@
+.archive-index,
+.archive-year,
+.archive-month {
+  container-type: inline-size;
+}
+
+.archive-ledger {
+  display: grid;
+  gap: 16px;
+}
+
+.archive-year-card {
+  position: relative;
+  padding: 20px 20px 18px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 78%, var(--paper));
+  border-radius: 9px 20px 11px 16px / 15px 9px 19px 10px;
+  background: var(--paper-wash), var(--paper);
+  box-shadow: var(--paper-shadow);
+}
+
+.archive-year-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed color-mix(in oklch, var(--line-strong) 70%, var(--paper));
+}
+
+.archive-year-label > span {
+  display: block;
+  color: var(--muted);
+  font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.14em;
+}
+
+.archive-year-label h2 {
+  margin: 3px 0 0;
+  font-size: clamp(26px, 7cqw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.archive-year-label h2 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.archive-year-label h2 a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--butter);
+  text-underline-offset: 6px;
+}
+
+.archive-year-count {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 68%, var(--paper));
+  border-radius: 6px 10px 8px 9px;
+  background: color-mix(in oklch, var(--butter) 26%, var(--cream-1));
+  color: var(--ink-soft);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.archive-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.archive-month-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 60%, var(--paper));
+  border-radius: 7px 11px 8px 10px;
+  background: color-mix(in oklch, var(--cream-1) 86%, var(--paper));
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.archive-month-link:hover {
+  background: color-mix(in oklch, var(--butter) 32%, var(--paper));
+  box-shadow: 2px 3px 0 color-mix(in oklch, var(--line-strong) 38%, transparent);
+  transform: translateY(-1px);
+}
+
+.archive-month-link:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.archive-month-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.archive-month-count {
+  color: var(--muted);
+  font: 10.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.archive-year-timeline {
+  display: grid;
+  gap: 24px;
+}
+
+.archive-month-block {
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in oklch, var(--butter) 60%, var(--paper));
+}
+
+.archive-month-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.archive-month-head h2 {
+  margin: 0;
+  font-size: clamp(20px, 4.2cqw, 26px);
+  letter-spacing: -0.02em;
+}
+
+.archive-month-head h2 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.archive-month-head h2 a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--butter);
+  text-underline-offset: 5px;
+}
+
+.archive-month-head > span {
+  color: var(--muted);
+  font: 10.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.archive-line-list {
+  border-top: 1px dashed color-mix(in oklch, var(--line-strong) 58%, var(--paper));
+}
+
+.archive-line {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 3px;
+  border-bottom: 1px dashed color-mix(in oklch, var(--line-strong) 52%, var(--paper));
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 160ms ease, padding-left 160ms ease;
+}
+
+.archive-line:hover {
+  background: color-mix(in oklch, var(--butter) 16%, transparent);
+  padding-left: 8px;
+}
+
+.archive-line:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.archive-line time {
+  color: var(--muted);
+  font: 10.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.archive-line-title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-line-arrow {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.archive-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px dashed color-mix(in oklch, var(--line-strong) 62%, var(--paper));
+}
+
+.archive-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 62%, var(--paper));
+  border-radius: 6px 9px 7px 8px;
+  background: var(--cream-1);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.archive-page-link:hover {
+  background: color-mix(in oklch, var(--butter) 26%, var(--cream-1));
+  color: var(--ink);
+}
+
+.archive-page-link.is-disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.archive-page-count {
+  color: var(--muted);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.archive-page-first {
+  margin-left: auto;
+}
+
+@container (max-width: 560px) {
+  .archive-year-card {
+    padding: 16px 14px 14px;
+  }
+
+  .archive-month-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .archive-month-link {
+    min-height: 38px;
+    padding: 8px 9px;
+  }
+
+  .archive-month-block {
+    padding-left: 10px;
+  }
+
+  .archive-line {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .archive-line-arrow {
+    display: none;
+  }
+
+  .archive-pagination {
+    justify-content: flex-start;
+  }
+
+  .archive-page-first {
+    margin-left: 0;
+  }
+}

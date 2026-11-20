@@ -11,6 +11,7 @@ GET /sitemap.xml
 - 首页 `/`
 - 文章列表 `/posts.html`
 - 标签列表 `/tags.html`
+- 归档总览 `/archive.html`，以及年归档和月归档第一页
 - 独立页面 `/{slug}.html`，由 `content/pages/` 下的文件自动发现
 - 已发布文章 `/posts/{slug}.html`，带 `lastmod`
 - 有已发布文章的标签 `/tags/{slug}.html`

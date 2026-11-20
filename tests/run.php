@@ -766,7 +766,7 @@ check('Search page, route and API are wired', function (): void {
     truthy($repository !== false && str_contains($repository, 'LIKE ? OR excerpt LIKE ?'), 'Single-character search must fall back to LIKE');
     truthy($header !== false && str_contains($header, 'nav-icon-link'), 'Desktop header needs a search entry');
     truthy($header !== false && str_contains($header, 'href="/search"'), 'Search entry must point to /search');
-    truthy($header !== false && str_contains($header, 'nav-drawer-index">05'), 'Mobile drawer needs a search row');
+    truthy($header !== false && str_contains($header, 'nav-drawer-index">06'), 'Mobile drawer needs a search row');
     truthy($posts !== false && str_contains($posts, "'/search'"), 'Search route must be registered');
     truthy($api !== false && str_contains($api, 'public function search'), 'Search API method must exist');
     truthy($css !== false && str_contains($css, '.search-form'), 'Search page needs a themed form');
@@ -964,8 +964,34 @@ check('Feed and SEO endpoints skip sessions', function (): void {
     truthy($index !== false && str_contains($index, '$statelessPaths'), 'Front controller needs a stateless path list');
     truthy($index !== false && str_contains($index, "'/feed.xml'") && str_contains($index, "'/sitemap.xml'"), 'Feed and sitemap must be stateless');
     $session = $index === false ? false : strpos($index, 'Session::start()');
-    $guard = $index === false ? false : strpos($index, 'if (!in_array($request->path(), $statelessPaths, true))');
+    $guard = $index === false ? false : strpos($index, 'if (!$stateless)');
     truthy($session !== false && $guard !== false && $guard < $session, 'Session startup must be skipped for stateless endpoints');
+    truthy($index !== false && str_contains($index, "str_starts_with(\$path, '/archive/')"), 'Archive pages must be stateless too');
+});
+
+check('Archive index and period pages are wired', function (): void {
+    $root = dirname(__DIR__);
+    $repository = file_get_contents($root . '/core/Content/PostRepository.php');
+    $controller = file_get_contents($root . '/plugins/posts/src/ArchiveController.php');
+    $plugin = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $archive = file_get_contents($root . '/themes/cream/templates/archive.php');
+    $year = file_get_contents($root . '/themes/cream/templates/archive-year.php');
+    $month = file_get_contents($root . '/themes/cream/templates/archive-month.php');
+    $css = file_get_contents($root . '/public/assets/archive.css');
+    $seo = file_get_contents($root . '/plugins/web/src/SeoController.php');
+    truthy($repository !== false && str_contains($repository, 'archiveMonths'), 'Archive repository needs month aggregates');
+    truthy($repository !== false && str_contains($repository, 'publishedInPeriod') && str_contains($repository, 'countPublishedInPeriod'), 'Archive repository needs period reads and counts');
+    truthy($controller !== false && str_contains($controller, 'private const PER_PAGE = 20'), 'Archive month pages must use 20 posts per page');
+    truthy($controller !== false && str_contains($controller, 'monthPageUrl'), 'Archive controller needs canonical page URLs');
+    truthy($plugin !== false && str_contains($plugin, "'/archive'") && str_contains($plugin, "'/archive/{year}/{month}/page/{page}'"), 'Posts plugin must route archive pages');
+    truthy($header !== false && str_contains($header, 'href="/archive.html"'), 'Navigation needs an archive link');
+    truthy($archive !== false && str_contains($archive, 'archive-month-grid'), 'Archive overview needs month links');
+    truthy($year !== false && str_contains($year, 'archive-line'), 'Year archive needs article rows');
+    truthy($month !== false && str_contains($month, 'archive-pagination'), 'Month archive needs pagination');
+    truthy($css !== false && str_contains($css, '.archive-ledger') && str_contains($css, '.archive-pagination'), 'Archive styles must cover ledger and pagination');
+    truthy($seo !== false && str_contains($seo, '/archive.html') && str_contains($seo, "archiveMonths"), 'Sitemap must include archive pages');
+    truthy(is_file($root . '/docs/ARCHIVE.md'), 'Archive documentation must exist');
 });
 
 check('Article share card, RSS and social metadata are wired', function (): void {

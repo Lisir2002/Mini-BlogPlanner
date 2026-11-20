@@ -1,7 +1,7 @@
 {
   "id": "posts",
   "name": "Posts",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "priority": 25,
   "class": "Plugin\\Posts\\PostsPlugin",
   "runtime": true,
@@ -14,9 +14,14 @@
     "posts",
     "tags",
     "search",
-    "feed"
+    "feed",
+    "archive"
   ],
   "routes": [
+    "/archive",
+    "/archive/{year}",
+    "/archive/{year}/{month}",
+    "/archive/{year}/{month}/page/{page}",
     "/feed",
     "/feed.xml",
     "/atom.xml",
@@ -26,6 +31,7 @@
     "/posts/{slug}"
   ],
   "route_prefixes": [
+    "/archive",
     "/posts",
     "/search"
   ],

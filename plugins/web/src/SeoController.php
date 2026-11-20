@@ -26,10 +26,13 @@ final class SeoController
         $pages = (new PageRepository($root, $this->version))->slugs();
         $posts = [];
         $tags = [];
+        $months = [];
 
         try {
             $db = Connection::fromEnv();
-            $posts = (new PostRepository($db))->publishedForSitemap();
+            $repository = new PostRepository($db);
+            $posts = $repository->publishedForSitemap();
+            $months = $repository->archiveMonths();
             $tags = (new TagRepository($db))->all();
         } catch (Throwable) {
             // 数据库不可用时仍返回静态入口，避免整份 sitemap 失效。
@@ -39,6 +42,7 @@ final class SeoController
             ['loc' => $baseUrl . '/', 'changefreq' => 'daily', 'priority' => 1.0],
             ['loc' => $baseUrl . '/posts.html', 'changefreq' => 'daily', 'priority' => 0.8],
             ['loc' => $baseUrl . '/tags.html', 'changefreq' => 'weekly', 'priority' => 0.6],
+            ['loc' => $baseUrl . '/archive.html', 'changefreq' => 'weekly', 'priority' => 0.5],
         ];
 
         foreach ($pages as $slug) {
@@ -64,6 +68,25 @@ final class SeoController
                 'loc' => $baseUrl . '/tags/' . rawurlencode($tag['slug']) . '.html',
                 'changefreq' => 'monthly',
                 'priority' => 0.5,
+            ];
+        }
+
+        $archiveYears = [];
+        foreach ($months as $month) {
+            $archiveYears[$month['year']] = true;
+        }
+        foreach (array_keys($archiveYears) as $year) {
+            $entries[] = [
+                'loc' => $baseUrl . '/archive/' . $year . '.html',
+                'changefreq' => 'monthly',
+                'priority' => 0.4,
+            ];
+        }
+        foreach ($months as $month) {
+            $entries[] = [
+                'loc' => $baseUrl . '/archive/' . $month['year'] . '/' . str_pad((string) $month['month'], 2, '0', STR_PAD_LEFT) . '.html',
+                'changefreq' => 'monthly',
+                'priority' => 0.4,
             ];
         }
 

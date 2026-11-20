@@ -40,6 +40,66 @@ final class PostRepository
         return array_map(fn (array $row): Post => $this->map($row), $rows);
     }
 
+    /** @return list<array{year:int, month:int, count:int}> */
+    public function archiveMonths(): array
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT YEAR(published_at) AS year, MONTH(published_at) AS month, COUNT(*) AS total
+             FROM posts
+             WHERE status = 'published' AND published_at <= NOW()
+             GROUP BY YEAR(published_at), MONTH(published_at)
+             ORDER BY year DESC, month DESC"
+        );
+
+        return array_map(
+            static fn (array $row): array => [
+                'year' => (int) $row['year'],
+                'month' => (int) $row['month'],
+                'count' => (int) $row['total'],
+            ],
+            $rows,
+        );
+    }
+
+    /** @return list<Post> */
+    public function publishedInPeriod(int $year, ?int $month = null, int $limit = 20, int $offset = 0): array
+    {
+        [$where, $params] = $this->periodFilter($year, $month);
+        $limit = max(1, min(500, $limit));
+        $offset = max(0, min(10000, $offset));
+        $rows = $this->db->fetchAll(
+            "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
+             FROM posts
+             WHERE " . $where . "
+             ORDER BY published_at DESC, id DESC
+             LIMIT " . $limit . ' OFFSET ' . $offset,
+            $params,
+        );
+
+        return array_map(fn (array $row): Post => $this->map($row), $rows);
+    }
+
+    public function countPublishedInPeriod(int $year, ?int $month = null): int
+    {
+        [$where, $params] = $this->periodFilter($year, $month);
+        $row = $this->db->fetchOne('SELECT COUNT(*) AS total FROM posts WHERE ' . $where, $params);
+
+        return $row === null ? 0 : (int) $row['total'];
+    }
+
+    /** @return array{0:string,1:list<int>} */
+    private function periodFilter(int $year, ?int $month): array
+    {
+        $where = "status = 'published' AND published_at <= NOW() AND YEAR(published_at) = ?";
+        $params = [$year];
+        if ($month !== null) {
+            $where .= ' AND MONTH(published_at) = ?';
+            $params[] = $month;
+        }
+
+        return [$where, $params];
+    }
+
     /** @return list<Post> */
     public function byTag(string $tagSlug, int $limit = 20): array
     {
