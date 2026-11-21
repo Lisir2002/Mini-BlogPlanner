@@ -493,15 +493,24 @@
   letter-spacing: 0.1em;
 }
 
-.admin-turnstile .cf-turnstile {
-  display: flex;
+.admin-turnstile-fit {
+  position: relative;
   width: 100%;
-  max-width: 100%;
   min-width: 0;
-  min-height: 65px;
-  align-items: center;
-  justify-content: center;
+  height: 65px;
   overflow: hidden;
+}
+
+.admin-turnstile .cf-turnstile {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 300px;
+  height: 65px;
+  min-height: 0;
+  margin-left: -150px;
+  transform: scale(var(--ts-scale, 1));
+  transform-origin: top center;
 }
 
 .admin-turnstile-note {
@@ -540,7 +549,6 @@
   .admin-login-body .tape-field { gap: 4px; }
   .admin-login-body .admin-turnstile { padding: 6px 8px; }
   .admin-login-body .admin-turnstile-head, .admin-login-body .admin-turnstile-note { display: none; }
-  .admin-login-body .admin-turnstile .cf-turnstile { min-height: 58px; }
   .admin-login-body .tape-input input { min-height: 42px; padding: 9px 18px; }
   .admin-login-body .admin-login-form .admin-button { min-height: 42px; }
   .admin-login-body .admin-foot { margin-top: 10px; }

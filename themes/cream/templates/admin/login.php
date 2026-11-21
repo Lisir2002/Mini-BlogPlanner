@@ -59,15 +59,23 @@
             <span>03 / HUMAN CHECK</span>
             <span>Cloudflare Turnstile</span>
           </div>
-          <div class="cf-turnstile" data-sitekey="<?= cream_e($turnstileSiteKey) ?>" data-action="login" data-theme="light" data-size="flexible" data-language="zh-cn"></div>
+          <div class="admin-turnstile-fit">
+            <div class="cf-turnstile" data-sitekey="<?= cream_e($turnstileSiteKey) ?>" data-action="login" data-theme="light" data-size="normal" data-language="zh-cn"></div>
+          </div>
           <p class="admin-turnstile-note">只确认这次登录不是自动脚本，不读取密码或账号。</p>
         </div>
         <script>
         (function () {
-          var widget = document.querySelector('.cf-turnstile');
-          if (widget && window.innerWidth < 370) {
-            widget.setAttribute('data-size', 'compact');
+          var fit = document.querySelector('.admin-turnstile-fit');
+          if (!fit) return;
+          function resizeTurnstile() {
+            var scale = Math.min(1, fit.clientWidth / 300);
+            fit.style.setProperty('--ts-scale', String(scale));
+            fit.style.height = (65 * scale) + 'px';
           }
+          resizeTurnstile();
+          window.addEventListener('resize', resizeTurnstile);
+          window.addEventListener('orientationchange', resizeTurnstile);
         })();
         </script>
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

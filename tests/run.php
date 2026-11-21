@@ -1157,7 +1157,9 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '.admin-turnstile') && str_contains($css, '.admin-turnstile .cf-turnstile'), 'Turnstile must use the paper login panel');
     truthy(str_contains($css, 'min-width: 0') && str_contains($css, 'max-width: 480px'), 'Login grid must be allowed to shrink on narrow phones');
     truthy(str_contains($css, '.admin-login-body { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }'), 'Login page must scroll vertically on phones');
-    truthy(str_contains($login, 'window.innerWidth < 370') && str_contains($login, "setAttribute('data-size', 'compact')"), 'Turnstile must use compact size on very narrow phones');
+    truthy(str_contains($login, 'admin-turnstile-fit') && str_contains($login, 'data-size="normal"'), 'Turnstile must keep the horizontal widget on phones');
+    truthy(str_contains($login, 'fit.clientWidth / 300') && str_contains($login, "setProperty('--ts-scale'"), 'Turnstile must scale horizontally with the available width');
+    truthy(str_contains($css, '.admin-turnstile-fit') && str_contains($css, 'transform: scale(var(--ts-scale, 1))'), 'Turnstile wrapper must reserve the scaled height');
 });
 
 check('Comments start with three and reveal in batches', function (): void {
