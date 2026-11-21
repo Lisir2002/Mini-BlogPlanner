@@ -49,7 +49,7 @@ final class AdminPlugin implements PluginInterface
             new Route(['GET'], '/admin', static fn (Request $request, array $params): Response => Response::redirect('/admin/posts.html', 302), 'admin.home'),
             new Route(['GET'], '/admin/login', static fn (Request $request, array $params): Response => $login->show($request), 'admin.login.show'),
             new Route(['POST'], '/admin/login', static fn (Request $request, array $params): Response => $login->login($request), 'admin.login.post'),
-            new Route(['GET'], '/admin/captcha.png', static fn (Request $request, array $params): Response => $login->captcha($request), 'admin.captcha'),
+            new Route(['GET'], '/admin/captcha', static fn (Request $request, array $params): Response => $login->captcha($request), 'admin.captcha'),
             new Route(['POST'], '/admin/logout', static fn (Request $request, array $params): Response => $login->logout($request), 'admin.logout'),
             new Route(['GET'], '/admin/posts', static fn (Request $request, array $params): Response => $posts->index($request), 'admin.posts.index'),
             new Route(['POST'], '/admin/posts', static fn (Request $request, array $params): Response => $posts->create($request), 'admin.posts.create'),

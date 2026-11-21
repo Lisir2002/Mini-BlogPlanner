@@ -62,7 +62,7 @@
             <div class="admin-captcha-field">
               <input id="captcha" name="captcha" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" pattern="[A-Za-z0-9]{5}" placeholder="5 位字符" required>
               <button class="admin-captcha-refresh" type="button" data-captcha-refresh aria-label="点击刷新图形验证码" title="点击换一张">
-                <img id="admin-captcha-image" src="/admin/captcha.png" width="160" height="50" alt="图形验证码，点击换一张" draggable="false">
+                <img id="admin-captcha-image" src="/admin/captcha" width="160" height="50" alt="图形验证码，点击换一张" draggable="false">
               </button>
             </div>
           </div>
@@ -74,7 +74,7 @@
           var refresh = document.querySelector('[data-captcha-refresh]');
           if (!image || !refresh) return;
           function reloadCaptcha() {
-            image.src = '/admin/captcha.png?t=' + Date.now();
+            image.src = '/admin/captcha?t=' + Date.now();
             var answer = document.getElementById('captcha');
             if (answer) {
               answer.value = '';

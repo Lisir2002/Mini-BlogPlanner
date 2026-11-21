@@ -3,7 +3,7 @@
 ## 入口与认证
 
 - 登录页：`GET /admin/login.html`
-- 图形验证码：`GET /admin/captcha.png`
+- 图形验证码：`GET /admin/captcha`
 - 登录提交：`POST /admin/login.html`，必须带 `captcha` 字段
 - 退出：`POST /admin/logout.html`
 - 后台首页：`GET /admin.html` → 302 到文章列表

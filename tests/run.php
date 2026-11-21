@@ -1145,10 +1145,10 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
     truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
     truthy($login !== false && str_contains($login, 'admin-captcha'), 'Login needs the local graphic captcha panel');
-    truthy($login !== false && str_contains($login, 'src="/admin/captcha.png"') && str_contains($login, 'name="captcha"') && str_contains($login, 'admin-captcha-field'), 'Login must place the local captcha image inside the answer field');
+    truthy($login !== false && str_contains($login, 'src="/admin/captcha"') && str_contains($login, 'name="captcha"') && str_contains($login, 'admin-captcha-field'), 'Login must place the local captcha image inside the answer field');
     truthy($login !== false && str_contains($login, 'data-captcha-refresh'), 'Captcha needs a refresh control');
     truthy($login !== false && !str_contains($login, 'challenges.cloudflare.com') && !str_contains($login, 'cf-turnstile'), 'Login must not load Cloudflare Turnstile');
-    truthy($plugin !== false && str_contains($plugin, "'/admin/captcha.png'"), 'Admin routes must expose the captcha image endpoint');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/captcha'"), 'Admin routes must expose the captcha image endpoint');
     $controller = file_get_contents($root . '/plugins/admin/src/LoginController.php');
     truthy($controller !== false && str_contains($controller, "'Cross-Origin-Resource-Policy', 'same-origin'") && str_contains($controller, "'X-Robots-Tag', 'noindex, nofollow'"), 'Captcha image must forbid cross-origin reuse and indexing');
     truthy($env !== false && !str_contains($env, 'TURNSTILE_'), 'Environment example must not advertise Turnstile keys');
