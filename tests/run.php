@@ -20,8 +20,11 @@ use Core\Routing\Route;
 use Core\Routing\Router;
 use Core\Database\Migration;
 use Core\Database\MigrationLoader;
+use Core\Upgrade\ReleaseArchive;
+use Core\Upgrade\ReleaseCatalog;
 use Core\Upgrade\ReleaseManifest;
 use Core\Upgrade\ReleaseRepository;
+use Core\Upgrade\UpdateJob;
 use Core\Version\SchemaAhead;
 use Core\Version\SchemaBehind;
 use Core\Version\SchemaGuard;
@@ -1433,6 +1436,110 @@ check('Series feature is removed from routes, templates and schema', function ()
     }
     truthy(!is_file($root . '/themes/cream/templates/series.php'), 'Series template must be gone');
     truthy(!is_file($root . '/themes/cream/templates/admin/series.php'), 'Series admin template must be gone');
+});
+
+check('Release catalog accepts only stable tagged assets', function (): void {
+    $payload = [
+        'tag_name' => 'v0.1.99',
+        'draft' => false,
+        'prerelease' => false,
+        'name' => 'v0.1.99',
+        'body' => "## 更新\n说明",
+        'published_at' => '2026-11-22T00:00:00Z',
+        'html_url' => 'https://github.com/Lisir2002/Mini-BlogPlanner/releases/tag/v0.1.99',
+        'assets' => [
+            [
+                'name' => 'Mini-BlogPlanner-v0.1.99.zip',
+                'browser_download_url' => 'https://github.com/Lisir2002/Mini-BlogPlanner/releases/download/v0.1.99/Mini-BlogPlanner-v0.1.99.zip',
+                'size' => 1024,
+            ],
+            [
+                'name' => 'Mini-BlogPlanner-v0.1.99.zip.sha256',
+                'browser_download_url' => 'https://github.com/Lisir2002/Mini-BlogPlanner/releases/download/v0.1.99/Mini-BlogPlanner-v0.1.99.zip.sha256',
+                'size' => 95,
+            ],
+        ],
+    ];
+    $release = (new ReleaseCatalog())->parse($payload);
+    same('0.1.99', $release['app']);
+    same('v0.1.99', $release['tag']);
+    same('Mini-BlogPlanner-v0.1.99.zip', $release['zip']['name']);
+
+    $prerelease = $payload;
+    $prerelease['tag_name'] = 'v0.1.99-rc1';
+    throws(RuntimeException::class, static fn () => (new ReleaseCatalog())->parse($prerelease));
+
+    $missing = $payload;
+    $missing['assets'] = [$payload['assets'][0]];
+    throws(RuntimeException::class, static fn () => (new ReleaseCatalog())->parse($missing));
+});
+
+check('Release archive rejects traversal and extracts a valid package', function (): void {
+    $directory = sys_get_temp_dir() . '/cj-archive-' . bin2hex(random_bytes(4));
+    mkdir($directory);
+    $valid = $directory . '/valid.zip';
+    $zip = new ZipArchive();
+    same(true, $zip->open($valid, ZipArchive::CREATE));
+    $zip->addFromString('version.json', '{"app":"0.1.99"}');
+    $zip->close();
+
+    $archive = new ReleaseArchive($valid);
+    $inspection = $archive->inspect();
+    same(1, $inspection['files']);
+    $archive->extractTo($directory . '/extract');
+    truthy(is_file($directory . '/extract/version.json'), 'Valid archive must extract');
+
+    $bad = $directory . '/bad.zip';
+    $zip = new ZipArchive();
+    same(true, $zip->open($bad, ZipArchive::CREATE));
+    $zip->addFromString('../escape.txt', 'bad');
+    $zip->close();
+    throws(RuntimeException::class, static fn () => (new ReleaseArchive($bad))->inspect());
+    rrmdir($directory);
+});
+
+check('Update job persists state and detects stale queues', function (): void {
+    $directory = sys_get_temp_dir() . '/cj-update-job-' . bin2hex(random_bytes(4));
+    $jobs = new UpdateJob($directory);
+    $jobs->save([
+        'status' => 'queued',
+        'step' => 'queued',
+        'message' => '等待更新。',
+        'tag' => 'v0.1.99',
+        'updated_at' => gmdate('c'),
+    ]);
+    $job = $jobs->load();
+    truthy(is_array($job) && $job['tag'] === 'v0.1.99', 'Update job must round-trip');
+    truthy($jobs->active($job), 'Fresh queued job must be active');
+
+    $job['updated_at'] = gmdate('c', time() - 200);
+    $normalized = $jobs->normalize($job);
+    same('failed', $normalized['status']);
+    truthy(($normalized['stale'] ?? false) === true, 'Stale queue must be marked failed');
+    rrmdir($directory);
+});
+
+check('Admin updates page exposes guarded one-click flow', function (): void {
+    $root = dirname(__DIR__);
+    $template = file_get_contents($root . '/themes/cream/templates/admin/updates.php');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
+    $controller = file_get_contents($root . '/plugins/admin/src/UpdatesAdminController.php');
+    $helper = file_get_contents($root . '/bin/update-helper.php');
+    $script = file_get_contents($root . '/public/assets/admin-updates.js');
+    $css = file_get_contents($root . '/public/assets/admin-updates.css');
+    truthy($template !== false && str_contains($template, 'data-status-url="/admin/updates/status"'), 'Updates page needs a status endpoint');
+    truthy($template !== false && str_contains($template, 'id="update-dialog"') && str_contains($template, 'action="/admin/updates/apply"'), 'Updates page needs a guarded apply dialog');
+    truthy($template !== false && str_contains($template, 'name="_csrf"') && str_contains($template, 'name="tag"'), 'Apply dialog needs CSRF and target tag');
+    truthy($layout !== false && str_contains($layout, '/admin/updates.html') && str_contains($layout, '版本与升级'), 'Admin navigation must expose updates');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/updates'") && str_contains($plugin, "'/admin/updates/apply'"), 'Admin plugin must register updates routes');
+    truthy($controller !== false && str_contains($controller, 'Csrf::validate') && str_contains($controller, 'sudo -n'), 'Controller must guard CSRF and use restricted sudo');
+    truthy($helper !== false && str_contains($helper, 'hash_equals') && str_contains($helper, 'ReleaseArchive') && str_contains($helper, 'posix_geteuid'), 'Helper must verify checksums and require root');
+    truthy($helper !== false && str_contains($helper, 'bin/upgrade.php') && str_contains($helper, '--confirm'), 'Helper must use the existing upgrade runner');
+    truthy($script !== false && str_contains($script, 'fetch(statusUrl'), 'Updates page must poll job status');
+    truthy($css !== false && str_contains($css, '.update-hero') && str_contains($css, '@media (max-width: 460px)'), 'Updates page needs responsive paper styles');
+    truthy(is_file($root . '/deploy/cream-update'), 'Restricted update entry must be shipped');
+    truthy(is_file($root . '/docs/ADMIN-UPDATES.md'), 'Updates documentation must exist');
 });
 
 check('Compressed assets match their source files', function (): void {

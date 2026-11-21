@@ -9,7 +9,8 @@
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "ext-mbstring": "*",
-        "ext-gd": "*"
+        "ext-gd": "*",
+        "ext-zip": "*"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.3",

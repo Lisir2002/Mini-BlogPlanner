@@ -44,6 +44,7 @@ final class AdminPlugin implements PluginInterface
         $audit = new AuditAdminController($this->theme);
         $tags = new TagAdminController($this->theme);
         $comments = new CommentAdminController($this->theme);
+        $updates = new UpdatesAdminController($this->theme, $this->version, $root);
 
         return [
             new Route(['GET'], '/admin', static fn (Request $request, array $params): Response => Response::redirect('/admin/posts.html', 302), 'admin.home'),
@@ -74,6 +75,9 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/comments/{id}/approve', static fn (Request $request, array $params): Response => $comments->approve($request, $params), 'admin.comments.approve'),
             new Route(['POST'], '/admin/comments/{id}/spam', static fn (Request $request, array $params): Response => $comments->spam($request, $params), 'admin.comments.spam'),
             new Route(['POST'], '/admin/comments/{id}/delete', static fn (Request $request, array $params): Response => $comments->delete($request, $params), 'admin.comments.delete'),
+            new Route(['GET'], '/admin/updates', static fn (Request $request, array $params): Response => $updates->index($request), 'admin.updates.index'),
+            new Route(['GET'], '/admin/updates/status', static fn (Request $request, array $params): Response => $updates->status($request), 'admin.updates.status'),
+            new Route(['POST'], '/admin/updates/apply', static fn (Request $request, array $params): Response => $updates->apply($request), 'admin.updates.apply'),
             new Route(['GET'], '/admin/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'admin.tags.index'),
             new Route(['POST'], '/admin/tags/{id}/rename', static fn (Request $request, array $params): Response => $tags->rename($request, $params), 'admin.tags.rename'),
             new Route(['POST'], '/admin/tags/{id}/merge', static fn (Request $request, array $params): Response => $tags->merge($request, $params), 'admin.tags.merge'),

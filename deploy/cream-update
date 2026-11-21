@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+ROOT=/var/www/cream-journal
+CURRENT=$(readlink -f "$ROOT/current")
+
+case "$CURRENT" in
+    "$ROOT"/releases/*) ;;
+    *)
+        printf '%s\n' '{"ok":false,"message":"当前发布链接不可用。"}'
+        exit 78
+        ;;
+esac
+
+if [ ! -f "$CURRENT/bin/update-helper.php" ]; then
+    printf '%s\n' '{"ok":false,"message":"当前发布缺少更新助手。"}'
+    exit 78
+fi
+
+exec /usr/bin/php8.5 "$CURRENT/bin/update-helper.php" "$@"
