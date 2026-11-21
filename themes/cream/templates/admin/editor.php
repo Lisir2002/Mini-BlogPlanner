@@ -41,7 +41,6 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
   <header class="editor-page-head">
     <div class="editor-page-title">
       <span class="eyebrow">BACKSTAGE · EDITOR</span>
-      <h1><?= cream_e($title ?? '编辑文章') ?></h1>
       <div class="editor-page-state">
         <span class="editor-save-dot"></span>
         <span id="editorSaveState"><?= cream_e($saveLabel) ?></span>

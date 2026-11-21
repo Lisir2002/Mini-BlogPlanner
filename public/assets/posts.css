@@ -3,15 +3,8 @@
   container-type: inline-size;
 }
 
-.archive-head h1 {
-  margin: 10px 0 8px;
-  font-size: clamp(32px, 6.4cqw, 52px);
-  line-height: 1.16;
-  letter-spacing: -0.045em;
-}
-
 .archive-head p {
-  margin: 0;
+  margin: 6px 0 0;
   color: var(--muted);
 }
 
@@ -216,13 +209,6 @@
 .back-link:focus-visible {
   outline: 2px solid var(--coral);
   outline-offset: 3px;
-}
-
-.post-head h1 {
-  margin: 14px 0 10px;
-  font-size: clamp(32px, 7cqw, 58px);
-  line-height: 1.16;
-  letter-spacing: -0.045em;
 }
 
 .post-lead {

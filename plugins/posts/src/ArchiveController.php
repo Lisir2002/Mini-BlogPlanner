@@ -47,6 +47,7 @@ final class ArchiveController
 
         return $this->render('archive', [
             'page_title' => '归档',
+            'page_heading' => '按年份翻回去',
             'page_description' => '按年份和月份翻看写过的文章。',
             'years' => array_values($years),
             'total' => array_sum(array_map(static fn (array $year): int => $year['count'], $years)),
@@ -100,6 +101,7 @@ final class ArchiveController
 
         return $this->render('archive-year', [
             'page_title' => $year . ' 年归档',
+            'page_heading' => $year . ' 年',
             'page_description' => $year . ' 年写过的文章，按月份分组。',
             'year' => $year,
             'year_count' => array_sum(array_map(static fn (array $month): int => $month['count'], $yearMonths)),
@@ -168,6 +170,7 @@ final class ArchiveController
 
         return $this->render('archive-month', [
             'page_title' => $title,
+            'page_heading' => $title,
             'page_description' => $year . ' 年 ' . $month . ' 月写过的文章。',
             'year' => $year,
             'month' => $month,

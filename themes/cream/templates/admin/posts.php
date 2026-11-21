@@ -3,7 +3,6 @@
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">POSTS</span>
-      <h1>文章管理</h1>
       <p>草稿、已发布和已归档都在这里。发布后才会出现在公开列表和 API。</p>
     </div>
     <a class="admin-button primary" href="/admin/posts/new.html"><?= cream_icon('pen') ?> 写新文章</a>

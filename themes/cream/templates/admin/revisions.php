@@ -27,7 +27,6 @@ foreach ($diff as $row) {
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">HISTORY</span>
-      <h1>版本历史</h1>
       <p>线上当前是 v<?= $onlineVersion ?>。每次发布都会留下快照，保留最近 <?= (int) ($retention ?? 50) ?> 个版本。</p>
     </div>
     <div class="revision-head-actions">

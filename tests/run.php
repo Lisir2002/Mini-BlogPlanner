@@ -1135,6 +1135,22 @@ check('Admin entry is reachable from public navigation', function (): void {
     truthy($css !== false && str_contains($css, '.footer-admin') && str_contains($css, '.nav-drawer-admin'), 'Admin entry links must be themed');
 });
 
+check('Page headings live in the top bar', function (): void {
+    $root = dirname(__DIR__);
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $home = file_get_contents($root . '/themes/cream/templates/home.php');
+    $posts = file_get_contents($root . '/themes/cream/templates/posts.php');
+    $post = file_get_contents($root . '/themes/cream/templates/post.php');
+    $archive = file_get_contents($root . '/themes/cream/templates/archive.php');
+    $adminLayout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    $adminPosts = file_get_contents($root . '/themes/cream/templates/admin/posts.php');
+    truthy($header !== false && str_contains($header, 'brand-page-title') && str_contains($header, '<h1 class="brand-text"'), 'Public page heading must render in the top bar');
+    truthy($home !== false && str_contains($home, 'hero-title') && !str_contains($home, '<h1'), 'Home hero must not compete with the top-bar heading');
+    truthy($posts !== false && !str_contains($posts, '<h1') && $post !== false && !str_contains($post, '<h1') && $archive !== false && !str_contains($archive, '<h1'), 'List and article headings must move out of content');
+    truthy($adminLayout !== false && str_contains($adminLayout, 'admin-brand-title'), 'Admin page heading must render in the top bar');
+    truthy($adminPosts !== false && !str_contains($adminPosts, '<h1'), 'Admin page heading must not repeat in content');
+});
+
 check('Admin login uses a taped desk layout', function (): void {
     $root = dirname(__DIR__);
     $login = file_get_contents($root . '/themes/cream/templates/admin/login.php');

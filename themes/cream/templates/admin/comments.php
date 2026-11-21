@@ -18,7 +18,6 @@ $tabs = [
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">COMMENTS</span>
-      <h1>留言管理</h1>
       <p>共 <?= $total ?> 条当前筛选结果。读者留言默认进入待审核，通过后才会显示在文章页。</p>
     </div>
     <div class="comment-tabs" role="tablist" aria-label="留言状态">

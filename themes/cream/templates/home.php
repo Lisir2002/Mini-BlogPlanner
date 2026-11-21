@@ -7,7 +7,7 @@ $title = (string) ($site['title'] ?? '日记Planner');
   <div class="hero-copy">
     <span class="tape tape-butter hero-tape" aria-hidden="true"></span>
     <span class="eyebrow"><?= cream_icon('spark', 'icon-sm') ?> 今日开张</span>
-    <h1>把代码和日子，<br><span class="marker">贴进同一本手账。</span></h1>
+    <p class="hero-title">把代码和日子，<br><span class="marker">贴进同一本手账。</span></p>
     <p class="hero-lead">一个不着急的写作角落。微内核、插件、主题和版本契约都已经就位，接下来让文字慢慢长出来。</p>
     <div class="hero-actions">
       <a class="button button-primary" href="/api.html"><?= cream_icon('book') ?> 看接口文档</a>

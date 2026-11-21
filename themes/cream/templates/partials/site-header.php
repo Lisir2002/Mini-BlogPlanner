@@ -1,15 +1,19 @@
 <?php
 $current = (string) ($current ?? 'home');
 $siteTitle = (string) ($site['title'] ?? '日记Planner');
+$pageHeading = trim((string) ($pageHeading ?? ''));
+if ($pageHeading === '') {
+    $pageHeading = $siteTitle;
+}
 ?>
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" href="/" aria-label="<?= cream_e($siteTitle) ?> 首页">
       <span class="brand-mark"><?= cream_icon('planner', 'icon-brand') ?></span>
-      <span class="brand-copy">
+      <div class="brand-copy">
         <span class="brand-project">MINI-BLOGPLANNER</span>
-        <span class="brand-text"><?= cream_e($siteTitle) ?><span class="brand-dot" aria-hidden="true"></span></span>
-      </span>
+        <h1 class="brand-text" title="<?= cream_e($pageHeading) ?>"><span class="brand-page-title"><?= cream_e($pageHeading) ?></span><span class="brand-dot" aria-hidden="true"></span></h1>
+      </div>
     </a>
 
     <nav class="nav nav-desktop" aria-label="主导航">

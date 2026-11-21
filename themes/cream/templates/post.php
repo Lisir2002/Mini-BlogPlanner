@@ -12,7 +12,6 @@ if (!is_object($post)) {
   <header class="post-head">
     <a class="back-link" href="/posts.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 回到文章列表</a>
     <?php require __DIR__ . '/partials/post-meta.php'; ?>
-    <h1><?= cream_e($post->title) ?></h1>
     <?php if ($post->excerpt !== ''): ?>
       <aside class="post-lead" aria-label="文章概览">
         <span class="post-lead-tape" aria-hidden="true"></span>

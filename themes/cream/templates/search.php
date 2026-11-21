@@ -5,7 +5,6 @@ $items = is_array($items ?? null) ? $items : [];
 <section class="archive search-page">
   <header class="archive-head search-head">
     <span class="eyebrow">SEARCH</span>
-    <h1>翻一翻这本手账</h1>
     <p>搜标题、摘要和正文里的词，找到写过的那一页。</p>
     <form class="search-form" action="/search" method="get" role="search">
       <label class="sr-only" for="search-q">搜索文章</label>

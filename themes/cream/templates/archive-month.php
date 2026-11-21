@@ -13,7 +13,6 @@ $nextUrl = is_string($next_url ?? null) ? $next_url : null;
   <header class="archive-head">
     <a class="back-link" href="/archive/<?= $year ?>.html"><?= cream_icon('arrow-left', 'icon-xs') ?> <?= $year ?> 年</a>
     <span class="eyebrow">MONTH</span>
-    <h1><?= $year ?> 年 <?= $month ?> 月</h1>
     <p>这个月共 <?= number_format($total) ?> 篇，按发布时间倒序。</p>
   </header>
 

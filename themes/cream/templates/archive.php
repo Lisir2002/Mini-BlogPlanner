@@ -5,7 +5,6 @@ $total = (int) ($total ?? 0);
 <section class="archive archive-index">
   <header class="archive-head">
     <span class="eyebrow"><?= cream_icon('calendar', 'icon-sm') ?> ARCHIVE</span>
-    <h1>按年份翻回去</h1>
     <p>共 <?= number_format($total) ?> 篇，按年与月排成一本可以往回翻的账。</p>
   </header>
 

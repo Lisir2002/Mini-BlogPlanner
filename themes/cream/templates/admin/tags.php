@@ -5,7 +5,7 @@ $messages = ['renamed' => '标签已重命名。', 'merged' => '标签已合并�
 ?>
 <section class="admin-page">
   <header class="admin-page-head">
-    <div><span class="eyebrow">TAGS</span><h1>标签管理</h1><p><?= count($tags) ?> 个标签。重命名保留 slug，合并会把文章关联转到目标标签。</p></div>
+    <div><span class="eyebrow">TAGS</span><p><?= count($tags) ?> 个标签。重命名保留 slug，合并会把文章关联转到目标标签。</p></div>
     <a class="admin-button ghost" href="/tags.html" target="_blank" rel="noopener">查看公开标签</a>
   </header>
 

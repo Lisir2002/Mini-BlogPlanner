@@ -20,7 +20,7 @@ $actions = is_array($error_actions ?? null) ? $error_actions : [];
       <span class="error-emblem" aria-hidden="true"><?= cream_icon($icon, 'error-icon') ?></span>
     </div>
     <span class="eyebrow"><?= cream_icon('planner', 'icon-sm') ?> MINI-BLOGPLANNER · <?= $isAdmin ? '后台错误' : '站点错误' ?></span>
-    <h1 id="error-title"><?= cream_e($heading) ?></h1>
+    <p class="error-heading" id="error-title"><?= cream_e($heading) ?></p>
     <p class="error-detail"><?= cream_e($detail) ?></p>
 
     <?php if ($note !== ''): ?>

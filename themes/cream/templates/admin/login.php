@@ -27,7 +27,6 @@
       <span class="admin-auth-card-index" aria-hidden="true">AUTH / 01</span>
       <div class="admin-auth-head">
         <span class="eyebrow"><?= cream_icon('lock', 'icon-sm') ?> 私人入口</span>
-        <h1>回到日记里。</h1>
         <p class="admin-lead">管理日记、计划与读者留言。密码使用 Argon2id 校验，登录失败会按 IP 节流。</p>
       </div>
       <?php if ($error !== null): ?>

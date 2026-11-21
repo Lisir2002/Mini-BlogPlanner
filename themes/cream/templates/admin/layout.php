@@ -4,6 +4,10 @@ $title = (string) ($title ?? '后台');
 $csrf = (string) ($csrf ?? '');
 $current = (string) ($current ?? '');
 $siteTitle = (string) (($site['title'] ?? '日记Planner'));
+$headerTitle = trim((string) ($title ?? ''));
+if ($headerTitle === '') {
+    $headerTitle = '后台';
+}
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -28,7 +32,7 @@ $siteTitle = (string) (($site['title'] ?? '日记Planner'));
   <div class="admin-header-inner">
     <a class="admin-brand" href="/admin/posts.html">
       <span class="admin-brand-mark"><?= cream_icon('planner') ?></span>
-      <span class="admin-brand-copy"><small>MINI-BLOGPLANNER</small><strong><?= cream_e($siteTitle) ?> 后台</strong></span>
+      <div class="admin-brand-copy"><small>MINI-BLOGPLANNER</small><h1 class="admin-brand-title" title="<?= cream_e($headerTitle) ?>"><?= cream_e($headerTitle) ?></h1></div>
     </a>
     <?php if ($admin !== null): ?>
     <nav class="admin-nav nav-desktop" aria-label="后台导航">

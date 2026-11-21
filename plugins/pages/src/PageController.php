@@ -32,15 +32,25 @@ final class PageController
 
         $site = $this->site();
         $canonical = $this->baseUrl($request) . '/' . rawurlencode($slug) . '.html';
+        $content = $page->content();
+        $heading = $page->title();
+        if (preg_match('~<h1\b[^>]*>(.*?)</h1>~is', $content, $matches) === 1) {
+            $candidate = trim(html_entity_decode(strip_tags($matches[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($candidate !== '') {
+                $heading = $candidate;
+            }
+            $content = preg_replace('~<h1\b[^>]*>.*?</h1>~is', '', $content, 1) ?? $content;
+        }
 
         $html = $this->theme->render($page->template(), [
             'site' => $site,
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => $page->title(),
+            'page_heading' => $heading,
             'page_description' => $site['description'],
             'current' => 'page',
-            'content' => $page->content(),
+            'content' => $content,
             'canonical_url' => $canonical,
             'json_ld' => StructuredData::webPage($page->title(), $site['description'], $canonical, $site),
             'page_styles' => $page->styles(),

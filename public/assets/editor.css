@@ -50,7 +50,6 @@
 
 .editor-page-title { display: grid; gap: 7px; min-width: 0; }
 .editor-page-title .eyebrow { font-size: 10px; letter-spacing: 0.18em; }
-.editor-page-title h1 { margin: 0; font-size: clamp(24px, 2.4vw, 34px); letter-spacing: -0.045em; line-height: 1.1; }
 
 .editor-page-state {
   display: flex;
@@ -834,7 +833,6 @@
 @media (max-width: 380px) {
   .editor-body .admin-header-inner,
   .editor-body .admin-main { width: calc(100% - 20px); }
-  .editor-page-title h1 { font-size: 23px; }
   #title { font-size: 25px; }
   .editor-preview { padding: 18px 18px 56px; }
   .editor-textarea { padding: 16px 16px 50px; font-size: 12px; }

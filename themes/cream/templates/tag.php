@@ -6,7 +6,6 @@ $posts = is_array($posts ?? null) ? $posts : [];
   <header class="archive-head">
     <a class="back-link" href="/tags.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 所有标签</a>
     <span class="eyebrow">TAG</span>
-    <h1>#<?= cream_e($tag['name']) ?></h1>
     <p>这个标签下共有 <?= count($posts) ?> 篇已发布文章。</p>
   </header>
 

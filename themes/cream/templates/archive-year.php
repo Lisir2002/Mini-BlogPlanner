@@ -7,7 +7,6 @@ $months = is_array($months ?? null) ? $months : [];
   <header class="archive-head">
     <a class="back-link" href="/archive.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 全部归档</a>
     <span class="eyebrow">YEAR</span>
-    <h1><?= $year ?> 年</h1>
     <p>这一年共 <?= number_format($yearCount) ?> 篇，按月份排下去。</p>
   </header>
 

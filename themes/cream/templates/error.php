@@ -8,7 +8,7 @@ $path = (string) ($error_path ?? '');
   <div class="error-card">
     <span class="error-code" aria-hidden="true"><?= cream_e($code) ?></span>
     <span class="eyebrow"><?= cream_icon('planner', 'icon-sm') ?> MINI-BLOGPLANNER</span>
-    <h1><?= cream_e($heading) ?></h1>
+    <p class="error-heading"><?= cream_e($heading) ?></p>
     <p><?= cream_e($detail) ?></p>
     <?php if ($path !== ''): ?>
     <code class="error-path"><?= cream_e($path) ?></code>

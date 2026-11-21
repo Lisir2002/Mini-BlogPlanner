@@ -6,7 +6,6 @@ $uploaded = $uploaded ?? null;
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">MEDIA</span>
-      <h1>媒体库</h1>
       <p>图片存放在非公开目录，通过受控地址读取。只接受 JPEG、PNG、WebP、GIF，单张不超过 5MB。</p>
     </div>
   </header>

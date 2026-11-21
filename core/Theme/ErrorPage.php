@@ -75,6 +75,7 @@ final class ErrorPage
             'app' => $version->app(),
             'schema' => $version->schema(),
             'page_title' => $status . ' · ' . self::heading($status),
+            'page_heading' => self::heading($status),
             'current' => '',
             'error_status' => $status,
             'error_context' => $context,

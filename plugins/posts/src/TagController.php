@@ -36,6 +36,7 @@ final class TagController
 
         return $this->render('tags', [
             'page_title' => '标签',
+            'page_heading' => '按标签翻手账',
             'page_description' => '按主题浏览文章。',
             'current' => 'tags',
             'tags' => $tags,
@@ -69,6 +70,7 @@ final class TagController
 
         return $this->render('tag', [
             'page_title' => $tag['name'],
+            'page_heading' => '#' . $tag['name'],
             'page_description' => '标签「' . $tag['name'] . '」下的文章。',
             'current' => 'tags',
             'tag' => $tag,

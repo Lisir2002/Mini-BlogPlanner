@@ -2,7 +2,6 @@
 <section class="archive">
   <header class="archive-head">
     <span class="eyebrow">TAGS</span>
-    <h1>按标签翻手账</h1>
     <p>同一件小事，写在不同时间里。选一个标签，看看它长成了什么。</p>
   </header>
 

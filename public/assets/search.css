@@ -2,10 +2,6 @@
   margin-bottom: 24px;
 }
 
-.search-head h1 {
-  max-width: 12em;
-}
-
 .search-form {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

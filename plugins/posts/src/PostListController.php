@@ -37,6 +37,7 @@ final class PostListController
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => '文章',
+            'page_heading' => '所有写过的东西',
             'page_description' => '按时间排列的文章列表。',
             'current' => 'posts',
             'posts' => $posts,

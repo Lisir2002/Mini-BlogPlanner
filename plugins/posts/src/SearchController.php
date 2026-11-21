@@ -46,6 +46,7 @@ final class SearchController
             'app' => $this->version->app(),
             'schema' => $this->version->schema(),
             'page_title' => $query === '' ? '搜索' : '搜索：' . $query,
+            'page_heading' => $query === '' ? '翻一翻这本手账' : '搜索：' . $query,
             'page_description' => '搜索文章标题、摘要与正文。',
             'current' => 'search',
             'query' => $query,

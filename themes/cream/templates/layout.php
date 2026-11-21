@@ -3,6 +3,10 @@ $site = is_array($site ?? null) ? $site : [];
 $title = (string) ($site['title'] ?? '日记Planner');
 $description = (string) ($site['description'] ?? '一个安静写字的地方。');
 $pageTitle = (string) ($page_title ?? $title);
+$pageHeading = trim((string) ($page_heading ?? ''));
+if ($pageHeading === '') {
+    $pageHeading = $pageTitle;
+}
 $locale = (string) ($site['language'] ?? 'zh-CN');
 $fullTitle = $pageTitle === $title ? $title : $pageTitle . ' · ' . $title;
 $metaDescription = trim((string) ($page_description ?? $description));

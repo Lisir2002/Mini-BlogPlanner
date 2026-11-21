@@ -4,7 +4,6 @@ $posts = is_array($posts ?? null) ? $posts : [];
 <section class="archive">
   <header class="archive-head">
     <span class="eyebrow">ARCHIVE</span>
-    <h1>所有写过的东西</h1>
     <p>按时间倒序。没有推荐算法，只有一页一页翻。</p>
   </header>
 

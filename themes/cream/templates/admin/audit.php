@@ -14,7 +14,6 @@ $hasFilter = $filter !== [];
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">AUDIT</span>
-      <h1>审计日志</h1>
       <p>共 <?= $total ?> 条。只记录动作、对象 id、状态和 IP，不记录密码。</p>
     </div>
     <form class="audit-filters" method="get" action="/admin/audit.html">
