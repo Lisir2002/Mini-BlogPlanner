@@ -352,6 +352,120 @@
 .post-body pre code { padding: 0; background: transparent; }
 .post-body img { max-width: 100%; height: auto; border-radius: var(--radius-md); }
 
+/* 正文格式按手账纸面统一：标题留荧光笔痕，重点像被轻轻划过，列表与表格带上账簿感。 */
+.post-body h2 {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 2px 3px;
+  background: linear-gradient(180deg, transparent 72%, color-mix(in oklch, var(--butter) 30%, transparent) 72%, color-mix(in oklch, var(--butter) 24%, transparent) 94%, transparent 94%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.post-body h3 { padding-left: 10px; border-left: 3px solid color-mix(in oklch, var(--butter) 72%, var(--line)); }
+.post-body strong {
+  color: var(--ink);
+  font-weight: 760;
+  padding: 0 0.06em;
+  background: linear-gradient(180deg, transparent 58%, color-mix(in oklch, var(--butter) 26%, transparent) 58%, color-mix(in oklch, var(--butter) 20%, transparent) 91%, transparent 91%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.post-body em { color: var(--ink-soft); }
+.post-body del { color: var(--muted); text-decoration: wavy color-mix(in oklch, var(--coral) 72%, transparent) 1px; }
+.post-body a { text-decoration-style: dotted; text-decoration-thickness: 1px; }
+.post-body ul > li::marker { color: var(--coral); }
+.post-body ol { counter-reset: journal-list; padding-left: 2em; }
+.post-body ol > li { counter-increment: journal-list; position: relative; padding-left: 0.35em; }
+.post-body ol > li::before {
+  content: counter(journal-list);
+  position: absolute;
+  left: -1.55em;
+  top: 0.48em;
+  display: grid;
+  place-items: center;
+  width: 1.25em;
+  height: 1.25em;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 68%, transparent);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font: 700 0.72em/1 var(--font-mono, ui-monospace, monospace);
+}
+.post-body table {
+  width: 100%;
+  margin: 24px 0;
+  border: 1px solid var(--line-strong);
+  border-spacing: 0;
+  border-collapse: separate;
+  border-radius: 11px;
+  background: var(--paper);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.post-body th {
+  padding: 8px 11px;
+  border-bottom: 2px solid color-mix(in oklch, var(--butter) 58%, var(--line));
+  background: color-mix(in oklch, var(--butter) 17%, var(--paper));
+  color: var(--ink);
+  font-weight: 800;
+  text-align: left;
+}
+.post-body td { padding: 8px 11px; border-bottom: 1px dashed var(--line); vertical-align: top; }
+.post-body tbody tr:nth-child(even) { background: color-mix(in oklch, var(--cream-1) 58%, transparent); }
+.post-body tbody tr:last-child td { border-bottom: 0; }
+.post-body th:first-child { border-top-left-radius: 10px; }
+.post-body th:last-child { border-top-right-radius: 10px; }
+.post-body tbody tr:last-child td:first-child { border-bottom-left-radius: 10px; }
+.post-body tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
+.post-body hr {
+  position: relative;
+  height: 18px;
+  margin: 30px 0;
+  border: 0;
+  background: repeating-linear-gradient(90deg, color-mix(in oklch, var(--line-strong) 82%, transparent) 0 6px, transparent 6px 12px) center / 100% 1px no-repeat;
+}
+.post-body hr::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 7px;
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--butter) 72%, transparent);
+  transform: translate(-50%, -50%) rotate(-1.2deg);
+}
+.post-body code {
+  border: 1px dashed color-mix(in oklch, var(--line-strong) 64%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.post-body pre {
+  border: 1px dashed color-mix(in oklch, var(--line-strong) 60%, transparent);
+  border-left: 4px solid var(--butter);
+  background: color-mix(in oklch, var(--cream-1) 82%, white 18%);
+  color: var(--ink);
+  box-shadow: 4px 5px 0 color-mix(in oklch, var(--ink) 12%, transparent);
+}
+.post-body pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 500;
+  white-space: pre;
+}
+.post-body img {
+  display: block;
+  margin: 24px auto;
+  padding: 7px 7px 16px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 72%, transparent);
+  border-radius: 7px;
+  background: var(--paper);
+  box-shadow: 3px 4px 0 color-mix(in oklch, var(--line-strong) 30%, transparent);
+}
+
 /* 分享票根：左侧打孔、右侧印章，像从手账上撕下来的一小截。 */
 .post-share {
   position: relative;
@@ -600,4 +714,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .post-body blockquote::before { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .post-body table { font-size: 12px; }
+  .post-body th, .post-body td { padding: 6px 8px; }
+  .post-body h2 { font-size: 23px; }
 }

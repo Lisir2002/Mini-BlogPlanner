@@ -133,13 +133,31 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
           </div>
           <span class="editor-tool-sep" aria-hidden="true"></span>
           <div class="editor-format-tools" data-markdown-tools>
-            <button type="button" class="editor-tool" data-editor-insert="h2" title="插入二级标题" aria-label="插入二级标题">H2</button>
-            <button type="button" class="editor-tool" data-editor-insert="bold" title="加粗" aria-label="加粗"><strong>B</strong></button>
-            <button type="button" class="editor-tool" data-editor-insert="italic" title="斜体" aria-label="斜体"><em>I</em></button>
-            <button type="button" class="editor-tool" data-editor-insert="link" title="插入链接" aria-label="插入链接"><?= cream_icon('link', 'icon-xs') ?></button>
-            <button type="button" class="editor-tool" data-editor-insert="quote" title="插入引用" aria-label="插入引用">“</button>
-            <button type="button" class="editor-tool" data-editor-insert="list" title="插入列表" aria-label="插入列表">≣</button>
-            <button type="button" class="editor-tool" data-editor-insert="code" title="插入代码块" aria-label="插入代码块">&lt;/&gt;</button>
+            <span class="editor-tool-group" role="group" aria-label="标题">
+              <button type="button" class="editor-tool" data-editor-insert="h2" data-tool-label="二级标题" data-syntax-markdown="## " data-syntax-html="&lt;h2&gt;" title="插入二级标题" aria-label="插入二级标题">H2</button>
+              <button type="button" class="editor-tool" data-editor-insert="h3" data-tool-label="三级标题" data-syntax-markdown="### " data-syntax-html="&lt;h3&gt;" title="插入三级标题" aria-label="插入三级标题">H3</button>
+            </span>
+            <span class="editor-tool-gap" aria-hidden="true"></span>
+            <span class="editor-tool-group" role="group" aria-label="行内格式">
+              <button type="button" class="editor-tool" data-editor-insert="bold" data-tool-label="加粗" data-syntax-markdown="**" data-syntax-html="&lt;strong&gt;" title="加粗" aria-label="加粗"><strong>B</strong></button>
+              <button type="button" class="editor-tool" data-editor-insert="italic" data-tool-label="斜体" data-syntax-markdown="*" data-syntax-html="&lt;em&gt;" title="斜体" aria-label="斜体"><em>I</em></button>
+              <button type="button" class="editor-tool" data-editor-insert="strike" data-tool-label="删除线" data-syntax-markdown="~~" data-syntax-html="&lt;del&gt;" title="删除线" aria-label="删除线"><s>S</s></button>
+              <button type="button" class="editor-tool" data-editor-insert="link" data-tool-label="链接" data-syntax-markdown="[文字](url)" data-syntax-html="&lt;a href&gt;" title="插入链接" aria-label="插入链接"><?= cream_icon('link', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="inlinecode" data-tool-label="行内代码" data-syntax-markdown="` `" data-syntax-html="&lt;code&gt;" title="插入行内代码" aria-label="插入行内代码"><?= cream_icon('code-inline', 'icon-xs') ?></button>
+            </span>
+            <span class="editor-tool-gap" aria-hidden="true"></span>
+            <span class="editor-tool-group" role="group" aria-label="段落格式">
+              <button type="button" class="editor-tool" data-editor-insert="quote" data-tool-label="引用" data-syntax-markdown="&gt; " data-syntax-html="&lt;blockquote&gt;" title="插入引用" aria-label="插入引用"><?= cream_icon('quote', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="list" data-tool-label="无序列表" data-syntax-markdown="- " data-syntax-html="&lt;ul&gt;" title="插入无序列表" aria-label="插入无序列表"><?= cream_icon('list-ul', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="ordered" data-tool-label="有序列表" data-syntax-markdown="1. " data-syntax-html="&lt;ol&gt;" title="插入有序列表" aria-label="插入有序列表"><?= cream_icon('list-ol', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="code" data-tool-label="代码块" data-syntax-markdown="```" data-syntax-html="&lt;pre&gt;" title="插入代码块" aria-label="插入代码块"><?= cream_icon('code-block', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="hr" data-tool-label="分隔线" data-syntax-markdown="---" data-syntax-html="&lt;hr&gt;" title="插入分隔线" aria-label="插入分隔线"><?= cream_icon('divider', 'icon-xs') ?></button>
+            </span>
+            <span class="editor-tool-gap" aria-hidden="true"></span>
+            <span class="editor-tool-group" role="group" aria-label="插入内容">
+              <button type="button" class="editor-tool" data-editor-insert="image" data-tool-label="图片" data-syntax-markdown="![](url)" data-syntax-html="&lt;img&gt;" title="插入图片" aria-label="插入图片"><?= cream_icon('image', 'icon-xs') ?></button>
+              <button type="button" class="editor-tool" data-editor-insert="table" data-tool-label="表格" data-syntax-markdown="| 表格 |" data-syntax-html="&lt;table&gt;" title="插入表格" aria-label="插入表格"><?= cream_icon('table', 'icon-xs') ?></button>
+            </span>
           </div>
           <div class="editor-toolbar-right">
             <span class="editor-format-label" id="editorFormatLabel"><?= strtoupper($format) ?></span>
@@ -147,9 +165,15 @@ $saveLabel = $hasDraft && $draftUpdatedAt !== ''
           <div class="editor-selection-bar" id="editorSelectionBar" hidden aria-label="选区格式">
             <button type="button" data-rich-format="bold" title="加粗" aria-label="加粗"><strong>B</strong></button>
             <button type="button" data-rich-format="italic" title="斜体" aria-label="斜体"><em>I</em></button>
+            <button type="button" data-rich-format="strike" title="删除线" aria-label="删除线"><s>S</s></button>
             <button type="button" data-rich-format="link" title="链接" aria-label="链接"><?= cream_icon('link', 'icon-xs') ?></button>
-            <button type="button" data-rich-format="code" title="行内代码" aria-label="行内代码">&lt;/&gt;</button>
+            <button type="button" data-rich-format="inlinecode" title="行内代码" aria-label="行内代码"><?= cream_icon('code-inline', 'icon-xs') ?></button>
           </div>
+        </div>
+
+        <div class="editor-syntax-strip" aria-live="polite">
+          <span class="editor-syntax-tape">FORMAT NOTE</span>
+          <span id="editorSyntaxText"><?= $format === 'html' ? 'HTML 标签 · &lt;h2&gt; 标题 · &lt;strong&gt; 加粗 · &lt;blockquote&gt; 引用' : 'Markdown 语法 · ## 标题 · ** 加粗 · &gt; 引用 · ` 行内代码' ?></span>
         </div>
 
         <div class="editor-stage">

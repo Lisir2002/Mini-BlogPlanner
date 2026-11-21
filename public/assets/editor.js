@@ -52,6 +52,7 @@
   var mobilePreview = form.querySelector('#editorMobilePreview');
   var mobileOutline = form.querySelector('#editorMobileOutline');
   var markdownTools = form.querySelectorAll('[data-markdown-tools] button');
+  var syntaxText = form.querySelector('#editorSyntaxText');
   var rich = form.querySelector('#editorRich');
   var richNote = form.querySelector('#editorRichNote');
   var selectionBar = document.querySelector('#editorSelectionBar');
@@ -326,6 +327,29 @@
     if (chip) chip.textContent = '/posts/' + (slug.value.trim() !== '' ? slug.value.trim() : 'new-post') + '.html';
   }
 
+  function updateToolbarContext() {
+    var modeName = mode === 'html' ? 'HTML 标签' : (mode === 'write' ? '纸面写作' : 'Markdown 语法');
+    if (syntaxText) {
+      if (mode === 'html') {
+        syntaxText.textContent = 'HTML 标签 · <h2> 标题 · <strong> 加粗 · <blockquote> 引用 · <ul> 列表 · <pre> 代码';
+      } else if (mode === 'write') {
+        syntaxText.textContent = '纸面写作 · 选中文字即可排版，保存时自动转成 Markdown';
+      } else {
+        syntaxText.textContent = 'Markdown 语法 · ## 标题 · ** 加粗 · > 引用 · - 列表 · ` 行内代码';
+      }
+    }
+    markdownTools.forEach(function (button) {
+      var label = button.getAttribute('data-tool-label') || '';
+      if (mode === 'write') {
+        button.title = label + ' · 在纸面直接应用';
+      } else {
+        var syntax = button.getAttribute(mode === 'html' ? 'data-syntax-html' : 'data-syntax-markdown') || '';
+        button.title = label + ' · ' + modeName + (syntax === '' ? '' : '：' + syntax);
+      }
+      button.setAttribute('aria-label', button.title);
+    });
+  }
+
   function updateStamp() {
     if (!stamp) return;
     var online = status && status.value === 'published';
@@ -487,7 +511,7 @@
     if (formatChip) formatChip.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? '写作' : 'Markdown');
     if (summaryFormat) summaryFormat.textContent = mode === 'html' ? 'HTML' : (mode === 'write' ? '写作' : 'Markdown');
     if (htmlNote) htmlNote.hidden = mode !== 'html';
-    markdownTools.forEach(function (button) { button.disabled = mode === 'html'; });
+    updateToolbarContext();
     if (mode !== 'write') hideSelectionBar();
     if (mode === 'write') {
       if (!silent && previousMode !== 'write') hydrateRich();
@@ -1019,46 +1043,102 @@
     }).catch(fail);
   }
 
-  function runRichCommand(kind, inlineOnly) {
-    if (!rich || !richReady || mode !== 'write') return;
-    var selection = window.getSelection();
-    if (!selection) return;
-    restoreRichSelection();
-    var selectedText = selection.toString();
-    if (kind === 'link') {
-      var href = window.prompt('链接地址', 'https://');
-      if (href === null) return;
-      var safe = safeLink(href);
-      if (safe === '') {
-        showToast('链接只支持 http、https、mailto、站内路径或锚点。', 'error');
-        return;
+  function creamDialog(options) {
+    return new Promise(function (resolve) {
+      var previousFocus = document.activeElement;
+      var layer = document.createElement('div');
+      layer.className = 'editor-prompt';
+      var card = document.createElement('div');
+      card.className = 'editor-prompt-card';
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+      var title = document.createElement('h2');
+      title.className = 'editor-prompt-title';
+      title.textContent = options.title;
+      card.appendChild(title);
+      if (options.note) {
+        var note = document.createElement('p');
+        note.className = 'editor-prompt-note';
+        note.textContent = options.note;
+        card.appendChild(note);
       }
-      if (selection.isCollapsed) {
-        document.execCommand('insertHTML', false, '<a href="' + escapeHtml(safe) + '">' + escapeHtml(safe) + '</a>');
+      var field = null;
+      if (options.kind === 'text') {
+        field = document.createElement('input');
+        field.type = 'text';
+        field.className = 'editor-prompt-field';
+        field.value = options.value || '';
+        field.placeholder = options.placeholder || '';
+        field.autocomplete = 'off';
+        field.spellcheck = false;
+        card.appendChild(field);
       } else {
-        document.execCommand('createLink', false, safe);
+        var message = document.createElement('p');
+        message.className = 'editor-prompt-message';
+        message.textContent = options.message || '';
+        card.appendChild(message);
       }
-    } else if (kind === 'bold' || kind === 'italic') {
-      document.execCommand(kind, false, null);
-    } else if (kind === 'code' && inlineOnly === true) {
-      var codeText = selectedText || '代码';
-      document.execCommand('insertHTML', false, '<code>' + escapeHtml(codeText) + '</code>');
-    } else if (kind === 'code') {
-      var blockText = selectedText || '代码';
-      document.execCommand('insertHTML', false, '<pre><code>' + escapeHtml(blockText) + '</code></pre>');
-    } else if (kind === 'h2') {
-      document.execCommand('formatBlock', false, '<h2>');
-    } else if (kind === 'quote') {
-      document.execCommand('formatBlock', false, '<blockquote>');
-    } else if (kind === 'list') {
-      document.execCommand('insertUnorderedList', false, null);
-    } else if (kind === 'hr') {
-      document.execCommand('insertHTML', false, '<hr>');
-    } else if (kind === 'table') {
-      document.execCommand('insertHTML', false, '<table><thead><tr><th>列一</th><th>列二</th></tr></thead><tbody><tr><td>内容</td><td></td></tr></tbody></table>');
-    } else {
-      return;
-    }
+      var actions = document.createElement('div');
+      actions.className = 'editor-prompt-actions';
+      var cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'admin-button ghost';
+      cancel.textContent = '取消';
+      var confirm = document.createElement('button');
+      confirm.type = 'button';
+      confirm.className = 'admin-button';
+      confirm.textContent = options.confirmLabel || '确定';
+      actions.appendChild(cancel);
+      actions.appendChild(confirm);
+      card.appendChild(actions);
+      layer.appendChild(card);
+
+      function close(result) {
+        if (!layer.parentNode) return;
+        layer.parentNode.removeChild(layer);
+        document.removeEventListener('keydown', onKey, true);
+        if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+        resolve(result);
+      }
+      function submit() {
+        if (options.kind === 'text') {
+          close(field.value);
+        } else {
+          close(true);
+        }
+      }
+      function onKey(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close(options.kind === 'text' ? null : false);
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          submit();
+        }
+      }
+      cancel.addEventListener('click', function () { close(options.kind === 'text' ? null : false); });
+      confirm.addEventListener('click', submit);
+      layer.addEventListener('mousedown', function (event) {
+        if (event.target === layer) close(options.kind === 'text' ? null : false);
+      });
+      document.addEventListener('keydown', onKey, true);
+      document.body.appendChild(layer);
+      if (field) {
+        field.focus();
+        field.select();
+      } else {
+        confirm.focus();
+      }
+    });
+  }
+
+  function finalizeRichCommand() {
+    if (!rich) return;
+    rich.querySelectorAll('strike, s').forEach(function (node) {
+      var del = document.createElement('del');
+      while (node.firstChild) del.appendChild(node.firstChild);
+      node.parentNode.replaceChild(del, node);
+    });
     syncRichToSource();
     markDirty();
     updateChecks();
@@ -1070,9 +1150,98 @@
     hideSelectionBar();
   }
 
+  function runRichCommand(kind) {
+    if (!rich || !richReady || mode !== 'write') return;
+    var selection = window.getSelection();
+    if (!selection) return;
+    restoreRichSelection();
+    var selectedText = selection.toString();
+    if (kind === 'link') {
+      var linkRange = selection.getRangeAt(0).cloneRange();
+      creamDialog({
+        kind: 'text',
+        title: '插入链接',
+        note: '只支持 http、https、mailto、站内路径或锚点。',
+        placeholder: 'https://example.com',
+        value: 'https://',
+        confirmLabel: '插入链接'
+      }).then(function (href) {
+        rich.focus();
+        selection.removeAllRanges();
+        selection.addRange(linkRange);
+        if (href === null) return;
+        var safe = safeLink(String(href).trim());
+        if (safe === '') {
+          showToast('链接只支持 http、https、mailto、站内路径或锚点。', 'error');
+          return;
+        }
+        if (linkRange.collapsed) {
+          document.execCommand('insertHTML', false, '<a href="' + escapeHtml(safe) + '">' + escapeHtml(safe) + '</a>');
+        } else {
+          document.execCommand('createLink', false, safe);
+        }
+        finalizeRichCommand();
+      });
+      return;
+    } else if (kind === 'bold' || kind === 'italic') {
+      document.execCommand(kind, false, null);
+    } else if (kind === 'strike') {
+      if (selection.isCollapsed) {
+        document.execCommand('insertHTML', false, '<del>' + escapeHtml('删除线') + '</del>');
+      } else {
+        document.execCommand('strikeThrough', false, null);
+      }
+    } else if (kind === 'inlinecode') {
+      var codeText = selectedText || '代码';
+      document.execCommand('insertHTML', false, '<code>' + escapeHtml(codeText) + '</code>');
+    } else if (kind === 'code') {
+      var blockText = selectedText || '代码';
+      document.execCommand('insertHTML', false, '<pre><code>' + escapeHtml(blockText) + '</code></pre>');
+    } else if (kind === 'h2' || kind === 'h3') {
+      document.execCommand('formatBlock', false, '<' + kind + '>');
+    } else if (kind === 'quote') {
+      document.execCommand('formatBlock', false, '<blockquote>');
+    } else if (kind === 'list') {
+      document.execCommand('insertUnorderedList', false, null);
+    } else if (kind === 'ordered') {
+      document.execCommand('insertOrderedList', false, null);
+    } else if (kind === 'image') {
+      var imageRange = selection.getRangeAt(0).cloneRange();
+      creamDialog({
+        kind: 'text',
+        title: '插入图片',
+        note: '支持 http、https、站内路径或锚点，正文里会保留图片地址。',
+        placeholder: 'https://example.com/photo.jpg',
+        value: 'https://',
+        confirmLabel: '插入图片'
+      }).then(function (src) {
+        rich.focus();
+        selection.removeAllRanges();
+        selection.addRange(imageRange);
+        if (src === null) return;
+        var safeSrc = safeLink(String(src).trim());
+        if (safeSrc === '') {
+          showToast('图片地址只支持 http、https、站内路径或锚点。', 'error');
+          return;
+        }
+        var alt = selectedText || '图片说明';
+        document.execCommand('insertHTML', false, '<img src="' + escapeHtml(safeSrc) + '" alt="' + escapeHtml(alt) + '">');
+        finalizeRichCommand();
+      });
+      return;
+    } else if (kind === 'hr') {
+      document.execCommand('insertHTML', false, '<hr>');
+    } else if (kind === 'table') {
+      document.execCommand('insertHTML', false, '<table><thead><tr><th>列一</th><th>列二</th></tr></thead><tbody><tr><td>内容</td><td></td></tr></tbody></table>');
+    } else {
+      return;
+    }
+    finalizeRichCommand();
+  }
+
   function insertSnippet(kind) {
     if (mode === 'write') {
-      runRichCommand(kind, false);
+      runRichCommand(kind);
       return;
     }
     var field = activeTextarea();
@@ -1083,25 +1252,35 @@
     var map = mode === 'html'
       ? {
           h2: ['<h2>', '</h2>', '小节标题'],
+          h3: ['<h3>', '</h3>', '小节标题'],
           bold: ['<strong>', '</strong>', '重点'],
           italic: ['<em>', '</em>', '语气'],
+          strike: ['<del>', '</del>', '删除线'],
           link: ['<a href="https://">', '</a>', '链接文字'],
+          inlinecode: ['<code>', '</code>', '代码'],
           quote: ['<blockquote>', '</blockquote>', '引用'],
           list: ['<ul>\n  <li>', '</li>\n</ul>', '列表项'],
+          ordered: ['<ol>\n  <li>', '</li>\n</ol>', '列表项'],
           code: ['<pre><code>', '</code></pre>', '代码'],
           table: ['<table>\n  <thead><tr><th>列一</th><th>列二</th></tr></thead>\n  <tbody><tr><td>', '</td><td></td></tr></tbody>\n</table>', '内容'],
-          hr: ['<hr>', '', '']
+          hr: ['<hr>', '', ''],
+          image: ['<img src="https://" alt="', '">', '图片说明']
         }
       : {
           h2: ['## ', '', '小节标题'],
+          h3: ['### ', '', '小节标题'],
           bold: ['**', '**', '重点'],
           italic: ['*', '*', '语气'],
+          strike: ['~~', '~~', '删除线'],
           link: ['[', '](https://)', '链接文字'],
+          inlinecode: ['`', '`', '代码'],
           quote: ['> ', '', '引用'],
           list: ['- ', '', '列表项'],
+          ordered: ['1. ', '', '列表项'],
           code: ['\n```\n', '\n```\n', '代码'],
           table: ['\n| 列一 | 列二 |\n| --- | --- |\n| ', ' |  |\n', '内容'],
-          hr: ['\n---\n', '', '']
+          hr: ['\n---\n', '', ''],
+          image: ['![', '](https://)', '图片说明']
         };
     var snippet = map[kind];
     if (!snippet) return;
@@ -1222,7 +1401,7 @@
       if (!button) return;
       event.preventDefault();
       var kind = button.getAttribute('data-rich-format');
-      runRichCommand(kind, kind === 'code');
+      runRichCommand(kind);
     });
   }
 
@@ -1262,14 +1441,21 @@
 
   if (draftClear && draftDiscardUrl) {
     draftClear.addEventListener('click', function () {
-      if (!window.confirm('丢弃后，这份工作稿的修改会从后台移除，线上文章不受影响。')) return;
-      postJson(draftDiscardUrl, { _csrf: csrf ? csrf.value : '' }, 12000).then(function (result) {
-        if (result.response.ok && result.json && result.json.ok) {
-          window.location.reload();
-          return;
-        }
-        setStatus('error', '丢弃工作稿失败');
-      }).catch(function () { setStatus('error', '丢弃工作稿失败'); });
+      creamDialog({
+        kind: 'confirm',
+        title: '丢弃这份工作稿？',
+        message: '丢弃后，工作稿里的修改会从后台移除，线上文章不受影响。',
+        confirmLabel: '丢弃工作稿'
+      }).then(function (confirmed) {
+        if (!confirmed) return;
+        postJson(draftDiscardUrl, { _csrf: csrf ? csrf.value : '' }, 12000).then(function (result) {
+          if (result.response.ok && result.json && result.json.ok) {
+            window.location.reload();
+            return;
+          }
+          setStatus('error', '丢弃工作稿失败');
+        }).catch(function () { setStatus('error', '丢弃工作稿失败'); });
+      });
     });
   }
 
@@ -1320,14 +1506,22 @@
       else save();
       return;
     }
-    if (meta && key === 'k' && mode === 'write') {
+    if (meta && key === 'k') {
       event.preventDefault();
-      runRichCommand('link', false);
+      if (mode === 'write') runRichCommand('link');
+      else insertSnippet('link');
       return;
     }
-    if (meta && mode === 'write' && (key === 'b' || key === 'i')) {
+    if (meta && (key === 'b' || key === 'i')) {
       event.preventDefault();
-      runRichCommand(key === 'b' ? 'bold' : 'italic', false);
+      if (mode === 'write') runRichCommand(key === 'b' ? 'bold' : 'italic');
+      else insertSnippet(key === 'b' ? 'bold' : 'italic');
+      return;
+    }
+    if (meta && event.shiftKey && key === 'x') {
+      event.preventDefault();
+      if (mode === 'write') runRichCommand('strike');
+      else insertSnippet('strike');
       return;
     }
     if (key === 'escape') {

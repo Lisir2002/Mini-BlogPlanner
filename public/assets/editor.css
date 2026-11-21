@@ -319,25 +319,64 @@
 
 .editor-tool-sep { width: 1px; height: 24px; background: var(--line); }
 
-.editor-format-tools { display: flex; align-items: center; gap: 2px; min-width: 0; }
+
+
+.editor-format-tools { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.editor-tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid color-mix(in oklch, var(--line) 86%, transparent);
+  border-radius: 9px;
+  background: color-mix(in oklch, var(--paper) 72%, var(--cream-1));
+}
+.editor-tool-gap { width: 1px; height: 22px; flex: none; margin: 0 2px; background: var(--line); }
 
 .editor-tool {
   display: inline-grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ink-soft);
-  font: 700 10px/1 var(--editor-code);
+  font: 700 9px/1 var(--editor-code);
   cursor: pointer;
 }
 
 .editor-tool:hover { border-color: var(--line); background: var(--paper); color: var(--ink); }
 .editor-tool:active { transform: translateY(1px); }
+.editor-tool:focus-visible { outline: 2px solid color-mix(in oklch, var(--butter) 72%, transparent); outline-offset: 1px; }
 .editor-tool:disabled { opacity: 0.35; cursor: not-allowed; }
+.editor-tool .icon { width: 14px; height: 14px; }
+.editor-tool s { text-decoration-color: var(--coral); text-decoration-thickness: 2px; }
+
+.editor-syntax-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 25px;
+  padding: 4px 14px;
+  border-bottom: 1px dashed var(--line);
+  background: color-mix(in oklch, var(--cream-1) 72%, var(--paper));
+  color: var(--muted);
+  font: 600 9px/1.5 var(--editor-code);
+  letter-spacing: 0.01em;
+}
+.editor-syntax-tape {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--butter) 66%, var(--paper));
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+#editorSyntaxText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .editor-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
@@ -736,7 +775,9 @@
   .editor-paper:not(.is-previewing) .editor-source-pane { display: flex; }
 
   .editor-toolbar { position: sticky; top: 62px; }
-  .editor-format-tools { flex: 1 1 100%; order: 4; overflow-x: auto; padding: 2px 0; }
+  .editor-format-tools { flex: 1 1 100%; order: 4; flex-wrap: wrap; gap: 4px 6px; padding: 2px 2px 3px; }
+  .editor-syntax-strip { padding: 4px 12px; }
+  .editor-syntax-tape { display: none; }
   .editor-format-label { display: none; }
   .editor-toolbar-right { margin-left: auto; }
   .editor-draft-note { display: none; }
@@ -820,3 +861,69 @@
 
 .editor-toast{position:fixed;z-index:12000}
 @media (max-width:640px){.editor-toast{top:76px;bottom:auto}}
+
+/* 编辑器的链接、图片地址和危险确认改用纸面弹层，避免重新出现系统原生对话框。 */
+.editor-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: color-mix(in oklch, var(--ink) 20%, transparent);
+  backdrop-filter: blur(3px);
+}
+.editor-prompt-card {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 20px 20px 16px;
+  border: 1px solid var(--line-strong);
+  border-top: 5px solid var(--butter);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 6px 8px 0 color-mix(in oklch, var(--ink) 12%, transparent), 0 24px 54px -30px oklch(0.26 0.02 70 / 0.6);
+}
+.editor-prompt-title {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font: 800 18px/1.3 "Songti SC", "Noto Serif SC", serif;
+  letter-spacing: -0.01em;
+}
+.editor-prompt-note,
+.editor-prompt-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.editor-prompt-field {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--cream-0);
+  color: var(--ink);
+  font: 13px/1.5 var(--font-mono, ui-monospace, monospace);
+  outline: 0;
+}
+.editor-prompt-field:focus {
+  border-color: color-mix(in oklch, var(--coral) 58%, var(--line-strong));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--butter) 32%, transparent);
+}
+.editor-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.editor-prompt-actions .admin-button {
+  min-height: 38px;
+  padding: 0 16px;
+}
+@media (max-width: 640px) {
+  .editor-prompt { align-items: end; padding: 12px; }
+  .editor-prompt-card { width: 100%; padding: 18px 16px calc(14px + env(safe-area-inset-bottom)); border-radius: 16px 16px 12px 12px; }
+  .editor-prompt-actions .admin-button { flex: 1; }
+}

@@ -650,6 +650,18 @@ check('Revision migration and history page are wired', function (): void {
     $selectJs = file_get_contents($root . '/public/assets/admin-select.js');
     truthy($selectJs !== false && str_contains($selectJs, 'aria-haspopup') && str_contains($selectJs, 'admin-select-menu'), 'Admin selects must render a custom paper menu');
     truthy(str_contains($editor, 'data-select-variant="status"') && str_contains($editor, 'data-hint="设为草稿'), 'Editor status must use the self-drawn status picker');
+    truthy(substr_count($editor, 'data-editor-insert=') >= 14, 'Editor toolbar must expose the extended format set');
+    truthy(str_contains($editor, 'data-syntax-markdown=') && str_contains($editor, 'data-syntax-html='), 'Toolbar buttons must carry mode-specific syntax hints');
+    truthy(str_contains($editor, 'id="editorSyntaxText"'), 'Editor must explain the current syntax beside the toolbar');
+    truthy(str_contains($editorJs, 'updateToolbarContext') && !str_contains($editorJs, "button.disabled = mode === 'html'"), 'Toolbar must stay enabled and switch syntax for HTML mode');
+    truthy(str_contains($editorJs, "kind === 'ordered'") && str_contains($editorJs, "kind === 'inlinecode'") && str_contains($editorJs, "kind === 'image'"), 'Writing mode must support ordered lists, inline code and images');
+    truthy(!str_contains($editorJs, 'window.prompt') && !str_contains($editorJs, 'window.confirm') && str_contains($editorJs, 'creamDialog'), 'Editor dialogs must stay self-drawn instead of native browser prompts');
+    $postCss = file_get_contents($root . '/public/assets/posts.css');
+    truthy($postCss !== false && str_contains($postCss, '.post-body table') && str_contains($postCss, '.post-body hr::after'), 'Body formatting must share the cream paper theme');
+    truthy(str_contains($postCss, '.post-body pre code') && str_contains($postCss, 'white-space: pre'), 'Code blocks must reset inline-code chrome and keep source wrapping');
+    truthy(str_contains($postCss, 'background: color-mix(in oklch, var(--cream-1) 82%, white 18%)'), 'Code blocks must use paper background instead of the old dark slab');
+    $editorCss = file_get_contents($root . '/public/assets/editor.css');
+    truthy($editorCss !== false && str_contains($editorCss, '.editor-prompt-card') && str_contains($editorCss, '.editor-format-tools { flex: 1 1 100%; order: 4; flex-wrap: wrap;'), 'Editor dialog and mobile toolbar must follow the paper theme');
 });
 
 check('Media URL uses stable id and disk basename', function (): void {
