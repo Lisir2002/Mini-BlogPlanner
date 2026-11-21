@@ -62,6 +62,14 @@
           <div class="cf-turnstile" data-sitekey="<?= cream_e($turnstileSiteKey) ?>" data-action="login" data-theme="light" data-size="flexible" data-language="zh-cn"></div>
           <p class="admin-turnstile-note">只确认这次登录不是自动脚本，不读取密码或账号。</p>
         </div>
+        <script>
+        (function () {
+          var widget = document.querySelector('.cf-turnstile');
+          if (widget && window.innerWidth < 370) {
+            widget.setAttribute('data-size', 'compact');
+          }
+        })();
+        </script>
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         <?php endif; ?>
         <button class="admin-button primary full" type="submit"><?= cream_icon('lock', 'icon-xs') ?> 进入后台</button>

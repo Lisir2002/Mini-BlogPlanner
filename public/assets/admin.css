@@ -229,6 +229,8 @@
 
 .admin-auth-layout {
   width: min(940px, 100%);
+  max-width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(390px, 1.12fr);
   gap: clamp(20px, 3.2vw, 34px);
@@ -328,6 +330,8 @@
 .admin-auth-card {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: clamp(26px, 4.2vw, 44px);
   border: 1px solid color-mix(in oklch, var(--line-strong) 78%, var(--paper));
   border-radius: 8px 22px 12px 20px / 16px 10px 22px 10px;
@@ -491,9 +495,13 @@
 
 .admin-turnstile .cf-turnstile {
   display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 65px;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .admin-turnstile-note {
@@ -515,8 +523,11 @@
 }
 
 @media (max-width: 840px) {
-  .admin-auth-layout { grid-template-columns: 1fr; width: min(480px, 100%); }
+  .admin-auth-layout { grid-template-columns: 1fr; width: 100%; max-width: 480px; min-width: 0; }
   .admin-auth-note { display: none; }
+  .admin-login-body { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
+  .admin-login-body .admin-main { flex: 0 0 auto; min-width: 0; }
+  .admin-login-body .admin-auth { height: auto; min-height: calc(100dvh - 62px); overflow: visible; }
 }
 
 @media (max-height: 640px) {
@@ -536,8 +547,8 @@
 }
 
 @media (max-width: 460px) {
-  .admin-auth { padding: 14px 0 30px; }
-  .admin-auth-card { padding: 24px 18px; border-radius: 6px 16px 8px 14px; }
+  .admin-auth { padding: 14px 14px 24px; }
+  .admin-auth-card { padding: 24px 16px; border-radius: 6px 16px 8px 14px; }
   .admin-auth-card-index { top: 14px; right: 14px; }
   .tape-field-head span { display: none; }
   .tape-input input { min-height: 48px; padding: 12px 19px; font-size: 14.5px; }
