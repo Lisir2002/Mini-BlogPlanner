@@ -13,6 +13,7 @@ use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Security\Turnstile;
 use Core\Theme\Theme;
 use Throwable;
 
@@ -32,6 +33,12 @@ final class LoginController
     {
         if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
             return $this->render('页面已过期，请刷新后重试。', 419);
+        }
+
+        $turnstile = Turnstile::fromEnv();
+        $turnstileToken = isset($_POST['cf-turnstile-response']) ? (string) $_POST['cf-turnstile-response'] : null;
+        if (!$turnstile->verify($turnstileToken)) {
+            return $this->render('请先完成人机验证。', 400, $turnstile);
         }
 
         $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
@@ -99,14 +106,17 @@ final class LoginController
         return Response::redirect('/admin/login.html', 303);
     }
 
-    private function render(?string $error, int $status): Response
+    private function render(?string $error, int $status, ?Turnstile $turnstile = null): Response
     {
+        $turnstile ??= Turnstile::fromEnv();
         $html = $this->theme->render('admin/login', [
             'site' => $this->site(),
             'title' => '后台登录',
             'current' => 'login',
             'csrf' => Csrf::token(),
             'error' => $error,
+            'turnstileEnabled' => $turnstile->enabled(),
+            'turnstileSiteKey' => $turnstile->siteKey(),
         ], 'admin/layout');
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');

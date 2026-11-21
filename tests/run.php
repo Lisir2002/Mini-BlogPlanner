@@ -12,6 +12,7 @@ use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
 use Core\Http\Session;
+use Core\Security\Turnstile;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Page\PageRepository;
@@ -689,6 +690,63 @@ check('Auth logs in, expires idle sessions and logs out', function (): void {
     truthy($auth->user() === null, 'Logout must clear user');
 });
 
+check('Turnstile verifies token, host and action', function (): void {
+    $seen = '';
+    $turnstile = new Turnstile(
+        siteKey: 'site-key',
+        secretKey: 'secret-key',
+        hostnames: ['planner.low-ai.online'],
+        action: 'login',
+        transport: function (string $payload) use (&$seen): string {
+            $seen = $payload;
+
+            return json_encode(['success' => true, 'hostname' => 'planner.low-ai.online', 'action' => 'login'], JSON_THROW_ON_ERROR);
+        },
+    );
+    truthy($turnstile->enabled(), 'Turnstile with both keys must be enabled');
+    truthy($turnstile->verify('token-1'), 'Valid Turnstile response rejected');
+    parse_str($seen, $fields);
+    same('secret-key', $fields['secret'] ?? null);
+    same('token-1', $fields['response'] ?? null);
+
+    $wrongHost = new Turnstile(
+        siteKey: 'site-key',
+        secretKey: 'secret-key',
+        hostnames: ['planner.low-ai.online'],
+        transport: static fn (string $payload): string => json_encode(['success' => true, 'hostname' => 'evil.example', 'action' => 'login'], JSON_THROW_ON_ERROR),
+    );
+    truthy(!$wrongHost->verify('token-2'), 'Turnstile hostname mismatch accepted');
+
+    $wrongAction = new Turnstile(
+        siteKey: 'site-key',
+        secretKey: 'secret-key',
+        hostnames: ['planner.low-ai.online'],
+        transport: static fn (string $payload): string => json_encode(['success' => true, 'hostname' => 'planner.low-ai.online', 'action' => 'contact'], JSON_THROW_ON_ERROR),
+    );
+    truthy(!$wrongAction->verify('token-3'), 'Turnstile action mismatch accepted');
+
+    $failed = new Turnstile(
+        siteKey: 'site-key',
+        secretKey: 'secret-key',
+        hostnames: ['planner.low-ai.online'],
+        transport: static fn (string $payload): string => json_encode(['success' => false], JSON_THROW_ON_ERROR),
+    );
+    truthy(!$failed->verify('token-4'), 'Failed Turnstile response accepted');
+
+    $offline = new Turnstile(
+        siteKey: 'site-key',
+        secretKey: 'secret-key',
+        hostnames: ['planner.low-ai.online'],
+        transport: static fn (string $payload): ?string => null,
+    );
+    truthy(!$offline->verify('token-5'), 'Turnstile network failure must fail closed');
+    truthy(!$turnstile->verify(null), 'Missing Turnstile token accepted');
+
+    $disabled = new Turnstile(siteKey: '', secretKey: '');
+    truthy(!$disabled->enabled(), 'Turnstile without site key must be disabled');
+    truthy($disabled->verify(null), 'Disabled Turnstile must not block login');
+});
+
 check('Csrf token validates only matching value', function (): void {
     Session::start();
     $_SESSION = [];
@@ -1087,6 +1145,8 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($login !== false && str_contains($login, 'admin-auth-note'), 'Login needs the private desk note');
     truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
     truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
+    truthy($login !== false && str_contains($login, 'cf-turnstile') && str_contains($login, 'data-action="login"'), 'Login needs a Cloudflare Turnstile widget');
+    truthy($login !== false && str_contains($login, 'challenges.cloudflare.com/turnstile/v0/api.js'), 'Login needs the Turnstile script');
     truthy($css !== false && str_contains($css, 'grid-template-columns: minmax(0, 0.88fr) minmax(390px, 1.12fr)'), 'Login desk must be split into two columns');
     truthy($css !== false && str_contains($css, '.tape-input::before') && str_contains($css, 'clip-path: polygon(1% 0'), 'Credential fields need a torn tape surface');
     truthy($css !== false && str_contains($css, 'appearance: none') && preg_match('/\.tape-input input:focus \{[^}]*background: transparent;[^}]*box-shadow: none;/s', $css) === 1, 'Credential inputs must keep the tape surface when focused');
@@ -1094,6 +1154,7 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-main') && str_contains($css, 'flex: 1 1 auto'), 'Login main must fill the remaining viewport');
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-auth') && str_contains($css, 'overflow: hidden'), 'Login page must not scroll');
     truthy($css !== false && str_contains($css, '@media (max-height: 640px)'), 'Short screens need a compact login layout');
+    truthy($css !== false && str_contains($css, '.admin-turnstile') && str_contains($css, '.admin-turnstile .cf-turnstile'), 'Turnstile must use the paper login panel');
 });
 
 check('Comments start with three and reveal in batches', function (): void {

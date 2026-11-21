@@ -1,4 +1,4 @@
-<?php $error = $error ?? null; ?>
+<?php $error = $error ?? null; $turnstileEnabled = $turnstileEnabled ?? false; $turnstileSiteKey = $turnstileSiteKey ?? ''; ?>
 <section class="admin-auth">
   <div class="admin-auth-layout">
     <aside class="admin-auth-note">
@@ -53,6 +53,17 @@
             <input id="password" name="password" type="password" autocomplete="current-password" placeholder="输入密码" required>
           </div>
         </div>
+        <?php if ($turnstileEnabled): ?>
+        <div class="admin-turnstile">
+          <div class="admin-turnstile-head">
+            <span>03 / HUMAN CHECK</span>
+            <span>Cloudflare Turnstile</span>
+          </div>
+          <div class="cf-turnstile" data-sitekey="<?= cream_e($turnstileSiteKey) ?>" data-action="login" data-theme="light" data-size="flexible" data-language="zh-cn"></div>
+          <p class="admin-turnstile-note">只确认这次登录不是自动脚本，不读取密码或账号。</p>
+        </div>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <?php endif; ?>
         <button class="admin-button primary full" type="submit"><?= cream_icon('lock', 'icon-xs') ?> 进入后台</button>
       </form>
       <p class="admin-foot"><a href="/"><?= cream_icon('arrow-left', 'icon-xs') ?> 返回站点</a></p>
