@@ -108,7 +108,7 @@ if ($canUpdate && $latest !== null) {
       <strong class="update-version"><?= cream_e($latest['app']) ?></strong>
       <p class="update-channel"><?= cream_e($latest['tag']) ?> · <?= cream_e($published) ?> · <?= number_format((int) $latest['zip']['size'] / 1024, 0) ?> KB</p>
       <?php if ($latest['body'] !== ''): ?>
-      <div class="update-notes"><?= nl2br(preg_replace('/\*\*(.+?)\*\*/u', '<strong>$1</strong>', cream_e($latest['body'])) ?? '') ?></div>
+      <div class="update-notes"><?= cream_update_notes((string) $latest['body']) ?></div>
       <?php else: ?>
       <p class="update-notes muted">这次发布没有填写说明。</p>
       <?php endif; ?>

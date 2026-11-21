@@ -105,6 +105,19 @@
 }
 .update-notes.muted { color: var(--muted); }
 .update-notes strong { color: var(--ink); font-weight: 800; }
+.update-notes p { margin: 0 0 5px; }
+.update-notes p:last-child { margin-bottom: 0; }
+.update-notes-heading {
+  margin: 10px 0 5px;
+  color: var(--ink);
+  font: 800 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.update-notes-heading:first-child { margin-top: 0; }
+.update-notes-list { margin: 0 0 5px; padding-left: 16px; }
+.update-notes-list li { margin: 0 0 3px; }
+.update-notes-list li:last-child { margin-bottom: 0; }
 
 .update-facts {
   display: grid;

@@ -64,6 +64,64 @@ if (!function_exists('cream_icon')) {
     }
 }
 
+if (!function_exists('cream_update_notes')) {
+    function cream_update_notes(string $body): string
+    {
+        $lines = preg_split('/\R/u', str_replace("\r\n", "\n", $body));
+        if (!is_array($lines)) {
+            return '';
+        }
+        $html = [];
+        $list = false;
+        foreach ($lines as $line) {
+            $line = rtrim((string) $line);
+            if ($line === '') {
+                if ($list) {
+                    $html[] = '</ul>';
+                    $list = false;
+                }
+                continue;
+            }
+            if (preg_match('/^#{1,3}\s+(.+)$/u', $line, $matches) === 1) {
+                if ($list) {
+                    $html[] = '</ul>';
+                    $list = false;
+                }
+                $html[] = '<h3 class="update-notes-heading">' . cream_update_inline($matches[1]) . '</h3>';
+                continue;
+            }
+            if (preg_match('/^[-*]\s+(.+)$/u', $line, $matches) === 1) {
+                if (!$list) {
+                    $html[] = '<ul class="update-notes-list">';
+                    $list = true;
+                }
+                $html[] = '<li>' . cream_update_inline($matches[1]) . '</li>';
+                continue;
+            }
+            if ($list) {
+                $html[] = '</ul>';
+                $list = false;
+            }
+            $html[] = '<p>' . cream_update_inline($line) . '</p>';
+        }
+        if ($list) {
+            $html[] = '</ul>';
+        }
+
+        return implode('', $html);
+    }
+}
+
+if (!function_exists('cream_update_inline')) {
+    function cream_update_inline(string $text): string
+    {
+        $escaped = cream_e($text);
+        $html = preg_replace('/\*\*(.+?)\*\*/u', '<strong>$1</strong>', $escaped);
+
+        return is_string($html) ? $html : $escaped;
+    }
+}
+
 if (!function_exists('cream_word_count')) {
     function cream_word_count(string $body): int
     {

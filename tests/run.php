@@ -1438,6 +1438,15 @@ check('Series feature is removed from routes, templates and schema', function ()
     truthy(!is_file($root . '/themes/cream/templates/admin/series.php'), 'Series admin template must be gone');
 });
 
+check('Release notes render safe headings and bullets', function (): void {
+    Theme::load(dirname(__DIR__), 'cream');
+    $notes = cream_update_notes("### 新功能\n- **版本升级页**：后台集中展示。\n<script>alert(1)</script>");
+    truthy(str_contains($notes, '<h3 class="update-notes-heading">新功能</h3>'), 'Release notes need a heading');
+    truthy(str_contains($notes, '<ul class="update-notes-list">'), 'Release notes need a bullet list');
+    truthy(str_contains($notes, '<strong>版本升级页</strong>'), 'Release notes need inline bold');
+    truthy(!str_contains($notes, '<script>'), 'Release notes must escape HTML');
+});
+
 check('Release catalog accepts only stable tagged assets', function (): void {
     $payload = [
         'tag_name' => 'v0.1.99',
