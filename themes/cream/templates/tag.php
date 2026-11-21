@@ -1,12 +1,15 @@
 <?php
 $tag = is_array($tag ?? null) ? $tag : ['name' => '', 'slug' => ''];
 $posts = is_array($posts ?? null) ? $posts : [];
+$total = (int) ($total ?? count($posts));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 ?>
 <section class="archive">
   <header class="archive-head">
     <a class="back-link" href="/tags.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 所有标签</a>
     <span class="eyebrow">TAG</span>
-    <p>这个标签下共有 <?= count($posts) ?> 篇已发布文章。</p>
+    <p>这个标签下共有 <?= number_format($total) ?> 篇已发布文章，每页十条。</p>
   </header>
 
 <?php if ($posts === []): ?>
@@ -26,5 +29,6 @@ $posts = is_array($posts ?? null) ? $posts : [];
     </article>
 <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '标签文章分页'; require __DIR__ . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

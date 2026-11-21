@@ -7,6 +7,7 @@ namespace Plugin\Api;
 use Core\Database\Connection;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Status\SiteStatus;
 use Core\Version\SchemaAhead;
 use Core\Version\SchemaBehind;
 use Core\Version\SchemaGuard;
@@ -58,10 +59,18 @@ final class HealthController
         }
     }
 
-    /** @param array<string, mixed> $data */
-    private function json(array $data): Response
+    public function status(Request $request): Response
     {
-        return Response::json($data)
+        $report = (new SiteStatus($this->version))->report();
+        $code = ($report['status'] ?? 'ok') === 'ok' ? 200 : 503;
+
+        return $this->json($report, $code);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function json(array $data, int $status = 200): Response
+    {
+        return Response::json($data, $status)
             ->withHeader('Cache-Control', 'no-store')
             ->withHeader('X-Robots-Tag', 'noindex');
     }

@@ -51,6 +51,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
       tags: [system]
+  /api/v1/status:
+    get:
+      operationId: getApiStatus
+      summary: 读取完整站点状态
+      description: 返回版本、数据库连接、结构版本、公开内容计数和检查结果。只暴露公开可读信息，不包含连接地址、账号或服务器路径。
+      responses:
+        "200":
+          description: 站点运行正常。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        "503":
+          description: 数据库或结构版本异常，响应仍为同样的状态对象。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+      tags: [system]
   /api/v1/posts:
     get:
       operationId: listPosts
@@ -250,6 +269,53 @@ components:
         schema:
           type: integer
           examples: [2026112006]
+    Status:
+      type: object
+      required: [status, app, api, channel, checked_at, php, database, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        app: { type: string, examples: ["0.1.66"] }
+        api: { type: string, examples: ["1.4.0"] }
+        channel: { type: string, examples: [stable] }
+        checked_at: { type: string, format: date-time }
+        latency_ms: { type: integer, minimum: 0 }
+        schema: { type: [integer, "null"], examples: [2026112105] }
+        php:
+          type: object
+          properties:
+            version: { type: string }
+            sapi: { type: string }
+            timezone: { type: string }
+        database:
+          type: object
+          properties:
+            connected: { type: boolean }
+            driver: { type: string }
+            version: { type: string }
+            server_time: { type: string }
+            latency_ms: { type: integer, minimum: 0 }
+        content:
+          type: object
+          properties:
+            published_posts: { type: integer, minimum: 0 }
+            approved_comments: { type: integer, minimum: 0 }
+            media: { type: integer, minimum: 0 }
+            tags: { type: integer, minimum: 0 }
+            last_published_at: { type: string }
+        checks:
+          type: array
+          items:
+            type: object
+            required: [id, label, status, detail, metric]
+            properties:
+              id: { type: string }
+              label: { type: string }
+              status: { type: string, enum: [ok, error] }
+              detail: { type: string }
+              metric: { type: string }
+        error: { type: string, examples: [schema-mismatch] }
     Problem:
       type: object
       required: [type, title, status, detail, instance]

@@ -1,10 +1,13 @@
 <?php
 $posts = is_array($posts ?? null) ? $posts : [];
+$total = (int) ($total ?? count($posts));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 ?>
 <section class="archive">
   <header class="archive-head">
     <span class="eyebrow">ARCHIVE</span>
-    <p>按时间倒序。没有推荐算法，只有一页一页翻。</p>
+    <p>按时间倒序，每页十条。共 <?= number_format($total) ?> 篇，没有推荐算法，只有一页一页翻。</p>
   </header>
 
 <?php if ($posts === []): ?>
@@ -24,5 +27,6 @@ $posts = is_array($posts ?? null) ? $posts : [];
     </article>
 <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '文章分页'; require __DIR__ . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

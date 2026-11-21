@@ -1,11 +1,15 @@
 <?php
 $tags = is_array($tags ?? null) ? $tags : [];
+$tagOptions = is_array($tagOptions ?? null) ? $tagOptions : $tags;
+$total = (int) ($total ?? count($tags));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 $ok = $ok ?? null;
 $messages = ['renamed' => '标签已重命名。', 'merged' => '标签已合并。', 'deleted' => '空标签已删除。'];
 ?>
 <section class="admin-page">
   <header class="admin-page-head">
-    <div><span class="eyebrow">TAGS</span><p><?= count($tags) ?> 个标签。重命名保留 slug，合并会把文章关联转到目标标签。</p></div>
+    <div><span class="eyebrow">TAGS</span><p>共 <?= number_format($total) ?> 个标签，每页十个。重命名保留 slug，合并会把文章关联转到目标标签。</p></div>
     <a class="admin-button ghost" href="/tags.html" target="_blank" rel="noopener">查看公开标签</a>
   </header>
 
@@ -28,11 +32,11 @@ $messages = ['renamed' => '标签已重命名。', 'merged' => '标签已合并�
         <input name="name" maxlength="60" value="<?= cream_e($tag['name']) ?>" required aria-label="新的标签名">
         <button class="admin-button ghost" type="submit">重命名</button>
       </form>
-      <?php if (count($tags) > 1): ?>
+      <?php if (count($tagOptions) > 1): ?>
       <form method="post" action="/admin/tags/<?= (int) $tag['id'] ?>/merge.html" class="tag-admin-form" onsubmit="return confirm('确认把这个标签的文章合并到目标标签？')">
         <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
         <select name="target_id" aria-label="合并目标">
-          <?php foreach ($tags as $target): if ($target['id'] === $tag['id']) { continue; } ?>
+          <?php foreach ($tagOptions as $target): if ($target['id'] === $tag['id']) { continue; } ?>
           <option value="<?= (int) $target['id'] ?>"><?= cream_e($target['name']) ?></option>
           <?php endforeach; ?>
         </select>
@@ -48,5 +52,6 @@ $messages = ['renamed' => '标签已重命名。', 'merged' => '标签已合并�
     </article>
   <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '标签管理分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

@@ -1,6 +1,10 @@
 <?php
 $post = is_array($post ?? null) ? $post : [];
 $revisions = is_array($revisions ?? null) ? $revisions : [];
+$revisionOptions = is_array($revisionOptions ?? null) ? $revisionOptions : $revisions;
+$total = (int) ($total ?? count($revisions));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 $selected = is_array($selected ?? null) ? $selected : null;
 $currentText = (string) ($current_text ?? '');
 $selectedText = (string) ($selected_text ?? '');
@@ -27,7 +31,7 @@ foreach ($diff as $row) {
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">HISTORY</span>
-      <p>线上当前是 v<?= $onlineVersion ?>。每次发布都会留下快照，保留最近 <?= (int) ($retention ?? 50) ?> 个版本。</p>
+      <p>线上当前是 v<?= $onlineVersion ?>。每次发布都会留下快照，共 <?= number_format($total) ?> 个，每页十个。</p>
     </div>
     <div class="revision-head-actions">
       <a class="admin-button ghost" href="/admin/posts/<?= $postId ?>.html">返回编辑器</a>
@@ -45,7 +49,7 @@ foreach ($diff as $row) {
     <aside class="revision-list" aria-label="版本列表">
       <div class="revision-list-head">
         <strong>发布版本</strong>
-        <span><?= count($revisions) ?> 个快照</span>
+        <span><?= count($revisions) ?> / <?= number_format($total) ?> 个快照</span>
       </div>
       <?php foreach ($revisions as $revision): ?>
         <?php
@@ -90,7 +94,7 @@ foreach ($diff as $row) {
           <label for="revisionCompare">对比基准</label>
           <select id="revisionCompare" name="compare" onchange="this.form.submit()">
             <option value=""<?= $baseIsOnline ? ' selected' : '' ?>>线上 v<?= $onlineVersion ?></option>
-            <?php foreach ($revisions as $revision): ?>
+            <?php foreach ($revisionOptions as $revision): ?>
               <?php $optionVersion = (int) ($revision['version'] ?? 0); ?>
               <?php if ($optionVersion === $selectedVersion) { continue; } ?>
               <option value="<?= $optionVersion ?>"<?= $optionVersion === $baseVersion ? ' selected' : '' ?>>v<?= $optionVersion ?> · <?= cream_e((string) ($revision['published_at'] ?? $revision['created_at'] ?? '')) ?></option>
@@ -158,5 +162,6 @@ foreach ($diff as $row) {
       <?php endif; ?>
     </section>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '版本历史分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

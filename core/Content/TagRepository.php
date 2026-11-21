@@ -12,8 +12,10 @@ final class TagRepository
     public function __construct(private readonly ConnectionInterface $db) {}
 
     /** @return list<array{name:string,slug:string,count:int}> */
-    public function all(): array
+    public function all(int $limit = 10, int $offset = 0): array
     {
+        $limit = max(1, min(100, $limit));
+        $offset = max(0, min(10000, $offset));
         $rows = $this->db->fetchAll(
             "SELECT t.name, t.slug, COUNT(pt.post_id) AS post_count
              FROM tags t
@@ -21,7 +23,8 @@ final class TagRepository
              JOIN posts p ON p.id = pt.post_id
              WHERE p.status = 'published' AND p.published_at <= NOW()
              GROUP BY t.id, t.name, t.slug
-             ORDER BY post_count DESC, t.name"
+             ORDER BY post_count DESC, t.name
+             LIMIT " . $limit . ' OFFSET ' . $offset
         );
 
         return array_map(static fn (array $row): array => [
@@ -29,6 +32,19 @@ final class TagRepository
             'slug' => (string) $row['slug'],
             'count' => (int) $row['post_count'],
         ], $rows);
+    }
+
+    public function countAll(): int
+    {
+        $row = $this->db->fetchOne(
+            "SELECT COUNT(DISTINCT t.id) AS total
+             FROM tags t
+             JOIN post_tags pt ON pt.tag_id = t.id
+             JOIN posts p ON p.id = pt.post_id
+             WHERE p.status = 'published' AND p.published_at <= NOW()"
+        );
+
+        return $row === null ? 0 : (int) $row['total'];
     }
 
     /** @return array{name:string,slug:string}|null */
@@ -55,6 +71,34 @@ final class TagRepository
             'slug' => (string) $row['slug'],
             'count' => (int) $row['post_count'],
         ], $rows);
+    }
+
+    /** @return list<array{id:int,name:string,slug:string,count:int}> */
+    public function adminPage(int $limit = 10, int $offset = 0): array
+    {
+        $limit = max(1, min(100, $limit));
+        $offset = max(0, min(10000, $offset));
+        $rows = $this->db->fetchAll(
+            'SELECT t.id, t.name, t.slug, COUNT(pt.post_id) AS post_count
+             FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id
+             GROUP BY t.id, t.name, t.slug
+             ORDER BY t.name
+             LIMIT ' . $limit . ' OFFSET ' . $offset
+        );
+
+        return array_map(static fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'slug' => (string) $row['slug'],
+            'count' => (int) $row['post_count'],
+        ], $rows);
+    }
+
+    public function adminCount(): int
+    {
+        $row = $this->db->fetchOne('SELECT COUNT(*) AS total FROM tags');
+
+        return $row === null ? 0 : (int) $row['total'];
     }
 
     /** @return array{id:int,name:string,slug:string,count:int}|null */

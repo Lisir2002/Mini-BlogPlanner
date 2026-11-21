@@ -66,7 +66,7 @@
 - `tag`：标签 slug，必须存在。
 - `sort`：`updated`（默认）、`published`、`title`。
 - `changes=1`：只看已发布且存在 `post_drafts` 的文章。
-- `page`：每页 20 篇；筛选后为空时显示专用空状态。
+- `page`：每页 10 篇；筛选后为空时显示专用空状态。
 - 列表在桌面显示七列表格，760px 以下及平板宽度切换为卡片；行菜单提供预览草稿、公开页、版本历史、归档/恢复。
 
 ## 异步表单约定
@@ -96,7 +96,7 @@
 
 - 预览必须登录，公开页使用的模板会显示“预览模式”，响应带 `X-Robots-Tag: noindex, nofollow`。
 - 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived/restored`、`post.bulk_archived/bulk_restored`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`。
-- 查询参数：`category`（`admin/post/comment/media/tag/system/other`）、`q`（事件、操作者或字段）、`event` 精确事件名、`actor` 精确用户名、`result`（`success/failed`）、`range`（`today/24h/7d/30d/90d`）、`from`/`to`（`YYYY-MM-DD`）、`per_page`（25/50/100）、`page` 页码；超出页数会夹到最后一页。
+- 查询参数：`category`（`admin/post/comment/media/tag/system/other`）、`q`（事件、操作者或字段）、`event` 精确事件名、`actor` 精确用户名、`result`（`success/failed`）、`range`（`today/24h/7d/30d/90d`）、`from`/`to`（`YYYY-MM-DD`）、每页固定 10 条（不再提供切换）、`page` 页码；超出页数会夹到最后一页。
 - 审计详情展开后显示结构化字段和脱敏后的原始 JSON；密码、令牌、Cookie、授权头、CSRF 和会话字段在写入和读取时都会遮蔽。
 - CSV 导出复用当前筛选，单次上限 5000 条，导出动作本身写入 `admin.audit.exported`；后台不提供编辑或删除入口。
 - 审计只记录动作、对象 id、状态、IP，不记录密码、Cookie、数据库连接串。

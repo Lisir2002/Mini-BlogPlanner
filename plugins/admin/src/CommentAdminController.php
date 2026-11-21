@@ -38,7 +38,7 @@ final class CommentAdminController
             $status = '';
         }
         $page = max(1, (int) ($request->query()['page'] ?? 1));
-        $limit = 30;
+        $limit = 10;
 
         try {
             $db = Connection::fromEnv();

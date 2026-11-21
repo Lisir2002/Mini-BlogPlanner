@@ -40,6 +40,31 @@ final class PostRepository
         return array_map(fn (array $row): Post => $this->map($row), $rows);
     }
 
+    public function countPublished(): int
+    {
+        $row = $this->db->fetchOne(
+            "SELECT COUNT(*) AS total FROM posts WHERE status = 'published' AND published_at <= NOW()"
+        );
+
+        return $row === null ? 0 : (int) $row['total'];
+    }
+
+    /** @return list<Post> */
+    public function published(int $limit = 10, int $offset = 0): array
+    {
+        $limit = max(1, min(50, $limit));
+        $offset = max(0, min(10000, $offset));
+        $rows = $this->db->fetchAll(
+            "SELECT id, slug, title, excerpt, body, published_at, updated_at, reading_minutes
+             FROM posts
+             WHERE status = 'published' AND published_at <= NOW()
+             ORDER BY published_at DESC, id DESC
+             LIMIT " . $limit . ' OFFSET ' . $offset
+        );
+
+        return $this->withTags(array_map(fn (array $row): Post => $this->map($row), $rows));
+    }
+
     /** @return list<array{year:int, month:int, count:int}> */
     public function archiveMonths(): array
     {
@@ -101,9 +126,10 @@ final class PostRepository
     }
 
     /** @return list<Post> */
-    public function byTag(string $tagSlug, int $limit = 20): array
+    public function byTag(string $tagSlug, int $limit = 10, int $offset = 0): array
     {
         $limit = max(1, min(50, $limit));
+        $offset = max(0, min(10000, $offset));
         $rows = $this->db->fetchAll(
             "SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, p.updated_at, p.reading_minutes
              FROM posts p
@@ -111,7 +137,7 @@ final class PostRepository
              JOIN tags t ON t.id = pt.tag_id
              WHERE t.slug = ? AND p.status = 'published' AND p.published_at <= NOW()
              ORDER BY p.published_at DESC, p.id DESC
-             LIMIT " . $limit,
+             LIMIT " . $limit . ' OFFSET ' . $offset,
             [$tagSlug],
         );
 
@@ -120,8 +146,22 @@ final class PostRepository
         return $this->withTags($posts);
     }
 
+    public function countByTag(string $tagSlug): int
+    {
+        $row = $this->db->fetchOne(
+            "SELECT COUNT(*) AS total
+             FROM posts p
+             JOIN post_tags pt ON pt.post_id = p.id
+             JOIN tags t ON t.id = pt.tag_id
+             WHERE t.slug = ? AND p.status = 'published' AND p.published_at <= NOW()",
+            [$tagSlug],
+        );
+
+        return $row === null ? 0 : (int) $row['total'];
+    }
+
     /** @return list<Post> */
-    public function search(string $query, int $limit = 20): array
+    public function search(string $query, int $limit = 10): array
     {
         $query = trim($query);
         if ($query === '') {

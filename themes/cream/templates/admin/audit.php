@@ -5,7 +5,7 @@ $actors = is_array($actors ?? null) ? $actors : [];
 $categoryTabs = is_array($categoryTabs ?? null) ? $categoryTabs : [];
 $activeFilters = is_array($activeFilters ?? null) ? $activeFilters : [];
 $pageLinks = is_array($pageLinks ?? null) ? $pageLinks : [];
-$pageSizes = is_array($pageSizes ?? null) ? $pageSizes : [25, 50, 100];
+$pageSizes = is_array($pageSizes ?? null) ? $pageSizes : [10];
 $ranges = is_array($ranges ?? null) ? $ranges : [];
 $stats = is_array($stats ?? null) ? $stats : ['total' => 0, 'today' => 0, 'week' => 0, 'failed' => 0, 'actors' => 0];
 $topEvent = is_array($topEvent ?? null) ? $topEvent : null;
@@ -18,7 +18,7 @@ $range = (string) ($range ?? 'all');
 $from = (string) ($from ?? '');
 $to = (string) ($to ?? '');
 $dateError = (string) ($dateError ?? '');
-$perPage = (int) ($perPage ?? 50);
+$perPage = (int) ($perPage ?? 10);
 $page = (int) ($page ?? 1);
 $pages = (int) ($pages ?? 1);
 $total = (int) ($total ?? 0);
@@ -168,11 +168,7 @@ foreach ($eventOptions as $option) {
       <a class="admin-button ghost" href="<?= cream_e($clearUrl) ?>">清空条件</a>
       <label class="audit-field audit-field-size">
         <span>每页</span>
-        <select name="per_page">
-          <?php foreach ($pageSizes as $size): ?>
-          <option value="<?= (int) $size ?>"<?= $perPage === (int) $size ? ' selected' : '' ?>><?= (int) $size ?> 条</option>
-          <?php endforeach; ?>
-        </select>
+        <span class="audit-fixed-page">固定 10 条</span>
       </label>
       <span class="audit-filter-note">事件和操作者为精确匹配；关键词会搜索事件名、操作者和字段内容。</span>
     </div>

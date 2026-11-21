@@ -28,21 +28,6 @@ $nextUrl = is_string($next_url ?? null) ? $next_url : null;
   </div>
 
 <?php if ($pages > 1): ?>
-  <nav class="archive-pagination" aria-label="归档分页">
-<?php if ($prevUrl !== null): ?>
-    <a class="archive-page-link" href="<?= cream_e($prevUrl) ?>"><?= cream_icon('arrow-left', 'icon-xs') ?> 上一页</a>
-<?php else: ?>
-    <span class="archive-page-link is-disabled"><?= cream_icon('arrow-left', 'icon-xs') ?> 上一页</span>
-<?php endif; ?>
-    <span class="archive-page-count">第 <?= $page ?> / <?= $pages ?> 页</span>
-<?php if ($page > 1 && $monthUrl !== ''): ?>
-    <a class="archive-page-link archive-page-first" href="<?= cream_e($monthUrl) ?>">本月第一页</a>
-<?php endif; ?>
-<?php if ($nextUrl !== null): ?>
-    <a class="archive-page-link" href="<?= cream_e($nextUrl) ?>">下一页 <?= cream_icon('arrow-right', 'icon-xs') ?></a>
-<?php else: ?>
-    <span class="archive-page-link is-disabled">下一页 <?= cream_icon('arrow-right', 'icon-xs') ?></span>
-<?php endif; ?>
-  </nav>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prevUrl; $pager_next = $nextUrl; $pager_links = $page_links ?? []; $pager_label = '归档分页'; require __DIR__ . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

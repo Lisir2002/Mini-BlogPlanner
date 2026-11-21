@@ -1,8 +1,13 @@
-<?php $tags = is_array($tags ?? null) ? $tags : []; ?>
+<?php
+$tags = is_array($tags ?? null) ? $tags : [];
+$total = (int) ($total ?? count($tags));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
+?>
 <section class="archive">
   <header class="archive-head">
     <span class="eyebrow">TAGS</span>
-    <p>同一件小事，写在不同时间里。选一个标签，看看它长成了什么。</p>
+    <p>共 <?= number_format($total) ?> 个标签，每页十个。同一件小事，写在不同时间里。</p>
   </header>
 
 <?php if ($tags === []): ?>
@@ -21,5 +26,6 @@
     </a>
   <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '标签分页'; require __DIR__ . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

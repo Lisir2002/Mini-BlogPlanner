@@ -25,7 +25,7 @@ final class AuditAdminController
 {
     use AdminErrors;
 
-    private const PAGE_SIZES = [25, 50, 100];
+    private const PAGE_SIZES = [10];
     private const EXPORT_LIMIT = 5000;
     private const RETENTION_DAYS = 90;
 
@@ -350,7 +350,7 @@ final class AuditAdminController
 
         $perPage = (int) $this->queryValue($query, 'per_page');
         if (!in_array($perPage, self::PAGE_SIZES, true)) {
-            $perPage = 50;
+            $perPage = 10;
         }
         $page = max(1, (int) $this->queryValue($query, 'page'));
 
@@ -368,9 +368,6 @@ final class AuditAdminController
             if ($value !== '') {
                 $filter[$key] = $value;
             }
-        }
-        if ($perPage !== 50) {
-            $filter['per_page'] = $perPage;
         }
 
         $db = [];

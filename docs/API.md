@@ -10,7 +10,7 @@
 - 缓存：读取接口默认 `no-store`；公开只读内容可按资源单独协商。
 - 认证：公开读取接口无需认证；写接口使用后台会话 + CSRF，后续补充 Token 插件。
 - 限流：默认按 IP 计数；超限返回 `429`，响应头带 `Retry-After`。
-- 分页：`?page=1&per_page=20`，响应包含 `data`、`meta`；`per_page` 上限 100。
+- 页面列表：固定每页 10 条，超出自动分页；API 读取接口使用 `?page=1&per_page=20`，响应包含 `data`、`meta`，`per_page` 上限 100。
 
 ## 已实现接口
 
@@ -45,6 +45,27 @@
 ```
 
 状态码 `503`。
+
+### `GET /api/v1/status`
+
+返回完整站点状态：应用与 API 版本、数据库连接、结构版本、PHP 运行环境、公开内容计数和检查结果。只包含公开可读信息，不返回连接地址、账号或服务器路径。正常返回 `200`，数据库或结构异常时返回同样的状态对象与 `503`。
+
+```json
+{
+  "status": "ok",
+  "app": "0.1.66",
+  "api": "1.4.0",
+  "channel": "stable",
+  "checked_at": "2026-11-22T08:00:00+00:00",
+  "latency_ms": 3,
+  "schema": 2026112105,
+  "database": {"connected": true, "driver": "mysql", "latency_ms": 3},
+  "content": {"published_posts": 19, "approved_comments": 5, "media": 3, "tags": 4},
+  "checks": [
+    {"id": "database", "label": "数据库连接", "status": "ok", "detail": "连接正常，可以读取站点数据。", "metric": "3 ms"}
+  ]
+}
+```
 
 ### `GET /api/v1/posts`
 

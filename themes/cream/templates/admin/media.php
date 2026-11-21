@@ -1,12 +1,15 @@
 <?php
 $media = is_array($media ?? null) ? $media : [];
 $uploaded = $uploaded ?? null;
+$total = (int) ($total ?? count($media));
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 ?>
 <section class="admin-page">
   <header class="admin-page-head">
     <div>
       <span class="eyebrow">MEDIA</span>
-      <p>图片存放在非公开目录，通过受控地址读取。只接受 JPEG、PNG、WebP、GIF，单张不超过 5MB。</p>
+      <p>共 <?= number_format($total) ?> 张图片，每页十张。图片存放在非公开目录，通过受控地址读取，单张不超过 5MB。</p>
     </div>
   </header>
 
@@ -56,5 +59,6 @@ $uploaded = $uploaded ?? null;
     </article>
   <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '媒体分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

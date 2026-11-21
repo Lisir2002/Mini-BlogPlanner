@@ -9,6 +9,7 @@ use Core\Content\PostRepository;
 use Core\Database\Connection;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Page\Pagination;
 use Core\Seo\StructuredData;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
@@ -17,8 +18,6 @@ use Throwable;
 
 final class ArchiveController
 {
-    private const PER_PAGE = 20;
-
     public function __construct(
         private readonly Version $version,
         private readonly Theme $theme,
@@ -63,10 +62,20 @@ final class ArchiveController
         if ($year === null) {
             return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
         }
+        $requestedPage = $this->pageValue($params['page'] ?? null);
+        if ($requestedPage === null) {
+            return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
+        }
 
         try {
-            $repository = new PostRepository(Connection::fromEnv());
-            $posts = $repository->publishedInPeriod($year, null, 500);
+            $db = Connection::fromEnv();
+            $repository = new PostRepository($db);
+            $total = $repository->countPublishedInPeriod($year, null);
+            $state = Pagination::resolve($requestedPage, $total);
+            if ($requestedPage > 1 && $requestedPage > $state['pages']) {
+                return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
+            }
+            $posts = $repository->publishedInPeriod($year, null, $state['per_page'], $state['offset']);
             $months = $repository->archiveMonths();
         } catch (Throwable) {
             return ErrorPage::page($this->theme, $request, 503, '暂时无法读取归档，请稍后再试。', $this->version, $this->site());
@@ -76,35 +85,50 @@ final class ArchiveController
             $months,
             static fn (array $month): bool => $month['year'] === $year,
         ));
-        if ($yearMonths === []) {
+        if ($yearMonths === [] || $total === 0) {
             return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
         }
 
         $groups = [];
-        foreach ($yearMonths as $month) {
-            $groups[$month['month']] = [
-                'month' => $month['month'],
-                'count' => $month['count'],
-                'posts' => [],
-            ];
-        }
         foreach ($posts as $post) {
             $monthNumber = (int) substr($post->publishedAt, 5, 2);
-            if (isset($groups[$monthNumber])) {
-                $groups[$monthNumber]['posts'][] = $post;
+            if (!isset($groups[$monthNumber])) {
+                $groups[$monthNumber] = [
+                    'month' => $monthNumber,
+                    'count' => 0,
+                    'posts' => [],
+                ];
             }
+            $groups[$monthNumber]['count']++;
+            $groups[$monthNumber]['posts'][] = $post;
         }
         krsort($groups);
 
-        $canonical = $this->baseUrl($request) . '/archive/' . $year . '.html';
+        $baseUrl = $this->baseUrl($request);
+        $yearUrl = $baseUrl . '/archive/' . $year . '.html';
+        $page = $state['page'];
+        $pages = $state['pages'];
+        $canonical = $page <= 1 ? $yearUrl : $baseUrl . '/archive/' . $year . '/page/' . $page . '.html';
+        $pageLinks = [];
+        foreach (Pagination::window($page, $pages) as $number) {
+            $pageLinks[] = [
+                'number' => $number,
+                'url' => $number === null ? null : ($number <= 1 ? $yearUrl : $baseUrl . '/archive/' . $year . '/page/' . $number . '.html'),
+            ];
+        }
         $site = $this->site();
 
         return $this->render('archive-year', [
-            'page_title' => $year . ' 年归档',
+            'page_title' => $page > 1 ? $year . ' 年归档（第 ' . $page . ' 页）' : $year . ' 年归档',
             'page_heading' => $year . ' 年',
-            'page_description' => $year . ' 年写过的文章，按月份分组。',
+            'page_description' => $year . ' 年写过的文章，每页十条。',
             'year' => $year,
-            'year_count' => array_sum(array_map(static fn (array $month): int => $month['count'], $yearMonths)),
+            'year_count' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'page_links' => $pageLinks,
+            'prev_url' => $page > 1 ? ($page === 2 ? $yearUrl : $baseUrl . '/archive/' . $year . '/page/' . ($page - 1) . '.html') : null,
+            'next_url' => $page < $pages ? $baseUrl . '/archive/' . $year . '/page/' . ($page + 1) . '.html' : null,
             'months' => array_values($groups),
             'canonical_url' => $canonical,
             'json_ld' => StructuredData::collectionPage($year . ' 年归档', $year . ' 年写过的文章，按月份分组。', $canonical, $site),
@@ -147,35 +171,44 @@ final class ArchiveController
             $db = Connection::fromEnv();
             $repository = new PostRepository($db);
             $total = $repository->countPublishedInPeriod($year, $month);
-            $pages = max(1, (int) ceil($total / self::PER_PAGE));
-            if ($total === 0 || $page < 1 || $page > $pages) {
+            $state = Pagination::resolve($page, $total);
+            if ($total === 0 || $page < 1 || $page > $state['pages']) {
                 return ErrorPage::page($this->theme, $request, 404, '', $this->version, $this->site());
             }
             $posts = $repository->publishedInPeriod(
                 $year,
                 $month,
-                self::PER_PAGE,
-                ($page - 1) * self::PER_PAGE,
+                $state['per_page'],
+                $state['offset'],
             );
         } catch (Throwable) {
             return ErrorPage::page($this->theme, $request, 503, '暂时无法读取归档，请稍后再试。', $this->version, $this->site());
         }
 
+        $pages = $state['pages'];
         $canonical = $this->monthPageUrl($baseUrl, $year, $month, $page);
         $title = $year . ' 年 ' . $month . ' 月';
         if ($page > 1) {
             $title .= '（第 ' . $page . ' 页）';
+        }
+        $pageLinks = [];
+        foreach (Pagination::window($page, $pages) as $number) {
+            $pageLinks[] = [
+                'number' => $number,
+                'url' => $number === null ? null : $this->monthPageUrl($baseUrl, $year, $month, $number),
+            ];
         }
         $site = $this->site();
 
         return $this->render('archive-month', [
             'page_title' => $title,
             'page_heading' => $title,
-            'page_description' => $year . ' 年 ' . $month . ' 月写过的文章。',
+            'page_description' => $year . ' 年 ' . $month . ' 月写过的文章，每页十条。',
             'year' => $year,
             'month' => $month,
             'page' => $page,
             'pages' => $pages,
+            'page_links' => $pageLinks,
             'total' => $total,
             'posts' => $posts,
             'month_url' => $monthUrl,
@@ -202,6 +235,19 @@ final class ArchiveController
         $year = (int) $raw;
 
         return $year >= 1970 && $year <= 2100 ? $year : null;
+    }
+
+    private function pageValue(?string $raw): ?int
+    {
+        if ($raw === null || $raw === '') {
+            return 1;
+        }
+        if (preg_match('/^[1-9][0-9]*$/', $raw) !== 1) {
+            return null;
+        }
+        $page = (int) $raw;
+
+        return $page <= 10000 ? $page : null;
     }
 
     /** @param array<string, mixed> $data */

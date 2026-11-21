@@ -18,6 +18,8 @@ use Core\Security\GraphicCaptcha;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Page\PageRepository;
+use Core\Page\Pagination;
+use Core\Status\SiteStatus;
 use Core\Routing\Route;
 use Core\Routing\Router;
 use Core\Database\Migration;
@@ -1301,16 +1303,46 @@ check('Archive index and period pages are wired', function (): void {
     $seo = file_get_contents($root . '/plugins/web/src/SeoController.php');
     truthy($repository !== false && str_contains($repository, 'archiveMonths'), 'Archive repository needs month aggregates');
     truthy($repository !== false && str_contains($repository, 'publishedInPeriod') && str_contains($repository, 'countPublishedInPeriod'), 'Archive repository needs period reads and counts');
-    truthy($controller !== false && str_contains($controller, 'private const PER_PAGE = 20'), 'Archive month pages must use 20 posts per page');
+    truthy($controller !== false && str_contains($controller, 'Pagination::resolve'), 'Archive pages must reuse the shared ten-item pager');
     truthy($controller !== false && str_contains($controller, 'monthPageUrl'), 'Archive controller needs canonical page URLs');
     truthy($plugin !== false && str_contains($plugin, "'/archive'") && str_contains($plugin, "'/archive/{year}/{month}/page/{page}'"), 'Posts plugin must route archive pages');
     truthy($header !== false && str_contains($header, 'href="/archive.html"'), 'Navigation needs an archive link');
     truthy($archive !== false && str_contains($archive, 'archive-month-grid'), 'Archive overview needs month links');
     truthy($year !== false && str_contains($year, 'archive-line'), 'Year archive needs article rows');
-    truthy($month !== false && str_contains($month, 'archive-pagination'), 'Month archive needs pagination');
+    truthy($month !== false && str_contains($month, 'page-pager'), 'Month archive needs pagination');
     truthy($css !== false && str_contains($css, '.archive-ledger') && str_contains($css, '.archive-pagination'), 'Archive styles must cover ledger and pagination');
     truthy($seo !== false && str_contains($seo, '/archive.html') && str_contains($seo, "archiveMonths"), 'Sitemap must include archive pages');
     truthy(is_file($root . '/docs/ARCHIVE.md'), 'Archive documentation must exist');
+});
+
+check('Pagination keeps every listing at ten items', function (): void {
+    $state = Pagination::resolve(3, 28);
+    same(10, $state['per_page']);
+    same(3, $state['pages']);
+    same(3, $state['page']);
+    same(20, $state['offset']);
+    same([1, 2, 3], Pagination::window(2, 3));
+
+    $root = dirname(__DIR__);
+    foreach ([
+        'plugins/posts/src/PostListController.php',
+        'plugins/posts/src/ArchiveController.php',
+        'plugins/posts/src/TagController.php',
+    ] as $file) {
+        $source = file_get_contents($root . '/' . $file);
+        truthy($source !== false && str_contains($source, 'Pagination::resolve'), $file . ' must use the shared ten-item pager');
+    }
+    foreach ([
+        'plugins/admin/src/PostAdminController.php',
+        'plugins/admin/src/CommentAdminController.php',
+        'plugins/admin/src/MediaAdminController.php',
+        'plugins/admin/src/TagAdminController.php',
+        'plugins/admin/src/RevisionAdminController.php',
+        'plugins/admin/src/AuditAdminController.php',
+    ] as $file) {
+        $source = file_get_contents($root . '/' . $file);
+        truthy($source !== false && (str_contains($source, '$limit = 10') || str_contains($source, 'Pagination::resolve') || str_contains($source, 'private const PAGE_SIZES = [10]')), $file . ' must cap a page at ten items');
+    }
 });
 
 check('Article share card, RSS and social metadata are wired', function (): void {
@@ -1721,6 +1753,26 @@ check('Audit page exposes richer safe controls', function (): void {
     truthy($plugin !== false && str_contains($plugin, "'/admin/audit/export.csv'"), 'Admin plugin must register the export route');
     truthy($plugin !== false && !str_contains($plugin, "'/admin/audit/delete'"), 'Audit page must not expose a delete route');
     truthy($css !== false && str_contains($css, '.audit-timeline') && str_contains($css, '@media (max-width: 520px)'), 'Audit page needs timeline and phone styles');
+});
+
+check('Site status page and API share one safe report', function () use ($validVersion): void {
+    $report = (new SiteStatus(Version::fromArray($validVersion)))->report();
+    truthy(isset($report['status'], $report['app'], $report['checked_at'], $report['checks']), 'Status report needs identity, time and checks');
+    truthy(is_array($report['checks']) && $report['checks'] !== [], 'Status report needs at least one check');
+    truthy(!str_contains((string) json_encode($report), 'password'), 'Status report must not expose credentials');
+
+    $root = dirname(__DIR__);
+    $template = file_get_contents($root . '/themes/cream/templates/status.php');
+    $css = file_get_contents($root . '/public/assets/status.css');
+    $controller = file_get_contents($root . '/plugins/web/src/StatusController.php');
+    $api = file_get_contents($root . '/plugins/api/src/HealthController.php');
+    $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
+    truthy($template !== false && str_contains($template, 'status-hero') && str_contains($template, 'status-metrics'), 'Status page needs hero and metrics');
+    truthy($template !== false && str_contains($template, 'status-checks') && str_contains($template, 'status-content'), 'Status page needs checks and content summary');
+    truthy($css !== false && str_contains($css, '@media (max-width: 560px)'), 'Status page needs phone styles');
+    truthy($controller !== false && str_contains($controller, 'no-store') && str_contains($controller, 'noindex'), 'Status page must stay uncached and unindexed');
+    truthy($api !== false && str_contains($api, 'function status') && str_contains($api, 'SiteStatus'), 'Health controller must expose the rich status report');
+    truthy($plugin !== false && str_contains($plugin, "'/api/v1/status'"), 'API plugin must route the rich status report');
 });
 
 check('Compressed assets match their source files', function (): void {

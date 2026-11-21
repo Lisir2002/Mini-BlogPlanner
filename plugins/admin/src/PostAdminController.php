@@ -59,7 +59,7 @@ final class PostAdminController
         $sort = in_array($sort, ['updated', 'published', 'title'], true) ? $sort : 'updated';
         $changes = (string) ($query['changes'] ?? '') === '1';
         $page = max(1, (int) ($query['page'] ?? 1));
-        $limit = 20;
+        $limit = 10;
 
         try {
             $db = Connection::fromEnv();

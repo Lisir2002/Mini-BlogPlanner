@@ -16,6 +16,7 @@ use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Page\Pagination;
 use Core\Theme\Theme;
 use Throwable;
 
@@ -48,14 +49,17 @@ final class RevisionAdminController
             if ($post === null) {
                 return $this->adminError($request, 404, 'Not Found');
             }
-            $revisions = (new PostRevisionRepository($db))->listForPost($id);
+            $allRevisions = (new PostRevisionRepository($db))->listForPost($id);
+            $total = count($allRevisions);
+            $state = Pagination::resolve(max(1, (int) ($request->query()['page'] ?? 1)), $total);
+            $revisions = array_slice($allRevisions, $state['offset'], $state['per_page']);
             $selected = null;
             $version = (int) ($request->query()['version'] ?? 0);
             if ($version > 0) {
                 $selected = (new PostRevisionRepository($db))->find($id, $version);
             }
-            if ($selected === null && $revisions !== []) {
-                $selected = (new PostRevisionRepository($db))->find($id, (int) $revisions[0]['version']);
+            if ($selected === null && $allRevisions !== []) {
+                $selected = (new PostRevisionRepository($db))->find($id, (int) $allRevisions[0]['version']);
             }
             $tags = (new TagRepository($db))->namesForPost($id);
             $draft = (new PostDraftRepository($db))->find($id);
@@ -86,11 +90,28 @@ final class RevisionAdminController
             $this->field('格式', (string) ($selected['body_format'] ?? ''), (string) ($base['body_format'] ?? '')),
         ];
 
+        $page = $state['page'];
+        $pages = $state['pages'];
+        $pageLinks = [];
+        foreach (Pagination::window($page, $pages) as $number) {
+            $pageLinks[] = [
+                'number' => $number,
+                'url' => $number === null ? null : '/admin/posts/' . $id . '/revisions' . ($number > 1 ? '?page=' . $number : ''),
+            ];
+        }
+
         return $this->render('admin/revisions', $admin, [
             'title' => '版本历史',
             'current' => 'posts',
             'post' => $post,
             'revisions' => $revisions,
+            'revisionOptions' => $allRevisions,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'page_links' => $pageLinks,
+            'prev_url' => $page > 1 ? '/admin/posts/' . $id . '/revisions' . ($page > 2 ? '?page=' . ($page - 1) : '') : null,
+            'next_url' => $page < $pages ? '/admin/posts/' . $id . '/revisions?page=' . ($page + 1) : null,
             'selected' => $selected,
             'selected_version' => (int) ($selected['version'] ?? 0),
             'base_version' => $baseVersion,

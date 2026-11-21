@@ -16,7 +16,7 @@ $schema = (string) ($schema ?? '');
     <nav class="footer-links" aria-label="站点入口">
       <a class="footer-link" href="/feed.xml"><?= cream_icon('rss', 'icon-xs') ?><span>RSS</span></a>
       <a class="footer-link" href="/api.html"><?= cream_icon('plug', 'icon-xs') ?><span>接口</span></a>
-      <a class="footer-link" href="/healthz"><?= cream_icon('shield', 'icon-xs') ?><span>状态</span></a>
+      <a class="footer-link" href="/status.html"><?= cream_icon('shield', 'icon-xs') ?><span>状态</span></a>
       <a class="footer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?><span>后台</span></a>
     </nav>
     <p class="footer-meta">

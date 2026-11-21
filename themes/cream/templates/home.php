@@ -11,7 +11,7 @@ $title = (string) ($site['title'] ?? '日记Planner');
     <p class="hero-lead">一个不着急的写作角落。微内核、插件、主题和版本契约都已经就位，接下来让文字慢慢长出来。</p>
     <div class="hero-actions">
       <a class="button button-primary" href="/api.html"><?= cream_icon('book') ?> 看接口文档</a>
-      <a class="button button-ghost" href="/healthz"><?= cream_icon('leaf') ?> 站点状态</a>
+      <a class="button button-ghost" href="/status.html"><?= cream_icon('leaf') ?> 站点状态</a>
     </div>
     <div class="status-strip" aria-label="当前版本">
       <span class="status-pill"><b>app</b> v<?= cream_e($app) ?></span>

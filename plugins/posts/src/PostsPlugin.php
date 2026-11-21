@@ -46,6 +46,7 @@ final class PostsPlugin implements PluginInterface
         return [
             new Route(['GET'], '/archive', static fn (Request $request, array $params): Response => $archive->index($request), 'archive.index'),
             new Route(['GET'], '/archive/{year}', static fn (Request $request, array $params): Response => $archive->year($request, $params), 'archive.year'),
+            new Route(['GET'], '/archive/{year}/page/{page}', static fn (Request $request, array $params): Response => $archive->year($request, $params), 'archive.year.page'),
             new Route(['GET'], '/archive/{year}/{month}', static fn (Request $request, array $params): Response => $archive->month($request, $params), 'archive.month'),
             new Route(['GET'], '/archive/{year}/{month}/page/{page}', static fn (Request $request, array $params): Response => $archive->month($request, $params), 'archive.month.page'),
             new Route(['GET'], '/feed.xml', $feed, 'feed.xml'),
@@ -54,11 +55,14 @@ final class PostsPlugin implements PluginInterface
             new Route(['GET'], '/feed', $feed, 'feed'),
             new Route(['GET'], '/search', $search, 'search'),
             new Route(['GET'], '/posts', new PostListController($this->version, $this->theme), 'posts.index'),
+            new Route(['GET'], '/posts/page/{page}', new PostListController($this->version, $this->theme), 'posts.index.page'),
             new Route(['GET'], '/posts/{slug}', new PostController($this->version, $this->theme), 'posts.show'),
             new Route(['POST'], '/posts/{slug}/comments', static fn (Request $request, array $params): Response => $comments->submit($request, $params), 'posts.comments.store'),
             new Route(['POST'], '/posts/{slug}/reaction', static fn (Request $request, array $params): Response => $reactions->submit($request, $params), 'posts.reactions.store'),
             new Route(['GET'], '/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'tags.index'),
+            new Route(['GET'], '/tags/page/{page}', static fn (Request $request, array $params): Response => $tags->index($request, $params), 'tags.index.page'),
             new Route(['GET'], '/tags/{slug}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'tags.show'),
+            new Route(['GET'], '/tags/{slug}/page/{page}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'tags.show.page'),
         ];
     }
 }

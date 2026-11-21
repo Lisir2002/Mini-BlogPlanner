@@ -12,6 +12,7 @@ use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Page\Pagination;
 use Core\Theme\Theme;
 use Throwable;
 
@@ -46,12 +47,32 @@ final class MediaAdminController
         }
 
         try {
-            $media = (new MediaRepository(Connection::fromEnv()))->latest(60);
+            $repository = new MediaRepository(Connection::fromEnv());
+            $total = $repository->count();
+            $state = Pagination::resolve(max(1, (int) ($request->query()['page'] ?? 1)), $total);
+            $media = $repository->latest($state['per_page'], $state['offset']);
         } catch (Throwable) {
             return $this->adminError($request, 503, '后台暂时无法连接数据库。');
         }
 
-        return $this->render($admin, $media);
+        $page = $state['page'];
+        $pages = $state['pages'];
+        $pageLinks = [];
+        foreach (Pagination::window($page, $pages) as $number) {
+            $pageLinks[] = [
+                'number' => $number,
+                'url' => $number === null ? null : ($number <= 1 ? '/admin/media.html' : '/admin/media.html?page=' . $number),
+            ];
+        }
+
+        return $this->render($admin, $media, [
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'page_links' => $pageLinks,
+            'prev_url' => $page > 1 ? ($page === 2 ? '/admin/media.html' : '/admin/media.html?page=' . ($page - 1)) : null,
+            'next_url' => $page < $pages ? '/admin/media.html?page=' . ($page + 1) : null,
+        ]);
     }
 
     public function upload(Request $request): Response
@@ -188,8 +209,11 @@ final class MediaAdminController
         return Response::redirect('/admin/media.html?deleted=' . $media->id, 303);
     }
 
-    /** @param list<\Core\Content\Media> $media */
-    private function render(Admin $admin, array $media): Response
+    /**
+     * @param list<\Core\Content\Media> $media
+     * @param array<string, mixed> $list
+     */
+    private function render(Admin $admin, array $media, array $list = []): Response
     {
         $html = $this->theme->render('admin/media', [
             'site' => [
@@ -203,7 +227,7 @@ final class MediaAdminController
             'csrf' => Csrf::token(),
             'media' => $media,
             'uploaded' => isset($_GET['uploaded']) && ctype_digit((string) $_GET['uploaded']) ? (int) $_GET['uploaded'] : null,
-        ], 'admin/layout');
+        ] + $list, 'admin/layout');
 
         return Response::html($html)->withHeader('Cache-Control', 'no-store');
     }

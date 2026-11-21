@@ -33,6 +33,7 @@ final class ApiPlugin implements PluginInterface
 
         return [
             new Route(['GET'], '/api/v1/health', static fn (Request $request, array $params): Response => $health($request), 'api.health'),
+            new Route(['GET'], '/api/v1/status', static fn (Request $request, array $params): Response => $health->status($request), 'api.status'),
             new Route(['GET'], '/healthz', static fn (Request $request, array $params): Response => $health($request), 'api.health.alias'),
             new Route(['GET'], '/api/v1/posts', static fn (Request $request, array $params): Response => $posts->index($request), 'api.posts.index'),
             new Route(['GET'], '/api/v1/search', static fn (Request $request, array $params): Response => $posts->search($request), 'api.search'),

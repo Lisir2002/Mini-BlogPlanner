@@ -2,12 +2,14 @@
 $year = (int) ($year ?? 0);
 $yearCount = (int) ($year_count ?? 0);
 $months = is_array($months ?? null) ? $months : [];
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
 ?>
 <section class="archive archive-year">
   <header class="archive-head">
     <a class="back-link" href="/archive.html"><?= cream_icon('arrow-left', 'icon-xs') ?> 全部归档</a>
     <span class="eyebrow">YEAR</span>
-    <p>这一年共 <?= number_format($yearCount) ?> 篇，按月份排下去。</p>
+    <p>这一年共 <?= number_format($yearCount) ?> 篇，每页十条，按月份排下去。</p>
   </header>
 
 <?php if ($months === []): ?>
@@ -36,5 +38,6 @@ $months = is_array($months ?? null) ? $months : [];
     </section>
 <?php endforeach; ?>
   </div>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $yearCount; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = $year . ' 年归档分页'; require __DIR__ . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

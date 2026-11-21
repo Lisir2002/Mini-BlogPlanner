@@ -24,7 +24,7 @@ $searchEnabled = empty($error_status);
       <a class="nav-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>标签</a>
       <a class="nav-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html"<?= $current === 'about' ? ' aria-current="page"' : '' ?>>关于</a>
       <a class="nav-link" href="/api.html">接口文档</a>
-      <a class="nav-link" href="/healthz">站点状态</a>
+      <a class="nav-link<?= $current === 'status' ? ' is-current' : '' ?>" href="/status.html"<?= $current === 'status' ? ' aria-current="page"' : '' ?>>站点状态</a>
     </nav>
 
     <div class="header-actions">
@@ -78,7 +78,7 @@ $searchEnabled = empty($error_status);
               <span class="nav-drawer-text">接口文档</span>
               <span class="nav-drawer-index">06</span>
             </a>
-            <a class="nav-drawer-link" href="/healthz">
+            <a class="nav-drawer-link<?= $current === 'status' ? ' is-current' : '' ?>" href="/status.html"<?= $current === 'status' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
               <span class="nav-drawer-text">站点状态</span>
               <span class="nav-drawer-index">07</span>

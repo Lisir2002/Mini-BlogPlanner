@@ -41,6 +41,7 @@ final class WebPlugin implements PluginInterface
 
         return [
             new Route(['GET'], '/', new HomeController($this->version, $this->theme), 'web.home'),
+            new Route(['GET'], '/status', new StatusController($this->version, $this->theme), 'web.status'),
             new Route(['GET'], '/sitemap.xml', static fn (Request $request): Response => $seo->sitemap($request), 'seo.sitemap'),
             new Route(['GET'], '/robots.txt', static fn (Request $request): Response => $seo->robots($request), 'seo.robots'),
         ];
