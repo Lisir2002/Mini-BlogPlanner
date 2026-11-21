@@ -49,7 +49,7 @@
     <?php endforeach; ?>
   </ul>
 </div>
-<form id="post-bulk-mobile" class="post-admin-bulk-form post-admin-bulk-form--mobile" method="post" action="/admin/posts/bulk.html" data-post-bulk-scope="mobile">
+<form id="post-bulk-mobile" class="post-admin-bulk-form post-admin-bulk-form--mobile" method="post" action="/admin/posts/bulk.html" data-ajax-silent data-post-bulk-scope="mobile">
   <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
   <input type="hidden" name="bulk_action" value="">
   <input type="hidden" name="return_query" value="<?= cream_e((string) ($returnQuery ?? '')) ?>">

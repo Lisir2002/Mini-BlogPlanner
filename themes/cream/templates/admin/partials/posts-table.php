@@ -71,7 +71,7 @@
     </table>
   </div>
 </div>
-<form id="post-bulk-desktop" class="post-admin-bulk-form post-admin-bulk-form--desktop" method="post" action="/admin/posts/bulk.html" data-post-bulk-scope="desktop">
+<form id="post-bulk-desktop" class="post-admin-bulk-form post-admin-bulk-form--desktop" method="post" action="/admin/posts/bulk.html" data-ajax-silent data-post-bulk-scope="desktop">
   <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
   <input type="hidden" name="bulk_action" value="">
   <input type="hidden" name="return_query" value="<?= cream_e((string) ($returnQuery ?? '')) ?>">

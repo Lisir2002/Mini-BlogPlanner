@@ -4,6 +4,8 @@ $postId = (int) ($post['id'] ?? 0);
 $postTitle = (string) ($post['title'] ?? '');
 $postStatus = (string) ($post['status'] ?? 'draft');
 $postSlug = (string) ($post['slug'] ?? '');
+$returnQuery = (string) ($returnQuery ?? '');
+$noticeQuery = static fn (string $ok): string => '/admin/posts.html?' . ($returnQuery !== '' ? $returnQuery . '&' : '') . 'ok=' . $ok . '&n=1';
 ?>
 <div class="post-admin-row-actions">
   <a class="post-admin-edit" href="/admin/posts/<?= $postId ?>.html">编辑</a>
@@ -19,13 +21,13 @@ $postSlug = (string) ($post['slug'] ?? '');
     <?php endif; ?>
     <a class="post-admin-menu-item" role="menuitem" href="/admin/posts/<?= $postId ?>/revisions.html">版本历史<span>已发布快照</span></a>
     <?php if ($postStatus === 'archived'): ?>
-    <form method="post" action="/admin/posts/<?= $postId ?>/restore.html" class="post-admin-menu-form">
+    <form method="post" action="/admin/posts/<?= $postId ?>/restore.html" class="post-admin-menu-form" data-ajax-silent data-ajax-result-url="<?= cream_e($noticeQuery('restored')) ?>">
       <input type="hidden" name="_csrf" value="<?= cream_e((string) ($csrf ?? '')) ?>">
       <input type="hidden" name="return_query" value="<?= cream_e((string) ($returnQuery ?? '')) ?>">
       <button class="post-admin-menu-item" role="menuitem" type="submit">恢复为草稿<span>不会自动发布</span></button>
     </form>
     <?php else: ?>
-    <form method="post" action="/admin/posts/<?= $postId ?>/archive.html" class="post-admin-menu-form" data-confirm-title="把这篇文章收进归档？" data-confirm-body="归档后公开页和 API 不再显示。文章数据会保留，可随时恢复为草稿。">
+    <form method="post" action="/admin/posts/<?= $postId ?>/archive.html" class="post-admin-menu-form" data-ajax-silent data-ajax-result-url="<?= cream_e($noticeQuery('archived')) ?>" data-confirm-title="把这篇文章收进归档？" data-confirm-body="归档后公开页和 API 不再显示。文章数据会保留，可随时恢复为草稿。">
       <input type="hidden" name="_csrf" value="<?= cream_e((string) ($csrf ?? '')) ?>">
       <input type="hidden" name="return_query" value="<?= cream_e((string) ($returnQuery ?? '')) ?>">
       <button class="post-admin-menu-item is-danger" role="menuitem" type="submit">收进归档<span>公开页不再显示</span></button>

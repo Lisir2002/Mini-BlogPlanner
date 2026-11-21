@@ -148,9 +148,19 @@
       return;
     }
 
-    if (url && status < 400) {
+    let historyUrl = url;
+    const resultUrl = form.dataset.ajaxResultUrl || '';
+    if (status < 400 && resultUrl !== '') {
       try {
-        history.pushState({}, '', url);
+        const next = new URL(resultUrl, location.href);
+        if (next.origin === location.origin) historyUrl = next.href;
+      } catch (error) {
+        // 非法回跳地址保留服务端返回的地址。
+      }
+    }
+    if (historyUrl && status < 400) {
+      try {
+        history.pushState({}, '', historyUrl);
       } catch (error) {
         // 跨源或非法 URL 不写入历史，交给浏览器处理。
       }
@@ -158,7 +168,7 @@
     hideLoader();
     if (status >= 400) {
       toast('请检查表单内容。', 'error');
-    } else {
+    } else if (!form.hasAttribute('data-ajax-silent')) {
       toast('已完成。');
     }
   };
