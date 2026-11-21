@@ -1,45 +1,110 @@
-<?php $posts = is_array($posts ?? null) ? $posts : []; ?>
-<section class="admin-page">
-  <header class="admin-page-head">
-    <div>
-      <span class="eyebrow">POSTS</span>
-      <p>草稿、已发布和已归档都在这里。发布后才会出现在公开列表和 API。</p>
+<?php
+$posts = is_array($posts ?? null) ? $posts : [];
+$summary = is_array($summary ?? null) ? $summary : ['total' => 0, 'published' => 0, 'draft' => 0, 'archived' => 0, 'with_changes' => 0];
+$allTags = is_array($allTags ?? null) ? $allTags : [];
+$status = $status ?? null;
+$q = (string) ($q ?? '');
+$tag = (string) ($tag ?? '');
+$sort = (string) ($sort ?? 'updated');
+$changes = (bool) ($changes ?? false);
+$total = (int) ($total ?? 0);
+$page = (int) ($page ?? 1);
+$pages = (int) ($pages ?? 1);
+$pendingComments = (int) ($pendingComments ?? 0);
+$notice = (string) ($notice ?? '');
+$statusUrls = is_array($statusUrls ?? null) ? $statusUrls : [];
+$statusKey = is_string($status) && $status !== '' ? $status : 'all';
+$hasFilters = is_string($status) || $q !== '' || $tag !== '' || $sort !== 'updated' || $changes;
+$statusTabs = [
+    'all' => ['全部', (int) ($summary['total'] ?? 0)],
+    'published' => ['已发布', (int) ($summary['published'] ?? 0)],
+    'draft' => ['草稿', (int) ($summary['draft'] ?? 0)],
+    'archived' => ['已归档', (int) ($summary['archived'] ?? 0)],
+];
+?>
+<section class="admin-page post-admin">
+  <div class="post-admin-console">
+    <div class="post-admin-rail" role="tablist" aria-label="文章状态">
+      <?php foreach ($statusTabs as $key => [$label, $count]): ?>
+      <a class="post-admin-rail-tab<?= $statusKey === $key ? ' is-current' : '' ?>" href="<?= cream_e((string) ($statusUrls[$key] ?? '/admin/posts.html')) ?>" role="tab" aria-selected="<?= $statusKey === $key ? 'true' : 'false' ?>">
+        <span><?= cream_e($label) ?></span><strong><?= (int) $count ?></strong>
+      </a>
+      <?php endforeach; ?>
+      <span class="post-admin-rail-spacer" aria-hidden="true"></span>
+      <?php if ($pendingComments > 0): ?>
+      <a class="post-admin-rail-note" href="/admin/comments.html?status=pending">
+        <?= cream_icon('heart', 'icon-xs') ?> 待审留言 <strong><?= $pendingComments ?></strong>
+      </a>
+      <?php endif; ?>
+      <a class="admin-button primary post-admin-new" href="/admin/posts/new.html"><?= cream_icon('pen', 'icon-sm') ?> 写新文章</a>
     </div>
-    <a class="admin-button primary" href="/admin/posts/new.html"><?= cream_icon('pen') ?> 写新文章</a>
-  </header>
+
+    <form class="post-admin-toolbar" method="get" action="/admin/posts.html" role="search">
+      <label class="post-admin-search">
+        <span class="visually-hidden">搜索文章</span>
+        <?= cream_icon('search', 'icon-sm') ?>
+        <input type="search" name="q" value="<?= cream_e($q) ?>" placeholder="搜索标题或固定链接" autocomplete="off" maxlength="80">
+      </label>
+      <label class="post-admin-select-field">
+        <span class="visually-hidden">按标签筛选</span>
+        <select name="tag" aria-label="按标签筛选">
+          <option value="">全部标签</option>
+          <?php foreach ($allTags as $item): ?>
+          <option value="<?= cream_e((string) ($item['slug'] ?? '')) ?>"<?= $tag === (string) ($item['slug'] ?? '') ? ' selected' : '' ?>><?= cream_e((string) ($item['name'] ?? '')) ?>（<?= (int) ($item['count'] ?? 0) ?>）</option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="post-admin-select-field">
+        <span class="visually-hidden">排序方式</span>
+        <select name="sort" aria-label="排序方式">
+          <option value="updated"<?= $sort === 'updated' ? ' selected' : '' ?>>最近更新</option>
+          <option value="published"<?= $sort === 'published' ? ' selected' : '' ?>>最近发布</option>
+          <option value="title"<?= $sort === 'title' ? ' selected' : '' ?>>标题 A-Z</option>
+        </select>
+      </label>
+      <?php if (is_string($status) && $status !== ''): ?><input type="hidden" name="status" value="<?= cream_e($status) ?>"><?php endif; ?>
+      <?php if ($changes): ?><input type="hidden" name="changes" value="1"><?php endif; ?>
+      <button class="admin-button ghost post-admin-filter-button" type="submit">筛选</button>
+      <span class="post-admin-result">筛选后 <strong><?= $total ?></strong> 篇</span>
+      <?php if ($hasFilters): ?><a class="post-admin-clear" href="/admin/posts.html">清空</a><?php endif; ?>
+      <?php if ((int) ($summary['with_changes'] ?? 0) > 0 && (!is_string($status) || $status === 'published')): ?>
+      <a class="post-admin-changes-toggle<?= $changes ? ' is-current' : '' ?>" href="<?= cream_e((string) ($changes ? ($clearChangesUrl ?? '/admin/posts.html') : ($changesUrl ?? '/admin/posts.html?changes=1'))) ?>"<?= $changes ? ' aria-pressed="true"' : ' aria-pressed="false"' ?>>
+        <?= cream_icon('pen', 'icon-xs') ?> 未发布改动 <strong><?= (int) $summary['with_changes'] ?></strong>
+      </a>
+      <?php endif; ?>
+    </form>
+  </div>
+
+  <?php if ($notice !== ''): ?>
+  <div class="admin-flash post-admin-flash" role="status"><?= cream_icon('spark', 'icon-sm') ?> <?= cream_e($notice) ?></div>
+  <?php endif; ?>
 
 <?php if ($posts === []): ?>
-  <div class="admin-empty">
+  <div class="admin-empty post-admin-empty">
     <?= cream_icon('book') ?>
-    <h2>还没有文章</h2>
-    <p>写第一篇，发布后它会出现在 <a href="/posts.html">/posts.html</a>。</p>
+    <?php if (!$hasFilters && (int) ($summary['total'] ?? 0) === 0): ?>
+    <h2>文章架还是空的</h2>
+    <p>写第一篇，发布后它会出现在公开列表和 API。</p>
+    <a class="admin-button primary" href="/admin/posts/new.html">写第一篇</a>
+    <?php elseif (is_string($status) && $status === 'archived' && $q === '' && $tag === '' && !$changes): ?>
+    <h2>归档抽屉还是空的</h2>
+    <p>暂时没有收进抽屉的文章。归档的文章会出现在这里。</p>
+    <?php else: ?>
+    <h2>没有符合条件的文章</h2>
+    <p>换个关键词，或清空筛选看看全部。</p>
+    <a class="admin-button ghost" href="/admin/posts.html">清空筛选</a>
+    <?php endif; ?>
   </div>
 <?php else: ?>
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead><tr><th>标题</th><th>状态</th><th>回声</th><th>更新时间</th><th>操作</th></tr></thead>
-      <tbody>
-      <?php foreach ($posts as $post): ?>
-        <tr>
-          <td><strong><?= cream_e($post['title'] ?? '') ?></strong><span class="admin-slug">/<?= cream_e($post['slug'] ?? '') ?>.html</span></td>
-          <td><span class="status-badge status-<?= cream_e($post['status'] ?? 'draft') ?>"><?= cream_e(match ((string) ($post['status'] ?? 'draft')) { 'published' => '已发布', 'archived' => '已归档', default => '草稿' }) ?></span></td>
-          <td class="admin-mono reaction-stat">赞 <?= (int) ($post['reaction_likes'] ?? 0) ?> · 踩 <?= (int) ($post['reaction_dislikes'] ?? 0) ?></td>
-          <td class="admin-mono"><?= cream_e((string) ($post['updated_at'] ?? '')) ?></td>
-          <td class="admin-actions">
-            <a href="/admin/posts/<?= (int) ($post['id'] ?? 0) ?>.html">编辑</a>
-            <a href="/admin/posts/<?= (int) ($post['id'] ?? 0) ?>/preview.html" target="_blank" rel="noopener">预览</a>
-            <?php if (($post['status'] ?? '') === 'published'): ?>
-            <a href="/posts/<?= cream_e($post['slug'] ?? '') ?>.html" target="_blank" rel="noopener">查看</a>
-            <?php endif; ?>
-            <form method="post" action="/admin/posts/<?= (int) ($post['id'] ?? 0) ?>/archive.html" class="inline-form" onsubmit="return confirm('确认归档这篇文章？')">
-              <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
-              <button class="link-button" type="submit">归档</button>
-            </form>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
+  <?php require __DIR__ . '/partials/posts-table.php'; ?>
+  <?php require __DIR__ . '/partials/posts-cards.php'; ?>
+
+  <?php if ($pages > 1): ?>
+  <nav class="post-admin-pager" aria-label="文章分页">
+    <?php if ($prevUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($prevUrl) ?>">上一页</a><?php else: ?><span class="admin-button ghost is-disabled">上一页</span><?php endif; ?>
+    <span>第 <?= $page ?> / <?= $pages ?> 页 · 共 <?= $total ?> 篇</span>
+    <?php if ($nextUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($nextUrl) ?>">下一页</a><?php else: ?><span class="admin-button ghost is-disabled">下一页</span><?php endif; ?>
+  </nav>
+  <?php endif; ?>
 <?php endif; ?>
 </section>

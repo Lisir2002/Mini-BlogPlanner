@@ -24,6 +24,8 @@
 | GET | `/admin/posts/{id}/preview.html` | 预览文章（含草稿） |
 | POST | `/admin/posts/{id}.html` | 更新文章 |
 | POST | `/admin/posts/{id}/archive.html` | 归档文章 |
+| POST | `/admin/posts/{id}/restore.html` | 把归档文章恢复为草稿 |
+| POST | `/admin/posts/bulk.html` | 批量归档或恢复，最多 100 篇 |
 | GET | `/admin/media.html` | 媒体库与上传表单 |
 | POST | `/admin/media.html` | 上传图片（字段 `file`） |
 | POST | `/admin/media/{id}/delete.html` | 删除图片与文件 |
@@ -45,10 +47,21 @@
 - 阅读时长按去标签正文每 500 字约 1 分钟计算，范围 1–120。
 - 作者取当前管理员 id；`author_id` 外键在管理员删除时置空。
 - slug 唯一冲突时返回表单错误，不会写入半条数据。
-- 归档后公开列表和 API 不再返回。
+- 归档后公开列表和 API 不再返回；恢复只回到 `draft`，不会自动发布。
+- 批量操作只接受 `archive`/`restore`，单次最多 100 篇；成功数按实际变更计算。
 - 标签同步与文章写入在同一个事务内完成，失败不会留下半条关联。
 - 正文白名单保留段落、标题、列表、引用、代码块、链接和图片；移除脚本、样式、表单、内嵌页面、事件属性和危险协议。
 - 中文标签会转写为拼音 slug；无法转写时回退到稳定哈希。
+
+文章列表查询：
+
+- `status`：`published`、`draft`、`archived`；省略表示全部。
+- `q`：匹配标题或 slug，最多 80 字符。
+- `tag`：标签 slug，必须存在。
+- `sort`：`updated`（默认）、`published`、`title`。
+- `changes=1`：只看已发布且存在 `post_drafts` 的文章。
+- `page`：每页 20 篇；筛选后为空时显示专用空状态。
+- 列表在桌面显示七列表格，760px 以下及平板宽度切换为卡片；行菜单提供预览草稿、公开页、版本历史、归档/恢复。
 
 ## 异步表单约定
 
@@ -58,7 +71,7 @@
 - 上传表单自动走 `XMLHttpRequest`，显示百分比；普通表单走 `fetch`，保留 303 跳转和服务端校验错误。
 - 会话失效跳回登录页时，脚本会提示重新登录，不再误报“已完成”。
 - 所有请求带 `X-Requested-With: XMLHttpRequest`，但仍以会话 Cookie 和 `_csrf` 为准。
-- 禁用 JavaScript 时遮罩自动隐藏，表单按原生 `action`/`method` 提交，功能不降级。
+- 禁用 JavaScript 时遮罩自动隐藏，单篇表单按原生 `action`/`method` 提交；批量栏和行菜单依赖脚本，未启用时仍可逐篇编辑、归档或恢复。
 
 ## 安全边界
 
@@ -76,7 +89,7 @@
 ## 预览与审计
 
 - 预览必须登录，公开页使用的模板会显示“预览模式”，响应带 `X-Robots-Tag: noindex, nofollow`。
-- 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`。
+- 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived/restored`、`post.bulk_archived/bulk_restored`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`。
 - 查询参数：`event` 精确事件名，`actor` 精确用户名，`page` 页码；每页 50 条，超出页数会夹到最后一页。
 - 审计只记录动作、对象 id、状态、IP，不记录密码、Cookie、数据库连接串。
 - 保留期清理：`php bin/audit-prune.php --days=90 --json` 默认试运行；加 `--confirm` 删除早于窗口的记录，并写一条 `system.audit.pruned`。最小窗口 7 天，最大 3650 天。

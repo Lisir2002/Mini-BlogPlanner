@@ -63,6 +63,41 @@ final class CommentRepository
         return (int) ($row['total'] ?? 0);
     }
 
+    /**
+     * @param list<int> $postIds
+     * @return array<int, array{approved:int,pending:int,spam:int}>
+     */
+    public function countsForPosts(array $postIds): array
+    {
+        $postIds = array_values(array_unique(array_filter(array_map('intval', $postIds), static fn (int $id): bool => $id > 0)));
+        if ($postIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($postIds), '?'));
+        $rows = $this->db->fetchAll(
+            'SELECT post_id, status, COUNT(*) AS comment_count
+             FROM comments
+             WHERE post_id IN (' . $placeholders . ')
+             GROUP BY post_id, status',
+            $postIds,
+        );
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $postId = (int) ($row['post_id'] ?? 0);
+            $status = (string) ($row['status'] ?? '');
+            if (!isset($counts[$postId])) {
+                $counts[$postId] = ['approved' => 0, 'pending' => 0, 'spam' => 0];
+            }
+            if (array_key_exists($status, $counts[$postId])) {
+                $counts[$postId][$status] = (int) ($row['comment_count'] ?? 0);
+            }
+        }
+
+        return $counts;
+    }
+
     public function findApproved(int $id, int $postId, bool $rootOnly = false): ?Comment
     {
         $row = $this->db->fetchOne(

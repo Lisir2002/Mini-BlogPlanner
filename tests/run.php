@@ -1014,7 +1014,9 @@ check('Post reactions render themed controls and stay in place', function (): vo
 check('Reaction totals reach admin and API', function (): void {
     $root = dirname(__DIR__);
     $admin = file_get_contents($root . '/plugins/admin/src/PostAdminController.php');
-    $adminView = file_get_contents($root . '/themes/cream/templates/admin/posts.php');
+    $adminView = file_get_contents($root . '/themes/cream/templates/admin/posts.php')
+        . file_get_contents($root . '/themes/cream/templates/admin/partials/posts-table.php')
+        . file_get_contents($root . '/themes/cream/templates/admin/partials/posts-cards.php');
     $api = file_get_contents($root . '/plugins/api/src/PostApiController.php');
     truthy($admin !== false && str_contains($admin, 'ReactionRepository'), 'Admin must load reaction totals');
     truthy($adminView !== false && str_contains($adminView, '赞 ') && str_contains($adminView, '踩 '), 'Admin list must show reaction totals');

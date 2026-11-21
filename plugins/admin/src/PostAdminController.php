@@ -7,6 +7,7 @@ namespace Plugin\Admin;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
+use Core\Content\CommentRepository;
 use Core\Content\Post;
 use Core\Content\PostAdminRepository;
 use Core\Content\PostConflictException;
@@ -48,29 +49,158 @@ final class PostAdminController
             return $admin;
         }
 
+        $query = $request->query();
+        $status = (string) ($query['status'] ?? '');
+        $status = in_array($status, ['published', 'draft', 'archived'], true) ? $status : null;
+        $q = trim((string) ($query['q'] ?? ''));
+        $q = mb_substr($q, 0, 80);
+        $tag = trim((string) ($query['tag'] ?? ''));
+        $sort = (string) ($query['sort'] ?? 'updated');
+        $sort = in_array($sort, ['updated', 'published', 'title'], true) ? $sort : 'updated';
+        $changes = (string) ($query['changes'] ?? '') === '1';
+        $page = max(1, (int) ($query['page'] ?? 1));
+        $limit = 20;
+
         try {
             $db = Connection::fromEnv();
-            $posts = (new PostAdminRepository($db))->all();
-            $reactions = (new ReactionRepository($db))->summariesForPosts(array_map(
-                static fn (array $post): int => (int) ($post['id'] ?? 0),
-                $posts,
-            ));
+            $repository = new PostAdminRepository($db);
+
+            $allTags = (new TagRepository($db))->adminAll();
+            if ($tag !== '' && !in_array($tag, array_column($allTags, 'slug'), true)) {
+                $tag = '';
+            }
+
+            $filters = [
+                'status' => $status,
+                'q' => $q,
+                'tag' => $tag,
+                'changes' => $changes,
+                'sort' => $sort,
+            ];
+
+            $summary = $repository->summary();
+            $total = $repository->countFiltered($filters);
+            $pages = max(1, (int) ceil($total / $limit));
+            $page = min($page, $pages);
+            $posts = $repository->paginate($filters, $limit, ($page - 1) * $limit);
+            $ids = array_map(static fn (array $post): int => (int) ($post['id'] ?? 0), $posts);
+            $reactions = (new ReactionRepository($db))->summariesForPosts($ids);
+            $postTags = (new TagRepository($db))->tagsForPosts($ids);
+            $commentCounts = (new CommentRepository($db))->countsForPosts($ids);
+            $pendingComments = (new CommentRepository($db))->count('pending');
         } catch (Throwable) {
-            return $this->adminError($request, 503, '后台暂时无法连接数据库。');
+            return $this->adminError($request, 503, '文章列表暂时不可用，请稍后重试。');
         }
 
-        $posts = array_map(static function (array $post) use ($reactions): array {
+        $posts = array_map(static function (array $post) use ($reactions, $postTags, $commentCounts): array {
             $id = (int) ($post['id'] ?? 0);
-            $post['reaction_likes'] = $reactions[$id]['likes'] ?? 0;
-            $post['reaction_dislikes'] = $reactions[$id]['dislikes'] ?? 0;
+            $post['tags'] = $postTags[$id] ?? [];
+            $comments = $commentCounts[$id] ?? ['approved' => 0, 'pending' => 0, 'spam' => 0];
+            $post['comment_approved'] = (int) $comments['approved'];
+            $post['comment_pending'] = (int) $comments['pending'];
+            $post['comment_spam'] = (int) $comments['spam'];
+            $post['reaction_likes'] = (int) ($reactions[$id]['likes'] ?? 0);
+            $post['reaction_dislikes'] = (int) ($reactions[$id]['dislikes'] ?? 0);
+            $post['has_changes'] = (string) ($post['status'] ?? '') === 'published'
+                && trim((string) ($post['draft_updated_at'] ?? '')) !== '';
 
             return $post;
         }, $posts);
+
+        $baseParams = array_filter([
+            'q' => $q !== '' ? $q : null,
+            'tag' => $tag !== '' ? $tag : null,
+            'sort' => $sort !== 'updated' ? $sort : null,
+            'changes' => $changes ? '1' : null,
+        ], static fn (?string $value): bool => $value !== null);
+
+        $listParams = $baseParams;
+        if ($status !== null) {
+            $listParams['status'] = $status;
+        }
+        $listParams = array_filter($listParams, static fn (?string $value): bool => $value !== null);
+
+        $pageUrl = static function (int $target) use ($baseParams, $status): string {
+            $params = $baseParams;
+            if ($status !== null) {
+                $params['status'] = $status;
+            }
+            if ($target > 1) {
+                $params['page'] = (string) $target;
+            }
+
+            return '/admin/posts.html' . ($params !== [] ? '?' . http_build_query($params) : '');
+        };
+
+        $statusUrl = static function (?string $next) use ($baseParams): string {
+            $params = $baseParams;
+            if ($next === 'draft' || $next === 'archived') {
+                unset($params['changes']);
+            }
+            if ($next !== null) {
+                $params['status'] = $next;
+            }
+
+            return '/admin/posts.html' . ($params !== [] ? '?' . http_build_query($params) : '');
+        };
+
+        $changesUrl = static function (bool $onlyChanges) use ($baseParams, $status): string {
+            $params = $baseParams;
+            unset($params['changes']);
+            if ($onlyChanges) {
+                $params['changes'] = '1';
+            }
+            if ($status !== null) {
+                $params['status'] = $status;
+            }
+
+            return '/admin/posts.html' . ($params !== [] ? '?' . http_build_query($params) : '');
+        };
+
+        $returnParams = $listParams;
+        if ($page > 1) {
+            $returnParams['page'] = (string) $page;
+        }
+
+        $ok = (string) ($query['ok'] ?? '');
+        $noticeCount = max(0, min(100, (int) ($query['n'] ?? 0)));
+        $notice = match ($ok) {
+            'archived' => '已归档 1 篇。',
+            'restored' => '已恢复为草稿。',
+            'bulk-archived' => $noticeCount > 0 ? '已归档 ' . $noticeCount . ' 篇。' : '没有可归档的文章。',
+            'bulk-restored' => $noticeCount > 0 ? '已恢复 ' . $noticeCount . ' 篇为草稿。' : '没有可恢复的文章。',
+            default => '',
+        };
 
         return $this->render('admin/posts', $admin, [
             'title' => '文章管理',
             'current' => 'posts',
             'posts' => $posts,
+            'summary' => $summary,
+            'allTags' => $allTags,
+            'pendingComments' => $pendingComments,
+            'status' => $status,
+            'q' => $q,
+            'tag' => $tag,
+            'sort' => $sort,
+            'changes' => $changes,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'prevUrl' => $page > 1 ? $pageUrl($page - 1) : null,
+            'nextUrl' => $page < $pages ? $pageUrl($page + 1) : null,
+            'statusUrls' => [
+                'all' => $statusUrl(null),
+                'published' => $statusUrl('published'),
+                'draft' => $statusUrl('draft'),
+                'archived' => $statusUrl('archived'),
+            ],
+            'returnQuery' => http_build_query($returnParams),
+            'changesUrl' => $changesUrl(true),
+            'clearChangesUrl' => $changesUrl(false),
+            'notice' => $notice,
+            'page_styles' => ['admin-posts.css'],
+            'page_scripts' => ['admin-posts.js'],
         ]);
     }
 
@@ -556,7 +686,9 @@ final class PostAdminController
         if ($admin instanceof Response) {
             return $admin;
         }
-        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
         $id = $this->id($params);
@@ -565,13 +697,142 @@ final class PostAdminController
         }
 
         try {
-            (new PostAdminRepository(Connection::fromEnv()))->archive($id);
+            $affected = (new PostAdminRepository(Connection::fromEnv()))->archiveMany([$id]);
+            if ($affected === 0) {
+                return $this->adminError($request, 404, '文章不存在，或已经在归档里。');
+            }
             $this->audit($admin, 'post.archived', ['id' => $id]);
         } catch (Throwable) {
             return $this->adminError($request, 503, '归档失败。');
         }
 
-        return Response::redirect('/admin/posts.html', 303);
+        return $this->redirectToList($payload, 'archived', 1);
+    }
+
+    /** @param array<string, string> $params */
+    public function restore(Request $request, array $params): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+        $id = $this->id($params);
+        if ($id === null) {
+            return $this->adminError($request, 404, 'Not Found');
+        }
+
+        try {
+            $affected = (new PostAdminRepository(Connection::fromEnv()))->restoreMany([$id]);
+            if ($affected === 0) {
+                return $this->adminError($request, 404, '文章不存在，或不在归档里。');
+            }
+            $this->audit($admin, 'post.restored', ['id' => $id]);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '恢复失败。');
+        }
+
+        return $this->redirectToList($payload, 'restored', 1);
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+
+        $payload = $this->payload();
+        if (!Csrf::validate(isset($payload['_csrf']) ? (string) $payload['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        $action = (string) ($payload['bulk_action'] ?? '');
+        if (!in_array($action, ['archive', 'restore'], true)) {
+            return $this->adminError($request, 422, '未知的批量操作。');
+        }
+
+        $rawIds = $payload['ids'] ?? [];
+        if (!is_array($rawIds)) {
+            return $this->adminError($request, 422, '请先选择文章。');
+        }
+        $ids = array_values(array_unique(array_filter(
+            array_map(static fn (mixed $id): int => (int) $id, $rawIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+        if ($ids === []) {
+            return $this->adminError($request, 422, '请先选择文章。');
+        }
+        if (count($ids) > 100) {
+            return $this->adminError($request, 422, '一次最多处理 100 篇文章。');
+        }
+
+        try {
+            $repository = new PostAdminRepository(Connection::fromEnv());
+            $affected = $action === 'archive' ? $repository->archiveMany($ids) : $repository->restoreMany($ids);
+            $event = $action === 'archive' ? 'post.bulk_archived' : 'post.bulk_restored';
+            $this->audit($admin, $event, ['ids' => $ids, 'count' => $affected]);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, $action === 'archive' ? '批量归档失败。' : '批量恢复失败。');
+        }
+
+        return $this->redirectToList($payload, $action === 'archive' ? 'bulk-archived' : 'bulk-restored', $affected);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function redirectToList(array $payload, string $ok, int $count): Response
+    {
+        $params = $this->returnParams((string) ($payload['return_query'] ?? ''));
+        $params['ok'] = $ok;
+        $params['n'] = (string) max(0, min(100, $count));
+
+        return Response::redirect('/admin/posts.html?' . http_build_query($params), 303);
+    }
+
+    /** @return array<string, string> */
+    private function returnParams(string $raw): array
+    {
+        if ($raw === '') {
+            return [];
+        }
+
+        parse_str($raw, $parsed);
+        $params = [];
+
+        $status = isset($parsed['status']) && is_string($parsed['status']) ? $parsed['status'] : '';
+        if (in_array($status, ['published', 'draft', 'archived'], true)) {
+            $params['status'] = $status;
+        }
+
+        $q = isset($parsed['q']) && is_string($parsed['q']) ? trim($parsed['q']) : '';
+        if ($q !== '') {
+            $params['q'] = mb_substr($q, 0, 80);
+        }
+
+        $tag = isset($parsed['tag']) && is_string($parsed['tag']) ? trim($parsed['tag']) : '';
+        if (preg_match('/^[a-z0-9-]{1,80}$/', $tag) === 1) {
+            $params['tag'] = $tag;
+        }
+
+        $sort = isset($parsed['sort']) && is_string($parsed['sort']) ? $parsed['sort'] : '';
+        if (in_array($sort, ['published', 'title'], true)) {
+            $params['sort'] = $sort;
+        }
+
+        if (isset($parsed['changes']) && is_string($parsed['changes']) && $parsed['changes'] === '1') {
+            $params['changes'] = '1';
+        }
+
+        $page = isset($parsed['page']) && is_scalar($parsed['page']) ? (int) $parsed['page'] : 1;
+        if ($page > 1) {
+            $params['page'] = (string) $page;
+        }
+
+        return $params;
     }
 
     /** @param array<string, mixed> $data */

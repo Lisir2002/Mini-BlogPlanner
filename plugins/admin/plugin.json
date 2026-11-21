@@ -1,7 +1,7 @@
 {
   "id": "admin",
   "name": "Admin",
-  "version": "0.6.13",
+  "version": "0.6.14",
   "priority": 10,
   "class": "Plugin\\Admin\\AdminPlugin",
   "runtime": true,

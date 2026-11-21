@@ -135,6 +135,39 @@ final class TagRepository
     }
 
     /**
+     * @param list<int> $postIds
+     * @return array<int, list<array{name:string,slug:string}>>
+     */
+    public function tagsForPosts(array $postIds): array
+    {
+        $postIds = array_values(array_unique(array_filter(array_map('intval', $postIds), static fn (int $id): bool => $id > 0)));
+        if ($postIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($postIds), '?'));
+        $rows = $this->db->fetchAll(
+            'SELECT pt.post_id, t.name, t.slug
+             FROM post_tags pt
+             INNER JOIN tags t ON t.id = pt.tag_id
+             WHERE pt.post_id IN (' . $placeholders . ')
+             ORDER BY pt.post_id ASC, t.name ASC, t.id ASC',
+            $postIds,
+        );
+
+        $tags = [];
+        foreach ($rows as $row) {
+            $postId = (int) ($row['post_id'] ?? 0);
+            $tags[$postId][] = [
+                'name' => (string) ($row['name'] ?? ''),
+                'slug' => (string) ($row['slug'] ?? ''),
+            ];
+        }
+
+        return $tags;
+    }
+
+    /**
      * @param list<string> $names
      * @return list<string>
      */
