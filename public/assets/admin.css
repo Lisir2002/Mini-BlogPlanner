@@ -473,17 +473,17 @@
   box-shadow: 2px 3px 0 color-mix(in oklch, var(--line-strong) 56%, transparent);
 }
 
-.admin-turnstile {
+.admin-captcha {
   display: grid;
-  gap: 7px;
-  padding: 11px 13px 9px;
+  gap: 8px;
+  padding: 11px 13px 10px;
   border: 1px dashed color-mix(in oklch, var(--line-strong) 68%, transparent);
   border-radius: 4px 10px 7px 5px;
   background:
     linear-gradient(180deg, color-mix(in oklch, var(--cream-1) 86%, white 14%), color-mix(in oklch, var(--butter) 20%, var(--cream-1)));
 }
 
-.admin-turnstile-head {
+.admin-captcha-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -493,27 +493,75 @@
   letter-spacing: 0.1em;
 }
 
-.admin-turnstile-fit {
-  position: relative;
+.admin-captcha-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-captcha-row img {
+  display: block;
+  flex: 0 1 auto;
+  width: 184px;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 74%, transparent);
+  border-radius: 4px 8px 5px 6px;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 color-mix(in oklch, var(--butter) 68%, transparent);
+  user-select: none;
+}
+
+.admin-captcha-refresh {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px dashed color-mix(in oklch, var(--line-strong) 64%, transparent);
+  border-radius: 4px 9px 6px 5px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 1px 2px 0 color-mix(in oklch, var(--line-strong) 42%, transparent);
+}
+
+.admin-captcha-refresh:hover,
+.admin-captcha-refresh:focus-visible {
+  border-color: var(--coral);
+  outline: none;
+}
+
+.admin-captcha-answer {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-captcha-answer label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.admin-captcha-answer input {
   width: 100%;
-  min-width: 0;
-  height: 65px;
-  overflow: hidden;
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in oklch, var(--line-strong) 62%, transparent);
+  border-radius: 4px 9px 6px 5px;
+  background: color-mix(in oklch, white 72%, var(--paper));
+  color: var(--ink);
+  font: 600 16px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.admin-turnstile .cf-turnstile {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 300px;
-  height: 65px;
-  min-height: 0;
-  margin-left: -150px;
-  transform: scale(var(--ts-scale, 1));
-  transform-origin: top center;
+.admin-captcha-answer input:focus {
+  border-color: var(--coral);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--coral) 22%, transparent);
 }
 
-.admin-turnstile-note {
+.admin-captcha-note {
   margin: 0;
   color: var(--muted);
   font-size: 10px;
@@ -539,15 +587,15 @@
   .admin-login-body .admin-auth { height: auto; min-height: calc(100dvh - 62px); overflow: visible; }
 }
 
-@media (max-height: 640px) {
+@media (max-height: 820px) {
   .admin-login-body .admin-auth { padding: 8px 12px; }
   .admin-login-body .admin-auth-card { padding: 16px 16px 12px; }
   .admin-login-body .admin-auth-card-index { display: none; }
   .admin-login-body .admin-lead { display: none; }
   .admin-login-body .admin-login-form { gap: 10px; }
   .admin-login-body .tape-field { gap: 4px; }
-  .admin-login-body .admin-turnstile { padding: 6px 8px; }
-  .admin-login-body .admin-turnstile-head, .admin-login-body .admin-turnstile-note { display: none; }
+  .admin-login-body .admin-captcha { padding: 6px 8px; }
+  .admin-login-body .admin-captcha-head, .admin-login-body .admin-captcha-note { display: none; }
   .admin-login-body .tape-input input { min-height: 42px; padding: 9px 18px; }
   .admin-login-body .admin-login-form .admin-button { min-height: 42px; }
   .admin-login-body .admin-foot { margin-top: 10px; }
@@ -599,6 +647,10 @@
   .admin-brand-title { font-size: 14px; }
   .admin-nav a { font-size: 12px; }
   .admin-page-head .admin-button { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 360px) {
+  .admin-brand { max-width: 52vw; }
 }
 
 .media-upload {

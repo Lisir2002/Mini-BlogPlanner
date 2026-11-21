@@ -13,7 +13,7 @@ use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
-use Core\Security\Turnstile;
+use Core\Security\GraphicCaptcha;
 use Core\Theme\Theme;
 use Throwable;
 
@@ -35,10 +35,9 @@ final class LoginController
             return $this->render('页面已过期，请刷新后重试。', 419);
         }
 
-        $turnstile = Turnstile::fromEnv();
-        $turnstileToken = isset($_POST['cf-turnstile-response']) ? (string) $_POST['cf-turnstile-response'] : null;
-        if (!$turnstile->verify($turnstileToken)) {
-            return $this->render('请先完成人机验证。', 400, $turnstile);
+        $captcha = new GraphicCaptcha();
+        if (!$captcha->verify(isset($_POST['captcha']) ? (string) $_POST['captcha'] : null)) {
+            return $this->render('图形验证码不正确，请重新输入。', 400);
         }
 
         $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
@@ -84,6 +83,17 @@ final class LoginController
         return Response::redirect('/admin/posts.html', 303);
     }
 
+    public function captcha(Request $request): Response
+    {
+        $captcha = new GraphicCaptcha();
+
+        return Response::binary($captcha->image($captcha->issue()), 'image/png')
+            ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->withHeader('Pragma', 'no-cache')
+            ->withHeader('Expires', '0')
+            ->withHeader('X-Content-Type-Options', 'nosniff');
+    }
+
     public function logout(Request $request): Response
     {
         if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
@@ -106,17 +116,14 @@ final class LoginController
         return Response::redirect('/admin/login.html', 303);
     }
 
-    private function render(?string $error, int $status, ?Turnstile $turnstile = null): Response
+    private function render(?string $error, int $status): Response
     {
-        $turnstile ??= Turnstile::fromEnv();
         $html = $this->theme->render('admin/login', [
             'site' => $this->site(),
             'title' => '后台登录',
             'current' => 'login',
             'csrf' => Csrf::token(),
             'error' => $error,
-            'turnstileEnabled' => $turnstile->enabled(),
-            'turnstileSiteKey' => $turnstile->siteKey(),
         ], 'admin/layout');
 
         return Response::html($html, $status)->withHeader('Cache-Control', 'no-store');

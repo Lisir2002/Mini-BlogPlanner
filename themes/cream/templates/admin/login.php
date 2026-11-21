@@ -1,4 +1,4 @@
-<?php $error = $error ?? null; $turnstileEnabled = $turnstileEnabled ?? false; $turnstileSiteKey = $turnstileSiteKey ?? ''; ?>
+<?php $error = $error ?? null; ?>
 <section class="admin-auth">
   <div class="admin-auth-layout">
     <aside class="admin-auth-note">
@@ -52,33 +52,37 @@
             <input id="password" name="password" type="password" autocomplete="current-password" placeholder="输入密码" required>
           </div>
         </div>
-        <?php if ($turnstileEnabled): ?>
-        <div class="admin-turnstile">
-          <div class="admin-turnstile-head">
-            <span>03 / HUMAN CHECK</span>
-            <span>Cloudflare Turnstile</span>
+        <div class="admin-captcha">
+          <div class="admin-captcha-head">
+            <span>03 / GRAPHIC CHECK</span>
+            <span>站内生成 · 一次性</span>
           </div>
-          <div class="admin-turnstile-fit">
-            <div class="cf-turnstile" data-sitekey="<?= cream_e($turnstileSiteKey) ?>" data-action="login" data-theme="light" data-size="normal" data-language="zh-cn"></div>
+          <div class="admin-captcha-row">
+            <img id="admin-captcha-image" src="/admin/captcha.png" width="184" height="58" alt="图形验证码" draggable="false">
+            <button class="admin-captcha-refresh" type="button" data-captcha-refresh>换一张</button>
           </div>
-          <p class="admin-turnstile-note">只确认这次登录不是自动脚本，不读取密码或账号。</p>
+          <div class="admin-captcha-answer">
+            <label for="captcha">输入图上的 5 个字符</label>
+            <input id="captcha" name="captcha" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" pattern="[A-Za-z0-9]{5}" placeholder="例如 7K3MP" required>
+          </div>
+          <p class="admin-captcha-note">验证码 5 分钟内有效，只能使用一次；看不清就换一张。</p>
         </div>
         <script>
         (function () {
-          var fit = document.querySelector('.admin-turnstile-fit');
-          if (!fit) return;
-          function resizeTurnstile() {
-            var scale = Math.min(1, fit.clientWidth / 300);
-            fit.style.setProperty('--ts-scale', String(scale));
-            fit.style.height = (65 * scale) + 'px';
+          var image = document.getElementById('admin-captcha-image');
+          var refresh = document.querySelector('[data-captcha-refresh]');
+          if (!image || !refresh) return;
+          function reloadCaptcha() {
+            image.src = '/admin/captcha.png?t=' + Date.now();
+            var answer = document.getElementById('captcha');
+            if (answer) {
+              answer.value = '';
+              answer.focus();
+            }
           }
-          resizeTurnstile();
-          window.addEventListener('resize', resizeTurnstile);
-          window.addEventListener('orientationchange', resizeTurnstile);
+          refresh.addEventListener('click', reloadCaptcha);
         })();
         </script>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-        <?php endif; ?>
         <button class="admin-button primary full" type="submit"><?= cream_icon('lock', 'icon-xs') ?> 进入后台</button>
       </form>
       <p class="admin-foot"><a href="/"><?= cream_icon('arrow-left', 'icon-xs') ?> 返回站点</a></p>

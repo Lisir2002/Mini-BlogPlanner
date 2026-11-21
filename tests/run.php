@@ -12,7 +12,7 @@ use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
 use Core\Http\Session;
-use Core\Security\Turnstile;
+use Core\Security\GraphicCaptcha;
 use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Page\PageRepository;
@@ -690,61 +690,37 @@ check('Auth logs in, expires idle sessions and logs out', function (): void {
     truthy($auth->user() === null, 'Logout must clear user');
 });
 
-check('Turnstile verifies token, host and action', function (): void {
-    $seen = '';
-    $turnstile = new Turnstile(
-        siteKey: 'site-key',
-        secretKey: 'secret-key',
-        hostnames: ['planner.low-ai.online'],
-        action: 'login',
-        transport: function (string $payload) use (&$seen): string {
-            $seen = $payload;
+check('Graphic captcha is one-time, case tolerant and attempt limited', function (): void {
+    $_SESSION = [];
+    $captcha = new GraphicCaptcha(ttl: 300, maxAttempts: 5);
+    $code = $captcha->issue();
+    truthy(preg_match('/^[2346789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/', $code) === 1, 'Captcha code must use the unambiguous five-character alphabet');
+    truthy($captcha->verify(strtolower($code)), 'Captcha answer must be case tolerant');
+    truthy(!$captcha->verify($code), 'Captcha answer was accepted twice');
 
-            return json_encode(['success' => true, 'hostname' => 'planner.low-ai.online', 'action' => 'login'], JSON_THROW_ON_ERROR);
-        },
-    );
-    truthy($turnstile->enabled(), 'Turnstile with both keys must be enabled');
-    truthy($turnstile->verify('token-1'), 'Valid Turnstile response rejected');
-    parse_str($seen, $fields);
-    same('secret-key', $fields['secret'] ?? null);
-    same('token-1', $fields['response'] ?? null);
+    $code = $captcha->issue();
+    $_SESSION[GraphicCaptcha::SESSION_KEY]['expires'] = time() - 1;
+    truthy(!$captcha->verify($code), 'Expired captcha answer accepted');
+    truthy(!isset($_SESSION[GraphicCaptcha::SESSION_KEY]), 'Expired captcha state must be cleared');
 
-    $wrongHost = new Turnstile(
-        siteKey: 'site-key',
-        secretKey: 'secret-key',
-        hostnames: ['planner.low-ai.online'],
-        transport: static fn (string $payload): string => json_encode(['success' => true, 'hostname' => 'evil.example', 'action' => 'login'], JSON_THROW_ON_ERROR),
-    );
-    truthy(!$wrongHost->verify('token-2'), 'Turnstile hostname mismatch accepted');
+    $limited = new GraphicCaptcha(ttl: 300, maxAttempts: 3);
+    $limited->issue();
+    truthy(!$limited->verify('00000'), 'Wrong captcha answer accepted');
+    truthy(!$limited->verify('00000'), 'Wrong captcha answer accepted on second try');
+    truthy(!$limited->verify('00000'), 'Wrong captcha answer accepted on third try');
+    truthy(!isset($_SESSION[GraphicCaptcha::SESSION_KEY]), 'Captcha state must be cleared after the attempt limit');
+    truthy(!$limited->verify('00000'), 'Captcha state must not be reusable after the attempt limit');
+});
 
-    $wrongAction = new Turnstile(
-        siteKey: 'site-key',
-        secretKey: 'secret-key',
-        hostnames: ['planner.low-ai.online'],
-        transport: static fn (string $payload): string => json_encode(['success' => true, 'hostname' => 'planner.low-ai.online', 'action' => 'contact'], JSON_THROW_ON_ERROR),
-    );
-    truthy(!$wrongAction->verify('token-3'), 'Turnstile action mismatch accepted');
-
-    $failed = new Turnstile(
-        siteKey: 'site-key',
-        secretKey: 'secret-key',
-        hostnames: ['planner.low-ai.online'],
-        transport: static fn (string $payload): string => json_encode(['success' => false], JSON_THROW_ON_ERROR),
-    );
-    truthy(!$failed->verify('token-4'), 'Failed Turnstile response accepted');
-
-    $offline = new Turnstile(
-        siteKey: 'site-key',
-        secretKey: 'secret-key',
-        hostnames: ['planner.low-ai.online'],
-        transport: static fn (string $payload): ?string => null,
-    );
-    truthy(!$offline->verify('token-5'), 'Turnstile network failure must fail closed');
-    truthy(!$turnstile->verify(null), 'Missing Turnstile token accepted');
-
-    $disabled = new Turnstile(siteKey: '', secretKey: '');
-    truthy(!$disabled->enabled(), 'Turnstile without site key must be disabled');
-    truthy($disabled->verify(null), 'Disabled Turnstile must not block login');
+check('Graphic captcha renders a local PNG', function (): void {
+    $captcha = new GraphicCaptcha();
+    $png = $captcha->image('K7M2P');
+    truthy(str_starts_with($png, "\x89PNG\r\n\x1a\n"), 'Captcha image must be a PNG');
+    $size = getimagesizefromstring($png);
+    truthy(is_array($size), 'Captcha PNG metadata is unreadable');
+    same(184, $size[0], 'Captcha width changed');
+    same(58, $size[1], 'Captcha height changed');
+    same('image/png', $size['mime'], 'Captcha MIME type changed');
 });
 
 check('Csrf token validates only matching value', function (): void {
@@ -1157,27 +1133,32 @@ check('Admin login uses a taped desk layout', function (): void {
     $root = dirname(__DIR__);
     $login = file_get_contents($root . '/themes/cream/templates/admin/login.php');
     $css = file_get_contents($root . '/public/assets/admin.css');
+    $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
+    $env = file_get_contents($root . '/.env.example');
     truthy($login !== false && str_contains($login, 'admin-auth-layout'), 'Login needs the two-column desk layout');
     $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
     truthy($layout !== false && str_contains($layout, "admin-login-body"), 'Login page needs its own body class');
     truthy($login !== false && str_contains($login, 'admin-auth-note'), 'Login needs the private desk note');
     truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
     truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
-    truthy($login !== false && str_contains($login, 'cf-turnstile') && str_contains($login, 'data-action="login"'), 'Login needs a Cloudflare Turnstile widget');
-    truthy($login !== false && str_contains($login, 'challenges.cloudflare.com/turnstile/v0/api.js'), 'Login needs the Turnstile script');
+    truthy($login !== false && str_contains($login, 'admin-captcha'), 'Login needs the local graphic captcha panel');
+    truthy($login !== false && str_contains($login, 'src="/admin/captcha.png"') && str_contains($login, 'name="captcha"'), 'Login must load the local captcha image and submit the captcha field');
+    truthy($login !== false && str_contains($login, 'data-captcha-refresh'), 'Captcha needs a refresh control');
+    truthy($login !== false && !str_contains($login, 'challenges.cloudflare.com') && !str_contains($login, 'cf-turnstile'), 'Login must not load Cloudflare Turnstile');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/captcha.png'"), 'Admin routes must expose the captcha image endpoint');
+    truthy($env !== false && !str_contains($env, 'TURNSTILE_'), 'Environment example must not advertise Turnstile keys');
+    truthy(!is_file($root . '/core/Security/Turnstile.php'), 'Turnstile implementation must be removed');
+    truthy($css !== false && str_contains($css, '.admin-captcha') && str_contains($css, '.admin-captcha-row img'), 'Captcha must use the paper login panel');
     truthy($css !== false && str_contains($css, 'grid-template-columns: minmax(0, 0.88fr) minmax(390px, 1.12fr)'), 'Login desk must be split into two columns');
     truthy($css !== false && str_contains($css, '.tape-input::before') && str_contains($css, 'clip-path: polygon(1% 0'), 'Credential fields need a torn tape surface');
     truthy($css !== false && str_contains($css, 'appearance: none') && preg_match('/\.tape-input input:focus \{[^}]*background: transparent;[^}]*box-shadow: none;/s', $css) === 1, 'Credential inputs must keep the tape surface when focused');
     truthy($css !== false && !str_contains($css, 'width: min(430px'), 'Login must no longer use the old single narrow card');
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-main') && str_contains($css, 'flex: 1 1 auto'), 'Login main must fill the remaining viewport');
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-auth') && str_contains($css, 'overflow: hidden'), 'Login page must not scroll');
-    truthy($css !== false && str_contains($css, '@media (max-height: 640px)'), 'Short screens need a compact login layout');
-    truthy($css !== false && str_contains($css, '.admin-turnstile') && str_contains($css, '.admin-turnstile .cf-turnstile'), 'Turnstile must use the paper login panel');
+    truthy($css !== false && str_contains($css, '@media (max-height: 820px)'), 'Short screens need a compact login layout');
+    truthy($css !== false && str_contains($css, '.admin-captcha-answer input') && str_contains($css, '.admin-captcha-refresh'), 'Captcha answer and refresh need paper styles');
     truthy(str_contains($css, 'min-width: 0') && str_contains($css, 'max-width: 480px'), 'Login grid must be allowed to shrink on narrow phones');
     truthy(str_contains($css, '.admin-login-body { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }'), 'Login page must scroll vertically on phones');
-    truthy(str_contains($login, 'admin-turnstile-fit') && str_contains($login, 'data-size="normal"'), 'Turnstile must keep the horizontal widget on phones');
-    truthy(str_contains($login, 'fit.clientWidth / 300') && str_contains($login, "setProperty('--ts-scale'"), 'Turnstile must scale horizontally with the available width');
-    truthy(str_contains($css, '.admin-turnstile-fit') && str_contains($css, 'transform: scale(var(--ts-scale, 1))'), 'Turnstile wrapper must reserve the scaled height');
 });
 
 check('Comments start with three and reveal in batches', function (): void {

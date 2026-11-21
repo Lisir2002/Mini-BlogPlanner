@@ -3,13 +3,16 @@
 ## 入口与认证
 
 - 登录页：`GET /admin/login.html`
-- 登录提交：`POST /admin/login.html`
+- 图形验证码：`GET /admin/captcha.png`
+- 登录提交：`POST /admin/login.html`，必须带 `captcha` 字段
 - 退出：`POST /admin/logout.html`
 - 后台首页：`GET /admin.html` → 302 到文章列表
 - 管理员来自 `admins` 表；安装器创建第一个管理员。
 - 密码使用 Argon2id；登录用 `password_verify`。
 - 登录成功 `session_regenerate_id(true)`，并轮换 CSRF token。
 - 会话闲置 2 小时自动失效；Cookie 为 HttpOnly、SameSite=Lax，HTTPS 下 Secure。
+- 登录页使用站内生成的图形验证码，不请求任何外部验证服务。
+- 验证码答案只保存在会话中，5 分钟有效，最多尝试 5 次；成功或失败都会消耗当前题目，刷新后换新题。
 - 登录失败按 IP 节流：15 分钟内 5 次；超限返回 429。
 - 所有写操作必须带 `_csrf`；失败返回 419。
 
