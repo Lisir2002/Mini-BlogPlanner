@@ -34,7 +34,8 @@
 | GET | `/admin/media.html` | 媒体库与上传表单 |
 | POST | `/admin/media.html` | 上传图片（字段 `file`） |
 | POST | `/admin/media/{id}/delete.html` | 删除图片与文件 |
-| GET | `/admin/audit.html` | 审计事件列表，支持筛选与分页 |
+| GET | `/admin/audit.html` | 审计事件列表，支持分类、关键词、操作者、结果、日期筛选与分页 |
+| GET | `/admin/audit/export.csv` | 按当前筛选导出审计 CSV，单次最多 5000 条 |
 
 表单字段：
 
@@ -95,7 +96,9 @@
 
 - 预览必须登录，公开页使用的模板会显示“预览模式”，响应带 `X-Robots-Tag: noindex, nofollow`。
 - 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived/restored`、`post.bulk_archived/bulk_restored`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`。
-- 查询参数：`event` 精确事件名，`actor` 精确用户名，`page` 页码；每页 50 条，超出页数会夹到最后一页。
+- 查询参数：`category`（`admin/post/comment/media/tag/system/other`）、`q`（事件、操作者或字段）、`event` 精确事件名、`actor` 精确用户名、`result`（`success/failed`）、`range`（`today/24h/7d/30d/90d`）、`from`/`to`（`YYYY-MM-DD`）、`per_page`（25/50/100）、`page` 页码；超出页数会夹到最后一页。
+- 审计详情展开后显示结构化字段和脱敏后的原始 JSON；密码、令牌、Cookie、授权头、CSRF 和会话字段在写入和读取时都会遮蔽。
+- CSV 导出复用当前筛选，单次上限 5000 条，导出动作本身写入 `admin.audit.exported`；后台不提供编辑或删除入口。
 - 审计只记录动作、对象 id、状态、IP，不记录密码、Cookie、数据库连接串。
 - 保留期清理：`php bin/audit-prune.php --days=90 --json` 默认试运行；加 `--confirm` 删除早于窗口的记录，并写一条 `system.audit.pruned`。最小窗口 7 天，最大 3650 天。
 

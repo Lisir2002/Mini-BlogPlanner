@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Core\Auth\AdminRepository;
 use Core\Auth\Auth;
+use Core\Audit\AuditPresenter;
+use Core\Audit\AuditRepository;
 use Core\Config\Env;
 use Core\Content\Media;
 use Core\Content\TagRepository;
@@ -1608,6 +1610,117 @@ check('Admin updates page exposes guarded one-click flow', function (): void {
     truthy($css !== false && str_contains($css, '.update-hero') && str_contains($css, '@media (max-width: 460px)'), 'Updates page needs responsive paper styles');
     truthy(is_file($root . '/deploy/cream-update'), 'Restricted update entry must be shipped');
     truthy(is_file($root . '/docs/ADMIN-UPDATES.md'), 'Updates documentation must exist');
+});
+
+check('Audit presenter names, redacts and summarizes events', function (): void {
+    same('admin', AuditPresenter::category('admin.login.failed'));
+    same('post', AuditPresenter::category('post.published'));
+    same('system', AuditPresenter::category('system.upgrade.succeeded'));
+    same('other', AuditPresenter::category('custom.event'));
+    same('登录失败', AuditPresenter::label('admin.login.failed'));
+    truthy(AuditPresenter::isFailure('system.upgrade.failed'), 'Failed suffix should be recognised');
+    truthy(!AuditPresenter::isFailure('comment.deleted'), 'Deletion is not a failed event');
+
+    $redacted = AuditPresenter::redact([
+        'password' => 'plain',
+        'meta' => ['token' => 'abc', 'ok' => 1],
+        'authorization' => 'Bearer secret',
+    ]);
+    same('[已脱敏]', $redacted['password']);
+    same('[已脱敏]', $redacted['authorization']);
+    truthy(is_array($redacted['meta']), 'Nested payload must stay an array');
+    same('[已脱敏]', $redacted['meta']['token'] ?? null);
+    same(1, $redacted['meta']['ok'] ?? null);
+
+    $summary = AuditPresenter::summary('post.updated', ['slug' => 'hello', 'status' => 'publish', 'id' => 12]);
+    truthy(str_contains($summary, 'hello') && str_contains($summary, 'publish'), 'Summary should expose object fields');
+
+    $fields = AuditPresenter::fields(['id' => 3, 'size' => 2097152, 'password' => 'x']);
+    truthy($fields !== [], 'Fields must not be empty');
+    same('文件大小', $fields[1]['label']);
+    same('2.0 MB', $fields[1]['value']);
+    same('[已脱敏]', $fields[2]['value']);
+    truthy(!str_contains(AuditPresenter::json(['token' => 'secret']), 'secret'), 'JSON view must not leak secrets');
+});
+
+check('Audit repository filters, stats and selected fields', function (): void {
+    $capture = new class implements ConnectionInterface {
+        public string $sql = '';
+        /** @var list<string> */
+        public array $params = [];
+
+        public function fetchOne(string $sql, array $params = []): ?array
+        {
+            $this->sql = $sql;
+            $this->params = array_values($params);
+
+            return ['total' => 0, 'today' => 0, 'week' => 0, 'failed' => 0, 'actors' => 0, 'now' => '2026-11-22 06:00:00'];
+        }
+
+        public function fetchAll(string $sql, array $params = []): array
+        {
+            $this->sql = $sql;
+            $this->params = array_values($params);
+
+            return [];
+        }
+
+        public function execute(string $sql, array $params = []): int
+        {
+            $this->sql = $sql;
+            $this->params = array_values($params);
+
+            return 0;
+        }
+
+        public function transaction(callable $callback): mixed
+        {
+            return $callback($this);
+        }
+    };
+
+    $repository = new AuditRepository($capture);
+    $repository->count([
+        'q' => 'login',
+        'category' => 'admin',
+        'result' => 'failed',
+        'from' => '2026-11-01 00:00:00',
+        'to' => '2026-11-30 23:59:59',
+    ]);
+    truthy(str_contains($capture->sql, 'CAST(payload AS CHAR) LIKE ?'), 'Keyword search must include payload');
+    truthy(str_contains($capture->sql, "event LIKE 'admin.%'"), 'Category filter must narrow admin events');
+    truthy(str_contains($capture->sql, "event LIKE '%.failed'"), 'Result filter must narrow failures');
+    truthy(str_contains($capture->sql, 'created_at >= ?') && str_contains($capture->sql, 'created_at <= ?'), 'Date range must be applied');
+    same(5, count($capture->params), 'Keyword and date filters must bind params');
+    same('login', trim($capture->params[0], '%'), 'Keyword should be parameterised');
+
+    $repository->count(['range' => 'today']);
+    truthy(str_contains($capture->sql, 'CURDATE()'), 'Today preset must use the database clock');
+
+    $repository->search(25, 0, ['category' => 'system']);
+    truthy(str_contains($capture->sql, 'plan_id') && str_contains($capture->sql, 'backup_id'), 'Rows must expose plan and backup ids');
+    truthy(str_contains($capture->sql, "event LIKE 'system.%'"), 'Search must reuse the same category filter');
+});
+
+check('Audit page exposes richer safe controls', function (): void {
+    $root = dirname(__DIR__);
+    $template = file_get_contents($root . '/themes/cream/templates/admin/audit.php');
+    $controller = file_get_contents($root . '/plugins/admin/src/AuditAdminController.php');
+    $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
+    $css = file_get_contents($root . '/public/assets/admin-audit.css');
+
+    truthy($template !== false && str_contains($template, 'name="range"') && str_contains($template, 'name="from"') && str_contains($template, 'name="to"'), 'Audit filters need time range and dates');
+    truthy($template !== false && str_contains($template, 'name="q"') && str_contains($template, 'name="result"'), 'Audit filters need keyword and result');
+    truthy($template !== false && str_contains($template, 'audit-category-tabs') && str_contains($template, 'audit-boundary'), 'Audit page needs category tabs and explicit boundaries');
+    truthy($template !== false && str_contains($template, '查看字段') && str_contains($template, '已脱敏'), 'Audit details must be structured and redacted');
+    truthy($template !== false && str_contains($template, '导出 CSV'), 'Audit page needs CSV export');
+    truthy($controller !== false && str_contains($controller, '/admin/audit/export.csv'), 'Export URL must come from the controller');
+    truthy($template !== false && !str_contains($template, "json_encode(\$event['payload']"), 'Audit page must not print raw legacy payload');
+    truthy($controller !== false && str_contains($controller, 'function export') && str_contains($controller, "admin.audit.exported"), 'Export must be audited');
+    truthy($controller !== false && str_contains($controller, "implode(',', array_keys(\$state['db']))"), 'Export audit payload should store filter names, not values');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/audit/export.csv'"), 'Admin plugin must register the export route');
+    truthy($plugin !== false && !str_contains($plugin, "'/admin/audit/delete'"), 'Audit page must not expose a delete route');
+    truthy($css !== false && str_contains($css, '.audit-timeline') && str_contains($css, '@media (max-width: 520px)'), 'Audit page needs timeline and phone styles');
 });
 
 check('Compressed assets match their source files', function (): void {

@@ -71,6 +71,7 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/media', static fn (Request $request, array $params): Response => $media->upload($request), 'admin.media.upload'),
             new Route(['POST'], '/admin/media/{id}/delete', static fn (Request $request, array $params): Response => $media->delete($request, $params), 'admin.media.delete'),
             new Route(['GET'], '/admin/audit', static fn (Request $request, array $params): Response => $audit->index($request), 'admin.audit.index'),
+            new Route(['GET'], '/admin/audit/export.csv', static fn (Request $request, array $params): Response => $audit->export($request), 'admin.audit.export'),
             new Route(['GET'], '/admin/comments', static fn (Request $request, array $params): Response => $comments->index($request), 'admin.comments.index'),
             new Route(['POST'], '/admin/comments/{id}/approve', static fn (Request $request, array $params): Response => $comments->approve($request, $params), 'admin.comments.approve'),
             new Route(['POST'], '/admin/comments/{id}/spam', static fn (Request $request, array $params): Response => $comments->spam($request, $params), 'admin.comments.spam'),

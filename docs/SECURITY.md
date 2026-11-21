@@ -49,6 +49,6 @@
 ## 6. 已知缺口
 
 - 无 CSP nonce、无多管理员角色权限、无二步验证。
-- 审计保留期清理需手动执行 `bin/audit-prune.php`，尚未接入定时任务。
+- 审计保留期清理需手动执行 `bin/audit-prune.php`，尚未接入定时任务；后台审计页只读，并提供带脱敏的 CSV 导出。
 - 无媒体缩略图/WebP 转换和上传配额。
 - 无真实 HTTPS/Nginx 集成测试；`deploy/nginx.conf.example` 是基线，不是已验收配置。
