@@ -695,6 +695,9 @@ check('Graphic captcha is one-time, case tolerant and attempt limited', function
     $captcha = new GraphicCaptcha(ttl: 300, maxAttempts: 5);
     $code = $captcha->issue();
     truthy(preg_match('/^[2346789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/', $code) === 1, 'Captcha code must use the unambiguous five-character alphabet');
+    $state = $_SESSION[GraphicCaptcha::SESSION_KEY] ?? [];
+    truthy(is_array($state) && !isset($state['code']) && !in_array($code, $state, true), 'Captcha answer must not be stored in plaintext');
+    truthy(($state['expires'] ?? 0) > time() && ($state['tries'] ?? -1) === 0, 'Captcha state must start with a future expiry and zero tries');
     truthy($captcha->verify(strtolower($code)), 'Captcha answer must be case tolerant');
     truthy(!$captcha->verify($code), 'Captcha answer was accepted twice');
 
@@ -718,8 +721,8 @@ check('Graphic captcha renders a local PNG', function (): void {
     truthy(str_starts_with($png, "\x89PNG\r\n\x1a\n"), 'Captcha image must be a PNG');
     $size = getimagesizefromstring($png);
     truthy(is_array($size), 'Captcha PNG metadata is unreadable');
-    same(184, $size[0], 'Captcha width changed');
-    same(58, $size[1], 'Captcha height changed');
+    same(160, $size[0], 'Captcha width changed');
+    same(50, $size[1], 'Captcha height changed');
     same('image/png', $size['mime'], 'Captcha MIME type changed');
 });
 
@@ -1142,13 +1145,15 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($login !== false && substr_count($login, 'tape-field') >= 2 && substr_count($login, 'tape-input') >= 2, 'Both credentials must use tape fields');
     truthy($login !== false && str_contains($login, 'type="password"'), 'Password must remain a real password input');
     truthy($login !== false && str_contains($login, 'admin-captcha'), 'Login needs the local graphic captcha panel');
-    truthy($login !== false && str_contains($login, 'src="/admin/captcha.png"') && str_contains($login, 'name="captcha"'), 'Login must load the local captcha image and submit the captcha field');
+    truthy($login !== false && str_contains($login, 'src="/admin/captcha.png"') && str_contains($login, 'name="captcha"') && str_contains($login, 'admin-captcha-field'), 'Login must place the local captcha image inside the answer field');
     truthy($login !== false && str_contains($login, 'data-captcha-refresh'), 'Captcha needs a refresh control');
     truthy($login !== false && !str_contains($login, 'challenges.cloudflare.com') && !str_contains($login, 'cf-turnstile'), 'Login must not load Cloudflare Turnstile');
     truthy($plugin !== false && str_contains($plugin, "'/admin/captcha.png'"), 'Admin routes must expose the captcha image endpoint');
+    $controller = file_get_contents($root . '/plugins/admin/src/LoginController.php');
+    truthy($controller !== false && str_contains($controller, "'Cross-Origin-Resource-Policy', 'same-origin'") && str_contains($controller, "'X-Robots-Tag', 'noindex, nofollow'"), 'Captcha image must forbid cross-origin reuse and indexing');
     truthy($env !== false && !str_contains($env, 'TURNSTILE_'), 'Environment example must not advertise Turnstile keys');
     truthy(!is_file($root . '/core/Security/Turnstile.php'), 'Turnstile implementation must be removed');
-    truthy($css !== false && str_contains($css, '.admin-captcha') && str_contains($css, '.admin-captcha-row img'), 'Captcha must use the paper login panel');
+    truthy($css !== false && str_contains($css, '.admin-captcha-field') && str_contains($css, '.admin-captcha-refresh img') && str_contains($css, '.admin-captcha-field:focus-within'), 'Captcha image must sit inside the answer field with a visible focus state');
     truthy($css !== false && str_contains($css, 'grid-template-columns: minmax(0, 0.88fr) minmax(390px, 1.12fr)'), 'Login desk must be split into two columns');
     truthy($css !== false && str_contains($css, '.tape-input::before') && str_contains($css, 'clip-path: polygon(1% 0'), 'Credential fields need a torn tape surface');
     truthy($css !== false && str_contains($css, 'appearance: none') && preg_match('/\.tape-input input:focus \{[^}]*background: transparent;[^}]*box-shadow: none;/s', $css) === 1, 'Credential inputs must keep the tape surface when focused');
@@ -1156,7 +1161,7 @@ check('Admin login uses a taped desk layout', function (): void {
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-main') && str_contains($css, 'flex: 1 1 auto'), 'Login main must fill the remaining viewport');
     truthy($css !== false && str_contains($css, '.admin-login-body .admin-auth') && str_contains($css, 'overflow: hidden'), 'Login page must not scroll');
     truthy($css !== false && str_contains($css, '@media (max-height: 820px)'), 'Short screens need a compact login layout');
-    truthy($css !== false && str_contains($css, '.admin-captcha-answer input') && str_contains($css, '.admin-captcha-refresh'), 'Captcha answer and refresh need paper styles');
+    truthy($css !== false && str_contains($css, '.admin-captcha-answer input') && str_contains($css, '.admin-captcha-refresh') && !str_contains($css, '.admin-captcha-row'), 'Captcha answer and image need the embedded field styles');
     truthy(str_contains($css, 'min-width: 0') && str_contains($css, 'max-width: 480px'), 'Login grid must be allowed to shrink on narrow phones');
     truthy(str_contains($css, '.admin-login-body { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }'), 'Login page must scroll vertically on phones');
 });

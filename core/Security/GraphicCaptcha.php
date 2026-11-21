@@ -16,8 +16,8 @@ final class GraphicCaptcha
 
     private const ALPHABET = '2346789ABCDEFGHJKLMNPQRSTUVWXYZ';
     private const LENGTH = 5;
-    private const WIDTH = 184;
-    private const HEIGHT = 58;
+    private const WIDTH = 160;
+    private const HEIGHT = 50;
 
     public function __construct(
         private readonly int $ttl = 300,
@@ -144,9 +144,9 @@ final class GraphicCaptcha
         }
 
         foreach (str_split($code) as $index => $character) {
-            $x = 17 + $index * 32 + random_int(-2, 2);
-            $y = 40 + random_int(-4, 3);
-            $fontSize = random_int(23, 27);
+            $x = 14 + $index * 28 + random_int(-1, 1);
+            $y = 35 + random_int(-3, 2);
+            $fontSize = random_int(21, 24);
             $angle = random_int(-18, 18);
             $shadow = $this->color($image, 255, 249, 236, 38);
             $rgb = $ink[random_int(0, count($ink) - 1)];

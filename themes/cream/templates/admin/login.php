@@ -57,15 +57,16 @@
             <span>03 / GRAPHIC CHECK</span>
             <span>站内生成 · 一次性</span>
           </div>
-          <div class="admin-captcha-row">
-            <img id="admin-captcha-image" src="/admin/captcha.png" width="184" height="58" alt="图形验证码" draggable="false">
-            <button class="admin-captcha-refresh" type="button" data-captcha-refresh>换一张</button>
-          </div>
           <div class="admin-captcha-answer">
             <label for="captcha">输入图上的 5 个字符</label>
-            <input id="captcha" name="captcha" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" pattern="[A-Za-z0-9]{5}" placeholder="例如 7K3MP" required>
+            <div class="admin-captcha-field">
+              <input id="captcha" name="captcha" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" pattern="[A-Za-z0-9]{5}" placeholder="5 位字符" required>
+              <button class="admin-captcha-refresh" type="button" data-captcha-refresh aria-label="点击刷新图形验证码" title="点击换一张">
+                <img id="admin-captcha-image" src="/admin/captcha.png" width="160" height="50" alt="图形验证码，点击换一张" draggable="false">
+              </button>
+            </div>
           </div>
-          <p class="admin-captcha-note">验证码 5 分钟内有效，只能使用一次；看不清就换一张。</p>
+          <p class="admin-captcha-note">看不清就点输入框右侧的图片；验证码 5 分钟内有效，只能用一次。</p>
         </div>
         <script>
         (function () {

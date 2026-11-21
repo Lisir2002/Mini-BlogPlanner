@@ -91,7 +91,10 @@ final class LoginController
             ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->withHeader('Pragma', 'no-cache')
             ->withHeader('Expires', '0')
-            ->withHeader('X-Content-Type-Options', 'nosniff');
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Cross-Origin-Resource-Policy', 'same-origin')
+            ->withHeader('X-Robots-Tag', 'noindex, nofollow')
+            ->withHeader('Content-Disposition', 'inline; filename="captcha.png"');
     }
 
     public function logout(Request $request): Response

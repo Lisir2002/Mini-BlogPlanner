@@ -493,45 +493,6 @@
   letter-spacing: 0.1em;
 }
 
-.admin-captcha-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.admin-captcha-row img {
-  display: block;
-  flex: 0 1 auto;
-  width: 184px;
-  max-width: 100%;
-  height: auto;
-  border: 1px solid color-mix(in oklch, var(--line-strong) 74%, transparent);
-  border-radius: 4px 8px 5px 6px;
-  background: var(--paper);
-  box-shadow: 2px 2px 0 color-mix(in oklch, var(--butter) 68%, transparent);
-  user-select: none;
-}
-
-.admin-captcha-refresh {
-  flex: 0 0 auto;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px dashed color-mix(in oklch, var(--line-strong) 64%, transparent);
-  border-radius: 4px 9px 6px 5px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 12px;
-  cursor: pointer;
-  box-shadow: 1px 2px 0 color-mix(in oklch, var(--line-strong) 42%, transparent);
-}
-
-.admin-captcha-refresh:hover,
-.admin-captcha-refresh:focus-visible {
-  border-color: var(--coral);
-  outline: none;
-}
-
 .admin-captcha-answer {
   display: grid;
   gap: 4px;
@@ -542,13 +503,30 @@
   font-size: 11px;
 }
 
-.admin-captcha-answer input {
-  width: 100%;
-  min-height: 38px;
-  padding: 7px 11px;
+.admin-captcha-field {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  overflow: hidden;
   border: 1px solid color-mix(in oklch, var(--line-strong) 62%, transparent);
   border-radius: 4px 9px 6px 5px;
   background: color-mix(in oklch, white 72%, var(--paper));
+}
+
+.admin-captcha-field:focus-within {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--coral) 22%, transparent);
+}
+
+.admin-captcha-answer input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
   font: 600 16px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: 0.18em;
@@ -556,9 +534,41 @@
 }
 
 .admin-captcha-answer input:focus {
-  border-color: var(--coral);
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--coral) 22%, transparent);
+  box-shadow: none;
+}
+
+.admin-captcha-refresh {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 40px;
+  margin: 2px 3px 2px 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px dashed color-mix(in oklch, var(--line-strong) 58%, transparent);
+  border-radius: 0 7px 6px 0;
+  background: color-mix(in oklch, var(--butter) 20%, var(--paper));
+  cursor: pointer;
+}
+
+.admin-captcha-refresh img {
+  display: block;
+  width: 112px;
+  height: 36px;
+  margin: 0 auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.admin-captcha-refresh:hover img,
+.admin-captcha-refresh:focus-visible img {
+  filter: contrast(1.08) saturate(1.05);
+}
+
+.admin-captcha-refresh:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--coral) 55%, transparent);
+  outline-offset: -3px;
 }
 
 .admin-captcha-note {
