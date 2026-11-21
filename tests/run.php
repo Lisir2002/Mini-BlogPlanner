@@ -1597,6 +1597,11 @@ check('Admin updates page exposes guarded one-click flow', function (): void {
     truthy($helper !== false && str_contains($helper, 'bin/upgrade.php') && str_contains($helper, '--confirm'), 'Helper must use the existing upgrade runner');
     truthy($script !== false && str_contains($script, 'fetch(statusUrl') && str_contains($script, 'refreshRegions'), 'Updates page must poll job status and refresh only changed regions');
     truthy($script !== false && !str_contains($script, 'window.location.reload'), 'Completed updates must not reload the whole page');
+    truthy($template !== false && str_contains($template, 'id="update-flash"') && str_contains($template, 'role="status"'), 'Updates page needs a visible completion status');
+    truthy($script !== false && str_contains($script, 'event.preventDefault()') && str_contains($script, 'fetch(form.action'), 'Update submission must stay on the current page');
+    truthy($script !== false && str_contains($script, 'const ui = () =>') && str_contains($script, "closest('[data-update-open]')"), 'Replaced regions must keep live controls and fresh DOM references');
+    truthy($script !== false && str_contains($script, 'visibilitychange') && str_contains($script, 'pageshow') && str_contains($script, 'showFlash'), 'Updates page must resume polling and surface completion state');
+    truthy($css !== false && str_contains($css, '.update-flash') && str_contains($css, '.update-flash.is-hidden'), 'Updates page needs completion banner styles');
     truthy($css !== false && str_contains($css, '.update-hero') && str_contains($css, '@media (max-width: 460px)'), 'Updates page needs responsive paper styles');
     truthy(is_file($root . '/deploy/cream-update'), 'Restricted update entry must be shipped');
     truthy(is_file($root . '/docs/ADMIN-UPDATES.md'), 'Updates documentation must exist');

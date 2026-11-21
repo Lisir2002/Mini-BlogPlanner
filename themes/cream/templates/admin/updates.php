@@ -57,6 +57,11 @@ if ($jobActive) {
 }
 $published = $latest !== null && $latest['published_at'] !== '' ? cream_date($latest['published_at']) : '—';
 $panelStatus = $jobActive || $queued ? 'running' : ($jobStatus === 'failed' ? 'failed' : 'idle');
+$finishedAt = $jobStatus === 'done' && isset($job['finished_at']) && is_string($job['finished_at'])
+    ? strtotime($job['finished_at'])
+    : false;
+$recentDone = $finishedAt !== false && time() - $finishedAt < 86400;
+$flashText = $recentDone ? (string) ($job['message'] ?? '更新完成，站点已恢复访问。') : '';
 $buttonLabel = '无需更新';
 if ($canUpdate && $latest !== null) {
     $buttonLabel = '更新到 ' . $latest['tag'];
@@ -73,6 +78,9 @@ if ($canUpdate && $latest !== null) {
   data-panel-status="<?= cream_e($panelStatus) ?>"
   data-step="<?= cream_e($jobStep) ?>"
   data-step-percent="<?= (int) $stepPercent ?>">
+  <div class="update-flash<?= $recentDone ? ' is-good' : ' is-hidden' ?>" id="update-flash" role="status" aria-live="polite"<?= $recentDone ? '' : ' hidden' ?>>
+    <?= cream_e($flashText) ?>
+  </div>
   <header class="admin-page-head update-head">
     <div>
       <span class="eyebrow">RELEASES · BACKSTAGE</span>
