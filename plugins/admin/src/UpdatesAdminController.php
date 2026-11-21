@@ -68,14 +68,9 @@ final class UpdatesAdminController
         }
         $job = $this->sanitizeJob($job);
 
-        $releases = [];
         $currentRelease = null;
-        $previousRelease = null;
         try {
-            $repository = $this->releaseRepository();
-            $currentRelease = $repository->current();
-            $previousRelease = $repository->previous();
-            $releases = array_slice($repository->list(), 0, 10);
+            $currentRelease = $this->releaseRepository()->current();
         } catch (Throwable) {
             // 源码目录或权限不足时仍显示应用版本。
         }
@@ -102,9 +97,7 @@ final class UpdatesAdminController
             'upgrading' => $upgrading,
             'job' => $job,
             'jobActive' => $this->jobs->active($job),
-            'releaseHistory' => $releases,
             'currentRelease' => $currentRelease,
-            'previousRelease' => $previousRelease,
             'queued' => isset($request->query()['queued']),
             'phpVersion' => PHP_VERSION,
             'page_styles' => ['admin-updates.css'],

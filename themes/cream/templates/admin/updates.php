@@ -2,9 +2,7 @@
 $latest = is_array($latest ?? null) ? $latest : null;
 $latestError = is_string($latestError ?? null) ? $latestError : null;
 $job = is_array($job ?? null) ? $job : null;
-$releaseHistory = is_array($releaseHistory ?? null) ? $releaseHistory : [];
 $currentRelease = is_string($currentRelease ?? null) ? $currentRelease : null;
-$previousRelease = is_string($previousRelease ?? null) ? $previousRelease : null;
 $updateAvailable = (bool) ($updateAvailable ?? false);
 $ahead = (bool) ($ahead ?? false);
 $canUpdate = (bool) ($canUpdate ?? false);
@@ -62,6 +60,35 @@ $finishedAt = $jobStatus === 'done' && isset($job['finished_at']) && is_string($
     : false;
 $recentDone = $finishedAt !== false && time() - $finishedAt < 86400;
 $flashText = $recentDone ? (string) ($job['message'] ?? '更新完成，站点已恢复访问。') : '';
+$jobStartedAt = $job !== null && isset($job['started_at']) && is_string($job['started_at'])
+    ? strtotime($job['started_at'])
+    : false;
+$jobFinishedAt = $job !== null && isset($job['finished_at']) && is_string($job['finished_at'])
+    ? strtotime($job['finished_at'])
+    : false;
+$jobFinishedLabel = '—';
+if ($jobFinishedAt !== false) {
+    $elapsed = max(0, time() - $jobFinishedAt);
+    if ($elapsed < 60) {
+        $jobFinishedLabel = '刚刚';
+    } elseif ($elapsed < 3600) {
+        $jobFinishedLabel = (int) floor($elapsed / 60) . ' 分钟前';
+    } elseif ($elapsed < 86400) {
+        $jobFinishedLabel = (int) floor($elapsed / 3600) . ' 小时前';
+    } else {
+        $jobFinishedLabel = cream_date((string) ($job['finished_at'] ?? ''));
+    }
+}
+$jobDuration = '—';
+if ($jobStartedAt !== false && $jobFinishedAt !== false && $jobFinishedAt >= $jobStartedAt) {
+    $seconds = $jobFinishedAt - $jobStartedAt;
+    $jobDuration = $seconds < 60
+        ? $seconds . ' 秒'
+        : (int) floor($seconds / 60) . ' 分 ' . ($seconds % 60) . ' 秒';
+}
+$jobStatusLabel = $job === null
+    ? '待命'
+    : ($jobStatus === 'done' ? '已完成' : ($jobStatus === 'failed' ? '失败' : '进行中'));
 $buttonLabel = '无需更新';
 if ($canUpdate && $latest !== null) {
     $buttonLabel = '更新到 ' . $latest['tag'];
@@ -201,23 +228,104 @@ if ($canUpdate && $latest !== null) {
       </div>
     </details>
 
-    <details class="update-detail">
-      <summary>已部署 release</summary>
-      <div class="update-detail-body">
-        <?php if ($releaseHistory === []): ?>
-        <p class="muted">当前环境没有 releases 目录，正在以源码目录运行。</p>
+    <div class="update-info-grid">
+      <section class="update-info-card update-flow-card">
+        <div class="update-info-head">
+          <span class="update-kicker">WHAT HAPPENS</span>
+          <h3>这次更新会做什么</h3>
+          <p>从读取正式发布到站点恢复，整条链路都在服务器受控执行。</p>
+        </div>
+        <ol class="update-flow">
+          <li>
+            <span class="update-flow-num">01</span>
+            <strong>检查发布</strong>
+            <span>读取 GitHub 上最新的正式 Release。</span>
+          </li>
+          <li>
+            <span class="update-flow-num">02</span>
+            <strong>校验发布包</strong>
+            <span>核对 SHA256、文件清单和版本契约。</span>
+          </li>
+          <li>
+            <span class="update-flow-num">03</span>
+            <strong>自动备份</strong>
+            <span>备份数据库与共享配置，保留恢复计划。</span>
+          </li>
+          <li>
+            <span class="update-flow-num">04</span>
+            <strong>切换版本</strong>
+            <span>进入维护模式，迁移并原子切换 release。</span>
+          </li>
+          <li>
+            <span class="update-flow-num">05</span>
+            <strong>健康检查</strong>
+            <span>重启运行环境，确认站点恢复并写回结果。</span>
+          </li>
+        </ol>
+        <p class="update-flow-footnote">通常不到一分钟完成；切换的几秒会短暂进入维护模式，当前页面会自动继续确认结果。</p>
+      </section>
+
+      <section class="update-info-card update-last-card">
+        <div class="update-info-head">
+          <span class="update-kicker">LAST UPDATE</span>
+          <h3>最近一次更新</h3>
+        </div>
+        <?php if ($job === null): ?>
+        <p class="update-empty-note">还没有后台更新记录。第一次更新后，这里会显示版本变化、耗时和备份编号。</p>
         <?php else: ?>
-        <div class="update-release-list">
-          <?php foreach ($releaseHistory as $release): ?>
-          <div class="update-release-row">
-            <code><?= cream_e($release) ?></code>
-            <span><?= $release === $currentRelease ? '当前' : ($release === $previousRelease ? '上一版' : '') ?></span>
+        <div class="update-last-summary">
+          <div class="update-last-status">
+            <span>任务状态</span>
+            <strong class="<?= cream_e($jobStatus === 'failed' ? 'bad' : ($jobStatus === 'done' ? 'good' : '')) ?>"><?= cream_e($jobStatusLabel) ?></strong>
           </div>
-          <?php endforeach; ?>
+          <div class="update-last-version">
+            <span><?= cream_e((string) ($job['from'] ?? '—')) ?></span>
+            <i aria-hidden="true">→</i>
+            <strong><?= cream_e((string) ($job['to'] ?? '—')) ?></strong>
+          </div>
+          <dl class="update-last-facts">
+            <div>
+              <dt>完成时间</dt>
+              <dd><?= cream_e($jobFinishedLabel) ?></dd>
+            </div>
+            <div>
+              <dt>耗时</dt>
+              <dd><?= cream_e($jobDuration) ?></dd>
+            </div>
+            <div>
+              <dt>目标版本</dt>
+              <dd><code><?= cream_e((string) ($job['tag'] ?? '—')) ?></code></dd>
+            </div>
+          </dl>
+          <?php if (isset($job['backup_id']) && is_string($job['backup_id']) && $job['backup_id'] !== ''): ?>
+          <div class="update-backup-id">
+            <span>备份编号</span>
+            <code><?= cream_e($job['backup_id']) ?></code>
+          </div>
+          <?php endif; ?>
+          <?php if ($jobStatus === 'failed' && !empty($job['error'])): ?>
+          <p class="update-last-error"><?= cream_e((string) $job['error']) ?></p>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
+      </section>
+    </div>
+
+    <section class="update-info-card update-guard-card">
+      <div class="update-info-head">
+        <span class="update-kicker">SAFETY NET</span>
+        <h3>升级保障</h3>
+        <p>每一步都可核对；失败时不删除备份，也不会把站点停在未知状态。</p>
       </div>
-    </details>
+      <div class="update-guard-grid">
+        <div><strong>仅正式版</strong><span>草稿和预发布不会进入更新。</span></div>
+        <div><strong>SHA256 校验</strong><span>下载包与校验文件必须完全一致。</span></div>
+        <div><strong>自动备份</strong><span>数据库和共享配置先备份再切换。</span></div>
+        <div><strong>独立任务</strong><span>重启 PHP-FPM 不会打断更新助手。</span></div>
+        <div><strong>健康检查</strong><span>切换后确认站点和 API 正常响应。</span></div>
+        <div><strong>失败可恢复</strong><span>保留计划与备份，可用 CLI 恢复。</span></div>
+      </div>
+    </section>
   </div>
 </section>
 

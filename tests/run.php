@@ -1602,6 +1602,9 @@ check('Admin updates page exposes guarded one-click flow', function (): void {
     truthy($script !== false && str_contains($script, 'const ui = () =>') && str_contains($script, "closest('[data-update-open]')"), 'Replaced regions must keep live controls and fresh DOM references');
     truthy($script !== false && str_contains($script, 'visibilitychange') && str_contains($script, 'pageshow') && str_contains($script, 'showFlash'), 'Updates page must resume polling and surface completion state');
     truthy($css !== false && str_contains($css, '.update-flash') && str_contains($css, '.update-flash.is-hidden'), 'Updates page needs completion banner styles');
+    truthy($template !== false && !str_contains($template, '已部署 release'), 'Updates page must not expose the raw release directory list');
+    truthy($template !== false && str_contains($template, '这次更新会做什么') && str_contains($template, '升级保障') && str_contains($template, '最近一次更新'), 'Updates page needs richer flow, safety and last-update content');
+    truthy($css !== false && str_contains($css, '.update-info-grid') && str_contains($css, '.update-flow') && str_contains($css, '.update-guard-grid'), 'New update information blocks need layout styles');
     truthy($css !== false && str_contains($css, '.update-hero') && str_contains($css, '@media (max-width: 460px)'), 'Updates page needs responsive paper styles');
     truthy(is_file($root . '/deploy/cream-update'), 'Restricted update entry must be shipped');
     truthy(is_file($root . '/docs/ADMIN-UPDATES.md'), 'Updates documentation must exist');
