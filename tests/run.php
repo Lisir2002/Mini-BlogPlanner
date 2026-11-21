@@ -1546,6 +1546,19 @@ check('Update job persists state and detects stale queues', function (): void {
     $normalized = $jobs->normalize($job);
     same('failed', $normalized['status']);
     truthy(($normalized['stale'] ?? false) === true, 'Stale queue must be marked failed');
+
+    $running = [
+        'status' => 'running',
+        'step' => 'apply',
+        'from' => '0.1.60',
+        'to' => '0.1.61',
+        'updated_at' => gmdate('c', time() - 200),
+    ];
+    $reconciled = $jobs->reconcile($running, '0.1.61', false);
+    same('done', $reconciled['status']);
+    truthy(($reconciled['reconciled'] ?? false) === true, 'Reached target must reconcile a stale running task');
+    same('running', $jobs->reconcile($running, '0.1.60', false)['status']);
+    same('running', $jobs->reconcile($running, '0.1.61', true)['status']);
     rrmdir($directory);
 });
 
@@ -1567,17 +1580,23 @@ check('Admin updates page exposes guarded one-click flow', function (): void {
     $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
     $controller = file_get_contents($root . '/plugins/admin/src/UpdatesAdminController.php');
     $helper = file_get_contents($root . '/bin/update-helper.php');
+    $entry = file_get_contents($root . '/deploy/cream-update');
     $script = file_get_contents($root . '/public/assets/admin-updates.js');
     $css = file_get_contents($root . '/public/assets/admin-updates.css');
     truthy($template !== false && str_contains($template, 'data-status-url="/admin/updates/status"'), 'Updates page needs a status endpoint');
+    truthy($template !== false && str_contains($template, 'data-update-region="current"') && str_contains($template, 'data-update-region="progress"') && str_contains($template, 'data-update-region="details"'), 'Updates page needs independently refreshable regions');
     truthy($template !== false && str_contains($template, 'id="update-dialog"') && str_contains($template, 'action="/admin/updates/apply"'), 'Updates page needs a guarded apply dialog');
     truthy($template !== false && str_contains($template, 'name="_csrf"') && str_contains($template, 'name="tag"'), 'Apply dialog needs CSRF and target tag');
     truthy($layout !== false && str_contains($layout, '/admin/updates.html') && str_contains($layout, '版本与升级'), 'Admin navigation must expose updates');
     truthy($plugin !== false && str_contains($plugin, "'/admin/updates'") && str_contains($plugin, "'/admin/updates/apply'"), 'Admin plugin must register updates routes');
     truthy($controller !== false && str_contains($controller, 'Csrf::validate') && str_contains($controller, 'sudo -n'), 'Controller must guard CSRF and use restricted sudo');
+    truthy($controller !== false && str_contains($controller, '->reconcile('), 'Controller must reconcile an upgrade that already switched versions');
+    truthy($controller !== false && !str_contains($controller, 'nohup'), 'Controller must not keep the helper inside the PHP-FPM process group');
+    truthy($entry !== false && str_contains($entry, 'systemd-run') && str_contains($entry, 'CREAM_UPDATE_SERVICE'), 'Update entry must detach into an independent systemd unit');
     truthy($helper !== false && str_contains($helper, 'hash_equals') && str_contains($helper, 'ReleaseArchive') && str_contains($helper, 'posix_geteuid'), 'Helper must verify checksums and require root');
     truthy($helper !== false && str_contains($helper, 'bin/upgrade.php') && str_contains($helper, '--confirm'), 'Helper must use the existing upgrade runner');
-    truthy($script !== false && str_contains($script, 'fetch(statusUrl'), 'Updates page must poll job status');
+    truthy($script !== false && str_contains($script, 'fetch(statusUrl') && str_contains($script, 'refreshRegions'), 'Updates page must poll job status and refresh only changed regions');
+    truthy($script !== false && !str_contains($script, 'window.location.reload'), 'Completed updates must not reload the whole page');
     truthy($css !== false && str_contains($css, '.update-hero') && str_contains($css, '@media (max-width: 460px)'), 'Updates page needs responsive paper styles');
     truthy(is_file($root . '/deploy/cream-update'), 'Restricted update entry must be shipped');
     truthy(is_file($root . '/docs/ADMIN-UPDATES.md'), 'Updates documentation must exist');

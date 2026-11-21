@@ -61,7 +61,9 @@ final class UpdatesAdminController
         }
 
         $job = $this->jobs->load();
+        $maintenance = is_file($this->storageRoot . '/maintenance.flag');
         if ($job !== null) {
+            $job = $this->jobs->reconcile($job, $current->app(), $maintenance);
             $job = $this->jobs->normalize($job);
         }
         $job = $this->sanitizeJob($job);
@@ -80,7 +82,7 @@ final class UpdatesAdminController
 
         $updateAvailable = $latest !== null && version_compare($latest['app'], $current->app(), '>');
         $ahead = $latest !== null && version_compare($latest['app'], $current->app(), '<');
-        $upgrading = $this->jobs->active($job) || is_file($this->storageRoot . '/maintenance.flag');
+        $upgrading = $this->jobs->active($job) || $maintenance;
         $helperAvailable = is_executable($this->helper);
         $canUpdate = $updateAvailable && $helperAvailable && !$upgrading;
 
@@ -191,18 +193,18 @@ final class UpdatesAdminController
             return $this->adminError($request, 503, '更新状态目录不可写，请检查存储权限。');
         }
 
-        $log = $this->storageRoot . '/updates/helper-console.log';
-        $command = 'nohup sudo -n ' . escapeshellarg($this->helper)
+        $command = 'sudo -n ' . escapeshellarg($this->helper)
             . ' --tag=' . escapeshellarg($tag)
             . ' --actor=' . escapeshellarg($admin->username)
-            . ' --json >> ' . escapeshellarg($log) . ' 2>&1 &';
+            . ' --json 2>&1';
+        $output = [];
         exec($command, $output, $code);
         if ($code !== 0) {
             $job['status'] = 'failed';
-            $job['error'] = '无法启动更新助手。';
+            $job['error'] = '无法启动更新助手，请检查独立任务配置。';
             $this->jobs->save($job);
 
-            return $this->adminError($request, 503, '无法启动更新助手。');
+            return $this->adminError($request, 503, '无法启动更新助手，请检查独立任务配置。');
         }
 
         $this->audit($admin, 'admin.update.started', ['tag' => $tag, 'to' => $latest['app']]);
@@ -217,16 +219,19 @@ final class UpdatesAdminController
             return Response::json(['ok' => false, 'message' => '请先登录后台。'], 401);
         }
 
+        $current = $this->currentVersion();
+        $maintenance = is_file($this->storageRoot . '/maintenance.flag');
         $job = $this->jobs->load();
         if ($job !== null) {
+            $job = $this->jobs->reconcile($job, $current->app(), $maintenance);
             $job = $this->sanitizeJob($this->jobs->normalize($job));
         }
 
         return Response::json([
             'ok' => true,
             'job' => $job,
-            'current' => $this->currentVersion()->app(),
-            'maintenance' => is_file($this->storageRoot . '/maintenance.flag'),
+            'current' => $current->app(),
+            'maintenance' => $maintenance,
             'helper' => is_executable($this->helper),
         ])->withHeader('Cache-Control', 'no-store');
     }

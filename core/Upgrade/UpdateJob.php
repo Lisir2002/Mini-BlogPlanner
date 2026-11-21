@@ -59,7 +59,7 @@ final class UpdateJob
     /** @param array<string, mixed> $job
      *  @return array<string, mixed>
      */
-    public function normalize(array $job, int $staleSeconds = 900): array
+    public function normalize(array $job, int $staleSeconds = 300): array
     {
         $status = (string) ($job['status'] ?? 'idle');
         if (!in_array($status, self::STATUSES, true)) {
@@ -82,8 +82,40 @@ final class UpdateJob
         return $job;
     }
 
+    /**
+     * 助手已切换版本但未写回终态时，按实际站点版本收口任务，避免页面永久停在“更新中”。
+     *
+     * @param array<string, mixed> $job
+     * @return array<string, mixed>
+     */
+    public function reconcile(array $job, string $currentApp, bool $maintenance): array
+    {
+        if ($maintenance || !in_array((string) ($job['status'] ?? ''), ['queued', 'running'], true)) {
+            return $job;
+        }
+
+        $target = (string) ($job['to'] ?? '');
+        $from = (string) ($job['from'] ?? '');
+        if ($target === '' || $from === '' || version_compare($target, $from, '<=') === true) {
+            return $job;
+        }
+        if (version_compare($currentApp, $target, '<') === true) {
+            return $job;
+        }
+
+        $job['status'] = 'done';
+        $job['step'] = 'done';
+        $job['message'] = '已更新到 ' . $target . '。';
+        $job['finished_at'] = gmdate('c');
+        $job['updated_at'] = gmdate('c');
+        $job['error'] = null;
+        $job['reconciled'] = true;
+
+        return $job;
+    }
+
     /** @param array<string, mixed>|null $job */
-    public function active(?array $job, int $staleSeconds = 900): bool
+    public function active(?array $job, int $staleSeconds = 300): bool
     {
         if ($job === null) {
             return false;

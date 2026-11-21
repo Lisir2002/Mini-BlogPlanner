@@ -31,7 +31,7 @@ php bin/upgrade.php rollback --mode=release --confirm --json
 
 回退成功与否看 `status` 的 `current`、`previous`、`schema`，不看命令行提示。
 
-切换 `current` 是软链原子替换；PHP-FPM/OPcache 的 realpath 缓存可能继续解析旧目录。配置 `RUNTIME_RELOAD_CMD`（例如 `systemctl restart php8.5-fpm`）后，工具会在切换后自动执行并等待 0.5 秒，再检查 `/healthz`；未配置时必须手动 restart PHP-FPM；只 reload、重启 CLI 或重启 Nginx 都可能继续命中旧 realpath。
+切换 `current` 是软链原子替换；PHP-FPM/OPcache 的 realpath 缓存可能继续解析旧目录。配置 `RUNTIME_RELOAD_CMD`（例如 `systemctl restart php8.5-fpm`）后，工具会在切换后自动执行并等待 0.5 秒，再检查 `/healthz`；未配置时必须手动 restart PHP-FPM；只 reload、重启 CLI 或重启 Nginx 都可能继续命中旧 realpath。后台一键更新会先把助手放进独立 systemd 临时服务，因此 PHP-FPM 重启不会中断后续健康检查和状态收尾。
 
 ## 2. plan 输出
 

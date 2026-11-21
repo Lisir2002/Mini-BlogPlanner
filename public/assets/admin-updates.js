@@ -14,6 +14,7 @@
   const progressBar = document.getElementById('update-progress-bar');
   const message = document.getElementById('update-progress-message');
   const errorBox = document.getElementById('update-error');
+  const regions = ['current', 'action', 'progress', 'details'];
   const steps = {
     queued: ['排队', 6],
     checking: ['检查发布', 16],
@@ -28,6 +29,7 @@
   let polling = false;
   let reloading = false;
   let emptyPolls = 0;
+  let refreshAttempts = 0;
 
   if (openButton && dialog) {
     openButton.addEventListener('click', () => {
@@ -70,6 +72,61 @@
     }
   };
 
+  // 只替换会变化的版本卡片、操作区、任务进度和版本构成，保留页面位置与表单状态。
+  const refreshRegions = async () => {
+    try {
+      const response = await fetch('/admin/updates.html', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { Accept: 'text/html' }
+      });
+      if (!response.ok) throw new Error('page ' + response.status);
+      const documentNext = new DOMParser().parseFromString(await response.text(), 'text/html');
+      let changed = 0;
+
+      for (const name of regions) {
+        const current = document.querySelector(`[data-update-region="${name}"]`);
+        const next = documentNext.querySelector(`[data-update-region="${name}"]`);
+        if (!current || !next) continue;
+
+        if (name === 'details') {
+          const wasOpen = Array.from(current.querySelectorAll('details')).map((item) => item.open);
+          current.replaceWith(next);
+          Array.from(next.querySelectorAll('details')).forEach((item, index) => {
+            if (typeof wasOpen[index] === 'boolean') item.open = wasOpen[index];
+          });
+        } else {
+          current.replaceWith(next);
+        }
+
+        next.classList.add('is-refreshed');
+        window.setTimeout(() => next.classList.remove('is-refreshed'), 700);
+        changed += 1;
+      }
+
+      const nextPanel = documentNext.querySelector('#update-panel');
+      if (nextPanel) panel.dataset.panelStatus = nextPanel.dataset.panelStatus || 'idle';
+      return changed > 0;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const finishUpdate = async () => {
+    const changed = await refreshRegions();
+    if (changed) return;
+
+    refreshAttempts += 1;
+    if (refreshAttempts >= 5) {
+      if (message) message.textContent = '更新已完成，但版本信息刷新失败；可点“检查更新”后重试。';
+      return;
+    }
+
+    reloading = false;
+    if (message) message.textContent = '更新已完成，正在刷新变化的版本信息…';
+    window.setTimeout(poll, 2200);
+  };
+
   const poll = async () => {
     if (polling || reloading) return;
     polling = true;
@@ -94,7 +151,7 @@
           setStatus('已完成', 'good');
           if (progressBar) progressBar.style.width = '100%';
           reloading = true;
-          window.setTimeout(() => window.location.reload(), 1200);
+          window.setTimeout(finishUpdate, 400);
           return;
         }
         if (job.status === 'failed') {

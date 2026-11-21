@@ -10,6 +10,7 @@
 
 - 后台页面运行在 `www-data`，只读取版本、发布目录和任务状态，不直接写 `releases`、`current` 或数据库备份。
 - 真正修改部署目录的更新助手由 root 执行，只允许 `www-data` 通过一条固定的 sudo 规则调用，不能传入任意命令或任意下载地址。
+- 带 `--tag` 的更新任务会进入独立的 systemd 临时服务，不留在 PHP-FPM 的进程组里；切换版本后重启 PHP-FPM 不会把助手一起结束。
 - 仓库地址固定为本项目 GitHub 仓库，Release 标签必须是稳定版 `v<major>.<minor>.<patch>`。
 - 更新助手只接受 GitHub API 返回的资产地址，不接受页面传入 URL。
 - Release zip 必须同时满足 SHA256 校验、文件清单逐项校验、版本契约和结构校验，才允许进入升级计划。
@@ -25,7 +26,7 @@
 | 更新任务 | `Core\Upgrade\UpdateJob` | 原子写入任务状态，供页面轮询 |
 | 后台控制器 | `Plugin\Admin\UpdatesAdminController` | 页面、检查更新、派发任务、状态接口 |
 | root 助手 | `bin/update-helper.php` | 下载、校验、解压、生成计划并执行升级 |
-| 固定入口 | `/usr/local/bin/cream-update` | root 所有，转发到当前 release 的助手 |
+| 固定入口 | `/usr/local/bin/cream-update` | root 所有，转发到当前 release 的助手；更新任务转入独立 systemd 临时服务 |
 
 ## 一键更新流程
 
@@ -37,13 +38,13 @@
 6. 在临时目录安全解压，校验 `RELEASE_MANIFEST.json` 与全部文件哈希。
 7. 把验证通过的目录原子移动到 `releases/<tag>`。
 8. 调用现有 `bin/upgrade.php plan` 生成计划，再执行 `apply`：备份、维护模式、迁移、清缓存、切换软链、健康检查。
-9. 任务状态写为 `done` 或 `failed`，页面轮询到终态后刷新。
+9. 任务状态写为 `done` 或 `failed`；页面轮询到终态后只替换当前版本卡片、操作区、任务进度和版本构成，不整页刷新。
 
 ## 状态机
 
 `queued → checking → download → verify → install → plan → apply → done`
 
-任一步失败写入 `failed`，保留 `step`、`error`、`plan_id` 和 `backup_id`。已有升级锁或未完成的升级状态时，助手拒绝启动新任务。
+任一步失败写入 `failed`，保留 `step`、`error`、`plan_id` 和 `backup_id`。已有升级锁或未完成的升级状态时，助手拒绝启动新任务。运行中的任务超过 5 分钟没有进展会标记为失败；如果站点已经切到目标任务版本且不在维护模式，状态接口会按实际版本收口为完成。
 
 ## 安全约束
 
@@ -76,4 +77,4 @@ chmod 0440 /etc/sudoers.d/cream-update
 visudo -cf /etc/sudoers.d/cream-update
 ```
 
-固定入口每次执行当前 release 中的 `bin/update-helper.php`，因此后续版本更新助手逻辑时不需要再次手工替换入口。
+固定入口每次执行当前 release 中的 `bin/update-helper.php`，因此后续版本更新助手逻辑时不需要再次手工替换入口。固定入口还用 `systemd-run` 把带 `--tag` 的更新任务放进独立临时服务；服务器必须安装并运行 systemd，缺少 `systemd-run` 时助手会拒绝启动更新。

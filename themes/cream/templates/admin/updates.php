@@ -82,7 +82,7 @@ if ($canUpdate && $latest !== null) {
   </header>
 
   <div class="update-hero">
-    <article class="update-card update-current">
+    <article class="update-card update-current" data-update-region="current">
       <div class="update-card-top">
         <span class="update-kicker">CURRENT</span>
         <span class="update-state <?= cream_e($statusTone) ?>"><?= cream_e($statusText) ?></span>
@@ -123,7 +123,7 @@ if ($canUpdate && $latest !== null) {
     </article>
   </div>
 
-  <article class="update-action">
+  <article class="update-action" data-update-region="action">
     <div class="update-action-copy">
       <?php if ($updateAvailable && $latest !== null): ?>
       <span class="update-action-eyebrow">READY TO ROLL</span>
@@ -154,7 +154,7 @@ if ($canUpdate && $latest !== null) {
     </div>
   </article>
 
-  <article class="update-progress-card<?= $job === null ? ' is-empty' : '' ?>" id="update-progress">
+  <article class="update-progress-card<?= $job === null ? ' is-empty' : '' ?>" id="update-progress" data-update-region="progress">
     <div class="update-progress-head">
       <div>
         <span class="update-kicker">UPDATE JOB</span>
@@ -178,7 +178,7 @@ if ($canUpdate && $latest !== null) {
     </div>
   </article>
 
-  <div class="update-details">
+  <div class="update-details" data-update-region="details">
     <details class="update-detail" open>
       <summary>版本构成</summary>
       <div class="update-detail-body">

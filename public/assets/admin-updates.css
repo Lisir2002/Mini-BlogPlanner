@@ -274,6 +274,13 @@
 .update-release-row span { color: var(--muted); font-size: 10px; }
 .update-page .muted { color: var(--muted); font-size: 12px; }
 
+.update-page [data-update-region].is-refreshed { animation: update-region-glow .6s ease-out; }
+@keyframes update-region-glow {
+  0% { filter: brightness(.96); }
+  45% { filter: brightness(1.025); }
+  100% { filter: none; }
+}
+
 .update-dialog {
   width: min(440px, calc(100vw - 28px));
   padding: 0;
@@ -319,4 +326,8 @@
   .update-dialog-actions .admin-button,
   .update-dialog-actions form,
   .update-dialog-actions form button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-page [data-update-region].is-refreshed { animation: none; }
 }

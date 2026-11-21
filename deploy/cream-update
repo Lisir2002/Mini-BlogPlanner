@@ -3,6 +3,7 @@ set -eu
 
 ROOT=/var/www/cream-journal
 CURRENT=$(readlink -f "$ROOT/current")
+LOG="$ROOT/shared/storage/updates/helper-console.log"
 
 case "$CURRENT" in
     "$ROOT"/releases/*) ;;
@@ -16,5 +17,28 @@ if [ ! -f "$CURRENT/bin/update-helper.php" ]; then
     printf '%s\n' '{"ok":false,"message":"当前发布缺少更新助手。"}'
     exit 78
 fi
+
+# 更新任务放进独立的 systemd 临时服务，避免切换后重启 PHP-FPM 时把助手一起带走。
+case " $* " in
+    *" --tag="*)
+        if [ -z "${CREAM_UPDATE_SERVICE:-}" ] && [ -z "${INVOCATION_ID:-}" ]; then
+            if ! command -v systemd-run >/dev/null 2>&1; then
+                printf '%s\n' '{"ok":false,"message":"服务器缺少 systemd-run，无法启动独立更新任务。"}'
+                exit 78
+            fi
+
+            UNIT="cream-update-$(date +%Y%m%dT%H%M%S)-$$"
+            exec systemd-run \
+                --unit="$UNIT" \
+                --collect \
+                --no-block \
+                --property=Type=exec \
+                --property=StandardOutput=append:"$LOG" \
+                --property=StandardError=append:"$LOG" \
+                --setenv=CREAM_UPDATE_SERVICE=1 \
+                "$0" "$@"
+        fi
+        ;;
+esac
 
 exec /usr/bin/php8.5 "$CURRENT/bin/update-helper.php" "$@"
