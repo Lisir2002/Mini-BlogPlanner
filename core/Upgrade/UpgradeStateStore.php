@@ -29,9 +29,7 @@ final class UpgradeStateStore
     /** @param array<string, mixed> $state */
     public function save(array $state): void
     {
-        if (!is_dir($this->directory) && !mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
-            throw new RuntimeException(sprintf('Unable to create upgrade state directory: %s', $this->directory));
-        }
+        $this->ensureDirectory();
 
         $file = $this->file();
         $temporary = $file . '.tmp.' . bin2hex(random_bytes(4));
@@ -40,12 +38,27 @@ final class UpgradeStateStore
         if (file_put_contents($temporary, $json . PHP_EOL, LOCK_EX) === false) {
             throw new RuntimeException('Unable to write upgrade state.');
         }
-        chmod($temporary, 0640);
+        chmod($temporary, 0644);
 
         if (!rename($temporary, $file)) {
             @unlink($temporary);
             throw new RuntimeException('Unable to replace upgrade state.');
         }
+    }
+
+    private function ensureDirectory(): void
+    {
+        if (!is_dir($this->directory) && !mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
+            throw new RuntimeException(sprintf('Unable to create upgrade state directory: %s', $this->directory));
+        }
+
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $owner = @fileowner(dirname($this->directory));
+            if ($owner !== false) {
+                @chown($this->directory, $owner);
+            }
+        }
+        @chmod($this->directory, 0755);
     }
 
     private function file(): string

@@ -212,6 +212,14 @@
   font-weight: 500;
 }
 
+.search-overlay-form input::-webkit-search-cancel-button,
+.search-overlay-form input::-webkit-search-decoration,
+.search-overlay-form input::-ms-clear {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .search-overlay-clear {
   display: grid;
   place-items: center;

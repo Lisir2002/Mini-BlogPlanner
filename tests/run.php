@@ -25,6 +25,7 @@ use Core\Upgrade\ReleaseCatalog;
 use Core\Upgrade\ReleaseManifest;
 use Core\Upgrade\ReleaseRepository;
 use Core\Upgrade\UpdateJob;
+use Core\Upgrade\UpgradeStateStore;
 use Core\Version\SchemaAhead;
 use Core\Version\SchemaBehind;
 use Core\Version\SchemaGuard;
@@ -1051,6 +1052,7 @@ check('Search overlay, redirect route and API are wired', function (): void {
     truthy($script !== false && str_contains($script, '/api/v1/search'), 'Overlay must query the search API');
     truthy($script !== false && str_contains($script, 'AbortController') && str_contains($script, 'localStorage') && str_contains($script, 'ArrowDown') && str_contains($script, 'Escape'), 'Overlay must cancel requests and support keyboard search');
     truthy($css !== false && str_contains($css, '.search-overlay-panel') && str_contains($css, 'backdrop-filter'), 'Overlay needs a masked floating panel');
+    truthy($css !== false && str_contains($css, '::-webkit-search-cancel-button') && str_contains($css, 'appearance: none'), 'Search field must hide the native clear button');
     truthy(is_file($root . '/docs/SEARCH.md'), 'Search documentation must exist');
 });
 
@@ -1529,6 +1531,17 @@ check('Update job persists state and detects stale queues', function (): void {
     $normalized = $jobs->normalize($job);
     same('failed', $normalized['status']);
     truthy(($normalized['stale'] ?? false) === true, 'Stale queue must be marked failed');
+    rrmdir($directory);
+});
+
+check('Upgrade storage is readable by the web process', function (): void {
+    $directory = sys_get_temp_dir() . '/cj-upgrade-state-' . bin2hex(random_bytes(4));
+    $store = new UpgradeStateStore($directory);
+    $store->save(['status' => 'done', 'release' => 'v0.1.99']);
+    same(0755, fileperms($directory) & 0777, 'Upgrade state directory must be traversable');
+    same(0644, fileperms($directory . '/state.json') & 0777, 'Upgrade state file must be readable');
+    $loaded = $store->load();
+    same('v0.1.99', $loaded['release'] ?? null);
     rrmdir($directory);
 });
 

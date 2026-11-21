@@ -39,9 +39,7 @@ final class UpdateJob
     /** @param array<string, mixed> $job */
     public function save(array $job): void
     {
-        if (!is_dir($this->directory) && !mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
-            throw new RuntimeException('无法创建更新状态目录。');
-        }
+        $this->ensureDirectory();
 
         $job['updated_at'] = gmdate('c');
         $file = $this->file();
@@ -104,6 +102,21 @@ final class UpdateJob
         $line = '[' . gmdate('c') . '] ' . trim($message) . PHP_EOL;
         file_put_contents($this->directory . '/helper.log', $line, FILE_APPEND | LOCK_EX);
         @chmod($this->directory . '/helper.log', 0644);
+    }
+
+    private function ensureDirectory(): void
+    {
+        if (!is_dir($this->directory) && !mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
+            throw new RuntimeException('无法创建更新状态目录。');
+        }
+
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $owner = @fileowner(dirname($this->directory));
+            if ($owner !== false) {
+                @chown($this->directory, $owner);
+            }
+        }
+        @chmod($this->directory, 0775);
     }
 
     private function file(): string
