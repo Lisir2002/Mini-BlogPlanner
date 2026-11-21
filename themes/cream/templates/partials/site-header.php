@@ -5,6 +5,7 @@ $pageHeading = trim((string) ($pageHeading ?? ''));
 if ($pageHeading === '') {
     $pageHeading = $siteTitle;
 }
+$searchEnabled = empty($error_status);
 ?>
 <header class="site-header">
   <div class="header-inner">
@@ -27,9 +28,11 @@ if ($pageHeading === '') {
     </nav>
 
     <div class="header-actions">
+<?php if ($searchEnabled): ?>
       <button class="nav-icon-link search-trigger" type="button" aria-label="搜索文章" aria-expanded="false" aria-controls="search-overlay" data-search-open>
         <?= cream_icon('search', 'icon-sm') ?>
       </button>
+<?php endif; ?>
 
       <details class="nav-mobile">
       <summary aria-label="打开导航菜单">
@@ -91,4 +94,4 @@ if ($pageHeading === '') {
     </div>
   </div>
 </header>
-<?php require __DIR__ . '/search-overlay.php'; ?>
+<?php if ($searchEnabled) { require __DIR__ . '/search-overlay.php'; } ?>
