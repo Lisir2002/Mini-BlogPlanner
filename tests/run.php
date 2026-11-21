@@ -1023,30 +1023,34 @@ check('Search index migration keeps the ngram contract', function (): void {
     truthy($migration !== false && str_contains($migration, 'DROP INDEX ft_posts_search'), 'Search index migration must be reversible');
 });
 
-check('Search page, route and API are wired', function (): void {
+check('Search overlay, redirect route and API are wired', function (): void {
     $root = dirname(__DIR__);
-    $template = file_get_contents($root . '/themes/cream/templates/search.php');
+    $overlay = file_get_contents($root . '/themes/cream/templates/partials/search-overlay.php');
     $controller = file_get_contents($root . '/plugins/posts/src/SearchController.php');
     $repository = file_get_contents($root . '/core/Content/PostRepository.php');
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
-    $posts = file_get_contents($root . '/plugins/posts/src/PostsPlugin.php');
+    $layout = file_get_contents($root . '/themes/cream/templates/layout.php');
     $api = file_get_contents($root . '/plugins/api/src/PostApiController.php');
-    $css = file_get_contents($root . '/public/assets/search.css');
-    truthy($template !== false && str_contains($template, 'action="/search"'), 'Search page needs a GET form');
-    truthy($template !== false && str_contains($template, 'search-results'), 'Search page needs result cards');
-    truthy($template !== false && str_contains($template, '没有翻到这一页'), 'Search page needs an empty result state');
-    truthy($controller !== false && str_contains($controller, "'search.css'"), 'Search page must load its stylesheet');
-    truthy($controller !== false && str_contains($controller, 'X-Robots-Tag'), 'Search page must be noindex');
-    truthy($controller !== false && str_contains($controller, 'noindex, follow'), 'Search page must keep links followable');
+    $css = file_get_contents($root . '/public/assets/search-overlay.css');
+    $script = file_get_contents($root . '/public/assets/search-overlay.js');
+    truthy(!is_file($root . '/themes/cream/templates/search.php'), 'Standalone search page must be removed');
+    truthy(!is_file($root . '/public/assets/search.css'), 'Standalone search stylesheet must be removed');
+    truthy($controller !== false && str_contains($controller, 'Response::redirect'), 'Old search URL must redirect to the overlay entry');
+    truthy($controller !== false && str_contains($controller, "'/?search='"), 'Search redirect must carry the query to the home overlay');
+    truthy($controller !== false && !str_contains($controller, 'theme->render'), 'Search controller must not render a standalone page');
     truthy($repository !== false && str_contains($repository, 'MATCH(title, excerpt, body)'), 'Search must use the full-text index');
     truthy($repository !== false && str_contains($repository, 'LIKE ? OR excerpt LIKE ?'), 'Single-character search must fall back to LIKE');
-    truthy($header !== false && str_contains($header, 'nav-icon-link'), 'Desktop header needs a search entry');
-    truthy($header !== false && str_contains($header, 'href="/search"'), 'Search entry must point to /search');
-    truthy($header !== false && str_contains($header, 'nav-drawer-index">06'), 'Mobile drawer needs a search row');
-    truthy($posts !== false && str_contains($posts, "'/search'"), 'Search route must be registered');
+    truthy($header !== false && str_contains($header, 'data-search-open'), 'Header needs a search trigger');
+    truthy($header !== false && str_contains($header, 'header-actions'), 'Search trigger must sit in header actions');
+    truthy($header !== false && !str_contains($header, 'href="/search"'), 'Header must not link to a standalone search page');
+    truthy($header !== false && strpos($header, 'data-search-open') !== false && strpos($header, 'class="nav-mobile"') !== false && strpos($header, 'data-search-open') < strpos($header, 'class="nav-mobile"'), 'Search trigger must be left of the mobile sidebar button');
+    truthy($overlay !== false && str_contains($overlay, 'data-search-input') && str_contains($overlay, 'data-search-results'), 'Overlay must contain an input and results region');
+    truthy($overlay !== false && str_contains($overlay, '没有翻到这一页'), 'Overlay needs an empty result state');
+    truthy($layout !== false && str_contains($layout, 'search-overlay.css') && str_contains($layout, 'search-overlay.js'), 'Layout must load overlay assets');
     truthy($api !== false && str_contains($api, 'public function search'), 'Search API method must exist');
-    truthy($css !== false && str_contains($css, '.search-form'), 'Search page needs a themed form');
-    truthy(is_file($root . '/public/assets/search.css.gz'), 'Search stylesheet needs a compressed copy');
+    truthy($script !== false && str_contains($script, '/api/v1/search'), 'Overlay must query the search API');
+    truthy($script !== false && str_contains($script, 'AbortController') && str_contains($script, 'localStorage') && str_contains($script, 'ArrowDown') && str_contains($script, 'Escape'), 'Overlay must cancel requests and support keyboard search');
+    truthy($css !== false && str_contains($css, '.search-overlay-panel') && str_contains($css, 'backdrop-filter'), 'Overlay needs a masked floating panel');
     truthy(is_file($root . '/docs/SEARCH.md'), 'Search documentation must exist');
 });
 
@@ -1395,7 +1399,7 @@ check('Website structured data exposes search action', function (): void {
         'language' => 'zh-CN',
     ], 'https://example.com/');
     truthy(($data['@type'] ?? null) === 'WebSite', 'Structured data must describe a WebSite');
-    truthy(($data['potentialAction']['target']['urlTemplate'] ?? null) === 'https://example.com/search?q={search_term_string}', 'WebSite search action must point at /search');
+    truthy(($data['potentialAction']['target']['urlTemplate'] ?? null) === 'https://example.com/?search={search_term_string}', 'WebSite search action must point at the overlay entry');
 });
 
 check('Public SEO routes expose sitemap, robots and structured data', function (): void {

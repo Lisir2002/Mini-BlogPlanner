@@ -72,6 +72,7 @@ $feedJsonUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.json';
 <?php require __DIR__ . '/partials/loader-style.php'; ?>
 <link rel="preload" href="<?= cream_asset('icons.svg') ?>" as="image" type="image/svg+xml" fetchpriority="low">
 <link rel="stylesheet" href="<?= cream_asset('cream.css') ?>" fetchpriority="high">
+<link rel="stylesheet" href="<?= cream_asset('search-overlay.css') ?>">
 <link rel="icon" href="<?= cream_asset('favicon.svg') ?>" type="image/svg+xml">
 <?php foreach (($page_styles ?? []) as $style): ?>
 <link rel="stylesheet" href="<?= cream_e(str_starts_with((string) $style, '/') ? (string) $style : cream_asset((string) $style)) ?>" fetchpriority="high">
@@ -86,6 +87,7 @@ $feedJsonUrl = ($siteUrl === '' ? '' : $siteUrl) . '/feed.json';
 </main>
 <?php require __DIR__ . '/partials/site-footer.php'; ?>
 <script src="<?= cream_asset('cream.js') ?>" defer onerror="document.getElementById('cream-loader').hidden=true"></script>
+<script src="<?= cream_asset('search-overlay.js') ?>" defer></script>
 <?php foreach (($page_scripts ?? []) as $script): ?>
 <script src="<?= cream_e(str_starts_with((string) $script, '/') ? (string) $script : cream_asset((string) $script)) ?>" defer></script>
 <?php endforeach; ?>

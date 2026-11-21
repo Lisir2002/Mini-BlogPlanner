@@ -39,7 +39,7 @@ final class PostsPlugin implements PluginInterface
         $tags = new TagController($this->version, $this->theme);
         $comments = new CommentController($this->version, $this->theme);
         $reactions = new ReactionController($this->version, $this->theme);
-        $search = new SearchController($this->version, $this->theme);
+        $search = new SearchController();
         $feed = new FeedController($this->version);
         $archive = new ArchiveController($this->version, $this->theme);
 
