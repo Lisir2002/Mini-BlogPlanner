@@ -49,7 +49,7 @@ final class PageController
             'page_title' => $page->title(),
             'page_heading' => $heading,
             'page_description' => $site['description'],
-            'current' => 'page',
+            'current' => $slug === 'about' ? 'about' : 'page',
             'content' => $content,
             'canonical_url' => $canonical,
             'json_ld' => StructuredData::webPage($page->title(), $site['description'], $canonical, $site),

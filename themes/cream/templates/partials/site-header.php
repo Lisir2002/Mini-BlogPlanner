@@ -22,7 +22,7 @@ $searchEnabled = empty($error_status);
       <a class="nav-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/posts.html"<?= $current === 'posts' ? ' aria-current="page"' : '' ?>>文章</a>
       <a class="nav-link<?= $current === 'archive' ? ' is-current' : '' ?>" href="/archive.html"<?= $current === 'archive' ? ' aria-current="page"' : '' ?>>归档</a>
       <a class="nav-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>标签</a>
-      <a class="nav-link" href="/about.html">关于</a>
+      <a class="nav-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html"<?= $current === 'about' ? ' aria-current="page"' : '' ?>>关于</a>
       <a class="nav-link" href="/api.html">接口文档</a>
       <a class="nav-link" href="/healthz">站点状态</a>
     </nav>

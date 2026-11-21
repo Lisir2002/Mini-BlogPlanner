@@ -1430,6 +1430,20 @@ check('Public SEO routes expose sitemap, robots and structured data', function (
     truthy($pageRepository !== false && str_contains($pageRepository, 'public function slugs'), 'Page repository must list page slugs');
     truthy($postRepository !== false && str_contains($postRepository, 'publishedForSitemap'), 'Post repository must list sitemap posts');
     truthy(is_file($root . '/docs/SEO.md'), 'SEO documentation must exist');
+    truthy($pages !== false && str_contains($pages, "'about'"), 'About page must mark its navigation entry');
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    truthy($header !== false && str_contains($header, '$current === \'about\''), 'About navigation must be highlighted on the desktop header');
+});
+
+check('About page is a complete responsive journal spread', function (): void {
+    $root = dirname(__DIR__);
+    $about = file_get_contents($root . '/content/pages/about.php');
+    $css = file_get_contents($root . '/public/assets/pages/about.css');
+    truthy($about !== false && str_contains($about, 'about-hero') && str_contains($about, 'about-timeline'), 'About page needs a hero and build timeline');
+    truthy($about !== false && str_contains($about, '这里有什么') && str_contains($about, '这里没有什么'), 'About page must set reader expectations');
+    truthy($about !== false && str_contains($about, 'about-footer') && str_contains($about, 'about-colophon'), 'About page needs a colophon footer');
+    truthy($css !== false && str_contains($css, '.about-now') && str_contains($css, '.about-boundary'), 'About styles must cover the now card and boundaries');
+    truthy($css !== false && str_contains($css, '@media (max-width: 560px)') && str_contains($css, 'prefers-reduced-motion'), 'About page must be responsive and motion-safe');
 });
 
 check('Series feature is removed from routes, templates and schema', function (): void {
