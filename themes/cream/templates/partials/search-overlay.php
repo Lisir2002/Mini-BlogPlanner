@@ -14,7 +14,7 @@
     <form class="search-overlay-form" action="/" method="get" role="search" data-search-form>
       <span class="search-overlay-field-icon" aria-hidden="true"><?= cream_icon('search', 'icon-sm') ?></span>
       <label class="sr-only" for="search-overlay-input">搜索文章</label>
-      <input id="search-overlay-input" type="search" name="search" maxlength="60" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="输入标题、摘要或正文里的词" data-search-input>
+      <input id="search-overlay-input" type="text" role="searchbox" inputmode="search" name="search" maxlength="60" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="输入标题、摘要或正文里的词" data-search-input>
       <button class="search-overlay-clear" type="button" aria-label="清空搜索词" hidden data-search-clear>
         <?= cream_icon('close', 'icon-xs') ?>
       </button>

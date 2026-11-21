@@ -1046,6 +1046,7 @@ check('Search overlay, redirect route and API are wired', function (): void {
     truthy($header !== false && !str_contains($header, 'href="/search"'), 'Header must not link to a standalone search page');
     truthy($header !== false && strpos($header, 'data-search-open') !== false && strpos($header, 'class="nav-mobile"') !== false && strpos($header, 'data-search-open') < strpos($header, 'class="nav-mobile"'), 'Search trigger must be left of the mobile sidebar button');
     truthy($overlay !== false && str_contains($overlay, 'data-search-input') && str_contains($overlay, 'data-search-results'), 'Overlay must contain an input and results region');
+    truthy($overlay !== false && str_contains($overlay, 'role="searchbox"') && !str_contains($overlay, 'type="search"'), 'Search field must avoid the native clear affordance');
     truthy($overlay !== false && str_contains($overlay, '没有翻到这一页'), 'Overlay needs an empty result state');
     truthy($layout !== false && str_contains($layout, 'search-overlay.css') && str_contains($layout, 'search-overlay.js'), 'Layout must load overlay assets');
     truthy($api !== false && str_contains($api, 'public function search'), 'Search API method must exist');
