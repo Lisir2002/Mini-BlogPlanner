@@ -1953,7 +1953,9 @@ check('Nginx baseline carries Cloudflare real IP and bounded request zones', fun
     $nginx = file_get_contents($root . '/deploy/nginx.conf.example');
     $limits = file_get_contents($root . '/deploy/nginx-rate-limit.conf.example');
     $realIp = file_get_contents($root . '/deploy/nginx-cloudflare-realip.conf.example');
-    truthy($nginx !== false && str_contains($nginx, 'limit_conn cream_conn 30') && str_contains($nginx, 'fastcgi_read_timeout 20s'), 'Nginx needs connection and upstream timeouts');
+    truthy($nginx !== false && str_contains($nginx, 'limit_conn cream_conn 30'), 'Nginx needs a per-IP connection cap');
+    truthy($nginx !== false && substr_count($nginx, 'fastcgi_read_timeout 20s') >= 2, 'Both PHP entry points need upstream timeouts');
+    truthy($nginx !== false && str_contains($nginx, 'add_header X-Frame-Options DENY always') && str_contains($nginx, 'fastcgi_hide_header X-Frame-Options'), 'Gateway headers must replace application duplicates');
     truthy($limits !== false && str_contains($limits, 'zone=cream_api') && str_contains($limits, 'zone=cream_auth') && str_contains($limits, 'zone=cream_write'), 'Nginx needs separate rate zones');
     truthy($realIp !== false && str_contains($realIp, 'real_ip_header CF-Connecting-IP') && str_contains($realIp, '173.245.48.0/20'), 'Nginx must trust only Cloudflare ranges');
 });

@@ -64,6 +64,10 @@ server {
     location = /install.php {
         limit_req zone=cream_auth burst=5 nodelay;
         limit_req zone=cream_general burst=20 nodelay;
+        fastcgi_hide_header X-Frame-Options;
+        fastcgi_hide_header X-Content-Type-Options;
+        fastcgi_hide_header Referrer-Policy;
+        fastcgi_hide_header Permissions-Policy;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
@@ -74,10 +78,17 @@ server {
     }
 
     location ~ \.php$ {
+        fastcgi_hide_header X-Frame-Options;
+        fastcgi_hide_header X-Content-Type-Options;
+        fastcgi_hide_header Referrer-Policy;
+        fastcgi_hide_header Permissions-Policy;
         try_files $uri =404;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
+        fastcgi_connect_timeout 5s;
+        fastcgi_send_timeout 10s;
+        fastcgi_read_timeout 20s;
         fastcgi_pass unix:/run/php/php8.5-fpm.sock;
     }
 

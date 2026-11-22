@@ -58,6 +58,7 @@
 - 限流计数优先使用本机 SysV 共享内存，避免每次请求写数据库；共享内存不可用时回退到带文件锁的本地计数。
 - 超限响应为 429，带 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` 和 `X-RateLimit-Scope`。
 - 这些措施降低应用层刷量和慢连接影响，但不能替代 CDN、带宽清洗和机房防火墙。
+- Nginx 对动态请求设置 5/10/20 秒的 FastCGI 连接、发送、读取超时，避免慢上游长期占用 PHP-FPM；安全响应头由网关统一补齐。
 
 ## 7. 已知缺口
 
