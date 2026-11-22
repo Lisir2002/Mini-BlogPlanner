@@ -18,6 +18,7 @@ use Core\Content\ReactionRepository;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
 use Core\Database\ConnectionInterface;
+use Core\Http\AdminFlash;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -50,6 +51,7 @@ final class PostAdminController
         }
 
         $query = $request->query();
+        $flash = AdminFlash::pull('posts') ?? [];
         $status = (string) ($query['status'] ?? '');
         $status = in_array($status, ['published', 'draft', 'archived'], true) ? $status : null;
         $q = trim((string) ($query['q'] ?? ''));
@@ -162,15 +164,7 @@ final class PostAdminController
             $returnParams['page'] = (string) $page;
         }
 
-        $ok = (string) ($query['ok'] ?? '');
-        $noticeCount = max(0, min(100, (int) ($query['n'] ?? 0)));
-        $notice = match ($ok) {
-            'archived' => '已归档 1 篇。',
-            'restored' => '已恢复为草稿。',
-            'bulk-archived' => $noticeCount > 0 ? '已归档 ' . $noticeCount . ' 篇。' : '没有可归档的文章。',
-            'bulk-restored' => $noticeCount > 0 ? '已恢复 ' . $noticeCount . ' 篇为草稿。' : '没有可恢复的文章。',
-            default => '',
-        };
+        $notice = (string) ($flash['notice'] ?? '');
 
         return $this->render('admin/posts', $admin, [
             'title' => '文章管理',
@@ -786,11 +780,21 @@ final class PostAdminController
     /** @param array<string, mixed> $payload */
     private function redirectToList(array $payload, string $ok, int $count): Response
     {
-        $params = $this->returnParams((string) ($payload['return_query'] ?? ''));
-        $params['ok'] = $ok;
-        $params['n'] = (string) max(0, min(100, $count));
+        $count = max(0, min(100, $count));
+        $notice = match ($ok) {
+            'archived' => '已归档 1 篇。',
+            'restored' => '已恢复为草稿。',
+            'bulk-archived' => $count > 0 ? '已归档 ' . $count . ' 篇。' : '没有可归档的文章。',
+            'bulk-restored' => $count > 0 ? '已恢复 ' . $count . ' 篇为草稿。' : '没有可恢复的文章。',
+            default => '',
+        };
+        if ($notice !== '') {
+            AdminFlash::put('posts', ['notice' => $notice]);
+        }
 
-        return Response::redirect('/admin/posts.html?' . http_build_query($params), 303);
+        $params = $this->returnParams((string) ($payload['return_query'] ?? ''));
+
+        return Response::redirect('/admin/posts.html' . ($params === [] ? '' : '?' . http_build_query($params)), 303);
     }
 
     /** @return array<string, string> */

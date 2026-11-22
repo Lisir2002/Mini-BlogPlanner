@@ -13,6 +13,7 @@ use Core\Content\MediaRepository;
 use Core\Content\MediaUploadException;
 use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
+use Core\Http\AdminFlash;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\RateLimitResult;
@@ -857,6 +858,19 @@ check('Media admin page and API stay wired together', function (): void {
     truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'is-fallback-open') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details with a fallback, copy and select-all');
     truthy($css !== false && str_contains($css, '.media-picked.has-files'), 'Picked upload files must stay visible on narrow screens');
     truthy($script !== false && str_contains($script, '已选择') && str_contains($script, 'has-files'), 'Picked upload feedback must show the selected count');
+    truthy($css !== false && str_contains($css, "  .media-filterbar {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));"), 'Phone filter card must use two balanced columns');
+    truthy($css !== false && str_contains($css, '.media-select-field .admin-select-trigger { width: 100%; min-width: 0;'), 'Phone selects must not overflow their filter column');
+
+    $controllers = [
+        'MediaAdminController.php',
+        'PostAdminController.php',
+        'CommentAdminController.php',
+        'TagAdminController.php',
+    ];
+    foreach ($controllers as $file) {
+        $source = file_get_contents($root . '/plugins/admin/src/' . $file);
+        truthy($source !== false && str_contains($source, 'AdminFlash::'), 'Admin notices must use one-time flash state in ' . $file);
+    }
 
     $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
     $scopes = file_get_contents($root . '/core/Api/ApiScope.php');
@@ -867,6 +881,12 @@ check('Media admin page and API stay wired together', function (): void {
     truthy($scopes !== false && str_contains($scopes, "'media:read'") && str_contains($scopes, "'media:write'"), 'Media scopes must be selectable');
     truthy($openapi !== false && str_contains($openapi, '/api/v1/admin/media/bulk') && str_contains($openapi, 'MediaListMeta') && str_contains($openapi, 'multipart/form-data'), 'OpenAPI must document media list, upload and bulk delete');
     truthy($apiDoc !== false && str_contains($apiDoc, '后台媒体') && str_contains($apiDoc, '`media:write`'), 'API guide must explain media scopes and uploads');
+});
+
+check('Admin flash is consumed once and stays out of URLs', function (): void {
+    AdminFlash::put('tests', ['notice' => '已保存。']);
+    same(['notice' => '已保存。'], AdminFlash::pull('tests'));
+    same(null, AdminFlash::pull('tests'));
 });
 
 check('TagRepository normalizes names and caps at eight', function (): void {

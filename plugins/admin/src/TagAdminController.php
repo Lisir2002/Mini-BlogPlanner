@@ -9,6 +9,7 @@ use Core\Auth\Admin;
 use Core\Config\Env;
 use Core\Content\TagRepository;
 use Core\Database\Connection;
+use Core\Http\AdminFlash;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -34,6 +35,7 @@ final class TagAdminController
             return $admin;
         }
 
+        $flash = AdminFlash::pull('tags') ?? [];
         $q = mb_substr(trim((string) ($request->query()['q'] ?? '')), 0, 60);
         $status = (string) ($request->query()['status'] ?? 'all');
         $status = in_array($status, ['all', 'used', 'empty'], true) ? $status : 'all';
@@ -88,9 +90,9 @@ final class TagAdminController
             'page_links' => $pageLinks,
             'prev_url' => $state['page'] > 1 ? $pageUrl($state['page'] - 1) : null,
             'next_url' => $state['page'] < $state['pages'] ? $pageUrl($state['page'] + 1) : null,
-            'ok' => isset($_GET['ok']) ? (string) $_GET['ok'] : null,
-            'err' => isset($_GET['err']) ? (string) $_GET['err'] : null,
-            'cleaned' => isset($_GET['count']) ? max(0, (int) $_GET['count']) : 0,
+            'ok' => isset($flash['ok']) ? (string) $flash['ok'] : null,
+            'err' => isset($flash['err']) ? (string) $flash['err'] : null,
+            'cleaned' => max(0, (int) ($flash['count'] ?? 0)),
         ]);
     }
 
@@ -256,7 +258,9 @@ final class TagAdminController
             $this->audit($admin, 'tag.cleaned', ['count' => $count]);
         }
 
-        return Response::redirect('/admin/tags.html?ok=cleaned&count=' . $count, 303);
+        AdminFlash::put('tags', ['ok' => 'cleaned', 'count' => $count]);
+
+        return Response::redirect('/admin/tags.html', 303);
     }
 
     /** @param array<string, mixed> $payload */
@@ -286,7 +290,10 @@ final class TagAdminController
 
     private function back(string $result): Response
     {
-        return Response::redirect('/admin/tags.html?' . (in_array($result, ['created', 'renamed', 'merged', 'deleted', 'cleaned'], true) ? 'ok=' : 'err=') . $result, 303);
+        $key = in_array($result, ['created', 'renamed', 'merged', 'deleted', 'cleaned'], true) ? 'ok' : 'err';
+        AdminFlash::put('tags', [$key => $result]);
+
+        return Response::redirect('/admin/tags.html', 303);
     }
 
     /**

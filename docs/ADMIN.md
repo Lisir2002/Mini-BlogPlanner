@@ -101,6 +101,7 @@
 ## 异步表单约定
 
 - 后台所有普通表单由 `assets/cream.js` 接管，默认把响应中的 `#admin-main` 替换回当前页面；服务端不需要额外 JSON 接口。
+- 操作结果写入会话的一次性提示，目标页读取后立即清除；刷新、返回或再次打开同一地址不会重复显示，也不会把结果带进网址。
 - 退出表单标记 `data-ajax-full`，整页替换后由脚本提示已退出；登录表单使用原生提交，完成 303 跳转后再进入后台，避免异步登录丢失会话。
 - 需要换目标容器时用 `data-ajax-target` 指定选择器；指定 `body` 等同整页替换。
 - 上传表单自动走 `XMLHttpRequest`，显示百分比；普通表单走 `fetch`，保留 303 跳转和服务端校验错误。
@@ -138,5 +139,5 @@
 - `POST /admin/tags/{id}/rename.html`：字段 `name`，只改显示名，slug 不变，公开链接不失效。
 - `POST /admin/tags/{id}/merge.html`：字段 `target_id`，把源标签的文章关联迁移到目标标签，再删除源标签。
 - `POST /admin/tags/{id}/delete.html`：仅允许删除文章数为 0 的空标签。
-- 所有写操作要求 CSRF；成功返回 303 到 `/admin/tags.html?ok=...`，参数错误 422，数据库错误 503。
+- 所有写操作要求 CSRF；成功返回 303 到 `/admin/tags.html` 并通过会话一次性提示说明结果，参数错误 422，数据库错误 503。
 - 审计事件：`tag.renamed`、`tag.merged`、`tag.deleted`。

@@ -9,6 +9,7 @@ use Core\Auth\Admin;
 use Core\Config\Env;
 use Core\Content\CommentRepository;
 use Core\Database\Connection;
+use Core\Http\AdminFlash;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -34,6 +35,7 @@ final class CommentAdminController
         }
 
         $query = $request->query();
+        $flash = AdminFlash::pull('comments') ?? [];
         $status = (string) ($query['status'] ?? '');
         if (!in_array($status, ['pending', 'approved', 'spam'], true)) {
             $status = '';
@@ -94,7 +96,7 @@ final class CommentAdminController
             'baseUrl' => '/admin/comments.html',
             'page_styles' => ['admin-comments.css'],
             'page_scripts' => ['admin-comments.js'],
-            'ok' => (string) ($query['ok'] ?? ''),
+            'ok' => (string) ($flash['ok'] ?? ''),
         ], 'admin/layout');
 
         return Response::html($html)->withHeader('Cache-Control', 'no-store');
@@ -232,7 +234,8 @@ final class CommentAdminController
 
     private function redirectWith(string $ok): Response
     {
-        $query = ['ok' => $ok];
+        AdminFlash::put('comments', ['ok' => $ok]);
+        $query = [];
         $status = (string) ($_POST['return_status'] ?? '');
         if (in_array($status, ['pending', 'approved', 'spam'], true)) {
             $query['status'] = $status;
@@ -250,6 +253,6 @@ final class CommentAdminController
             $query['page'] = $page;
         }
 
-        return Response::redirect('/admin/comments.html?' . http_build_query($query), 303);
+        return Response::redirect('/admin/comments.html' . ($query === [] ? '' : '?' . http_build_query($query)), 303);
     }
 }

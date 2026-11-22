@@ -11,6 +11,7 @@ use Core\Content\Media;
 use Core\Content\MediaRepository;
 use Core\Content\MediaUploadService;
 use Core\Database\Connection;
+use Core\Http\AdminFlash;
 use Core\Http\Csrf;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -38,6 +39,7 @@ final class MediaAdminController
             return $admin;
         }
 
+        $flash = AdminFlash::pull('media') ?? [];
         $query = $request->query();
         $filters = MediaRepository::normalizeFilters([
             'q' => (string) ($query['q'] ?? ''),
@@ -88,10 +90,10 @@ final class MediaAdminController
             'has_filters' => $hasFilters,
             'active_filter_count' => $activeFilterCount,
             'return_url' => $this->pageUrl($filters, $page),
-            'uploaded' => max(0, (int) ($query['uploaded'] ?? 0)),
-            'failed' => max(0, (int) ($query['failed'] ?? 0)),
-            'upload_error' => mb_substr(trim((string) ($query['error'] ?? '')), 0, 200),
-            'deleted' => max(0, (int) ($query['deleted'] ?? 0)),
+            'uploaded' => max(0, (int) ($flash['uploaded'] ?? 0)),
+            'failed' => max(0, (int) ($flash['failed'] ?? 0)),
+            'upload_error' => mb_substr(trim((string) ($flash['error'] ?? '')), 0, 200),
+            'deleted' => max(0, (int) ($flash['deleted'] ?? 0)),
         ]);
     }
 
@@ -136,13 +138,14 @@ final class MediaAdminController
             return $this->adminError($request, $result['fatal'] ? 503 : 422, $message);
         }
 
-        $query = ['uploaded' => count($result['stored'])];
+        $notice = ['uploaded' => count($result['stored'])];
         if ($result['errors'] !== []) {
-            $query['failed'] = count($result['errors']);
-            $query['error'] = mb_substr($result['errors'][0], 0, 200);
+            $notice['failed'] = count($result['errors']);
+            $notice['error'] = mb_substr($result['errors'][0], 0, 200);
         }
+        AdminFlash::put('media', $notice);
 
-        return Response::redirect('/admin/media.html?' . http_build_query($query), 303);
+        return Response::redirect('/admin/media.html', 303);
     }
 
     /** @param array<string, string> $params */
@@ -357,15 +360,15 @@ final class MediaAdminController
         }
     }
 
-    /** @param array<string, int|string> $query */
-    private function back(Request $request, array $query = []): Response
+    /** @param array<string, int|string> $notice */
+    private function back(Request $request, array $notice = []): Response
     {
         $return = (string) ($_POST['return'] ?? '');
         if ($return === '' || !str_starts_with($return, '/admin/media.html') || str_contains($return, '//') || preg_match('/[\r\n]/', $return) === 1) {
             $return = '/admin/media.html';
         }
-        if ($query !== []) {
-            $return .= (str_contains($return, '?') ? '&' : '?') . http_build_query($query);
+        if ($notice !== []) {
+            AdminFlash::put('media', $notice);
         }
 
         return Response::redirect($return, 303);
