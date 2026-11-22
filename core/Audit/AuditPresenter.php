@@ -57,6 +57,8 @@ final class AuditPresenter
         'system.rollback.succeeded' => '回滚完成',
         'system.rollback.failed' => '回滚失败',
         'system.audit.pruned' => '清理审计日志',
+        'api.token.created' => '创建 API 令牌',
+        'api.token.revoked' => '撤销 API 令牌',
     ];
 
     /** @var array<string, string> */
@@ -78,6 +80,9 @@ final class AuditPresenter
         'size' => '文件大小',
         'plan_id' => '升级计划',
         'backup_id' => '备份编号',
+        'prefix' => '令牌前缀',
+        'scopes' => '作用域',
+        'expires_at' => '到期时间',
         'before' => '清理边界',
         'days' => '保留天数',
         'deleted' => '删除条数',
@@ -125,6 +130,9 @@ final class AuditPresenter
         }
         if (str_starts_with($event, 'system.')) {
             return 'system';
+        }
+        if (str_starts_with($event, 'api.token')) {
+            return 'admin';
         }
 
         return 'other';

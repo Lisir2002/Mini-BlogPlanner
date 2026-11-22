@@ -1,7 +1,7 @@
 {
   "id": "api",
   "name": "HTTP API",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "priority": 30,
   "class": "Plugin\\Api\\ApiPlugin",
   "runtime": true,
@@ -17,7 +17,10 @@
     "/api/v1/health",
     "/api/v1/search",
     "/healthz",
-    "/api/v1/status"
+    "/api/v1/status",
+    "/api/v1/admin/status",
+    "/api/v1/admin/posts",
+    "/api/v1/admin/comments"
   ],
   "route_prefixes": [
     "/api/",

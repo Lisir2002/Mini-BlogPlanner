@@ -45,6 +45,7 @@ final class AdminPlugin implements PluginInterface
         $tags = new TagAdminController($this->theme);
         $comments = new CommentAdminController($this->theme);
         $updates = new UpdatesAdminController($this->theme, $this->version, $root);
+        $tokens = new ApiTokenAdminController($this->theme);
 
         return [
             new Route(['GET'], '/admin', static fn (Request $request, array $params): Response => Response::redirect('/admin/posts.html', 302), 'admin.home'),
@@ -76,6 +77,10 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/comments/{id}/approve', static fn (Request $request, array $params): Response => $comments->approve($request, $params), 'admin.comments.approve'),
             new Route(['POST'], '/admin/comments/{id}/spam', static fn (Request $request, array $params): Response => $comments->spam($request, $params), 'admin.comments.spam'),
             new Route(['POST'], '/admin/comments/{id}/delete', static fn (Request $request, array $params): Response => $comments->delete($request, $params), 'admin.comments.delete'),
+            new Route(['GET'], '/admin/tokens', static fn (Request $request, array $params): Response => $tokens->index($request), 'admin.tokens.index'),
+            new Route(['GET'], '/admin/tokens/page/{page}', static fn (Request $request, array $params): Response => $tokens->index($request), 'admin.tokens.page'),
+            new Route(['POST'], '/admin/tokens', static fn (Request $request, array $params): Response => $tokens->create($request), 'admin.tokens.create'),
+            new Route(['POST'], '/admin/tokens/{id}/revoke', static fn (Request $request, array $params): Response => $tokens->revoke($request, $params), 'admin.tokens.revoke'),
             new Route(['GET'], '/admin/updates', static fn (Request $request, array $params): Response => $updates->index($request), 'admin.updates.index'),
             new Route(['GET'], '/admin/updates/status', static fn (Request $request, array $params): Response => $updates->status($request), 'admin.updates.status'),
             new Route(['POST'], '/admin/updates/apply', static fn (Request $request, array $params): Response => $updates->apply($request), 'admin.updates.apply'),

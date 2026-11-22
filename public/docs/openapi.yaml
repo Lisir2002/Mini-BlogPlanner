@@ -1,11 +1,12 @@
 openapi: 3.2.1
 info:
   title: Mini-BlogPlanner API
-  summary: 个人博客的公开读取接口。
+  summary: 个人博客公开读取接口与受保护的管理接口。
   description: |
     所有响应均为 JSON。错误使用 RFC 9457 problem+json。
+    公开内容接口匿名可读；`/api/v1/admin/*` 需要 `Authorization: Bearer mbp_<token>`。
     版本号与 version.json 的 `api` 轴保持一致。
-  version: 1.4.0
+  version: 1.5.0
   contact:
     name: Mini-BlogPlanner
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
@@ -204,7 +205,169 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
       tags: [posts]
+  /api/v1/admin/status:
+    get:
+      operationId: getAdminStatus
+      summary: 读取管理状态
+      description: 需要 `status:read` 作用域的 Bearer 令牌。返回完整运行状态，并附带令牌名称。
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 管理状态。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Status"
+                  meta:
+                    type: object
+                    properties:
+                      token: { type: string }
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+  /api/v1/admin/posts:
+    get:
+      operationId: listAdminPosts
+      summary: 列出后台文章
+      description: 需要 `content:read` 作用域的 Bearer 令牌。包含草稿和归档文章，不返回正文。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [published, draft, archived] }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [updated, published, title], default: updated }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: 后台文章列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        slug: { type: string }
+                        title: { type: string }
+                        excerpt: { type: string }
+                        status: { type: string }
+                        published_at: { type: string }
+                        updated_at: { type: string }
+                        has_draft: { type: boolean }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      page: { type: integer }
+                      pages: { type: integer }
+                      per_page: { type: integer }
+                      status: { type: string }
+                      sort: { type: string }
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+  /api/v1/admin/comments:
+    get:
+      operationId: listAdminComments
+      summary: 列出后台留言
+      description: 需要 `comments:read` 作用域的 Bearer 令牌。不返回留言邮箱。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, spam] }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: 后台留言列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        post_id: { type: integer }
+                        post_title: { type: string }
+                        post_slug: { type: string }
+                        author_name: { type: string }
+                        body: { type: string }
+                        status: { type: string }
+                        created_at: { type: string }
+                        approved_at: { type: string, nullable: true }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      page: { type: integer }
+                      pages: { type: integer }
+                      per_page: { type: integer }
+                      status: { type: string }
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: mbp_<token>
   schemas:
     PostSummary:
       type: object
@@ -276,12 +439,12 @@ components:
         status:
           type: string
           enum: [ok, degraded]
-        app: { type: string, examples: ["0.1.66"] }
-        api: { type: string, examples: ["1.4.0"] }
+        app: { type: string, examples: ["0.1.67"] }
+        api: { type: string, examples: ["1.5.0"] }
         channel: { type: string, examples: [stable] }
         checked_at: { type: string, format: date-time }
         latency_ms: { type: integer, minimum: 0 }
-        schema: { type: [integer, "null"], examples: [2026112105] }
+        schema: { type: [integer, "null"], examples: [2026112106] }
         php:
           type: object
           properties:
@@ -352,6 +515,18 @@ components:
                   message:
                     type: string
   responses:
+    TokenRequired:
+      description: 缺少、无效、已过期或已撤销的令牌。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    TokenForbidden:
+      description: 令牌有效，但没有该接口所需作用域。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     Problem:
       description: RFC 9457 problem details
       content:

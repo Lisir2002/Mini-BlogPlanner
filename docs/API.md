@@ -2,13 +2,14 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.4.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.5.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
 - 时间：ISO 8601 UTC；数据库存储 UTC。
 - 缓存：读取接口默认 `no-store`；公开只读内容可按资源单独协商。
-- 认证：公开读取接口无需认证；写接口使用后台会话 + CSRF，后续补充 Token 插件。
+- 认证：公开文章、搜索、标签与站点状态无需认证；`/api/v1/admin/*` 必须携带 `Authorization: Bearer mbp_<token>`，并按令牌作用域授权。
+- 令牌：后台“API”菜单创建，明文只显示一次，数据库仅保存 SHA-256 哈希；可设置有效期并随时撤销。
 - 限流：默认按 IP 计数；超限返回 `429`，响应头带 `Retry-After`。
 - 页面列表：固定每页 10 条，超出自动分页；API 读取接口使用 `?page=1&per_page=20`，响应包含 `data`、`meta`，`per_page` 上限 100。
 
@@ -24,8 +25,8 @@
 {
   "status": "ok",
   "app": "0.1.40",
-  "api": "1.4.0",
-  "schema": 2026112102
+  "api": "1.5.0",
+  "schema": 2026112106
 }
 ```
 
@@ -53,12 +54,12 @@
 ```json
 {
   "status": "ok",
-  "app": "0.1.66",
-  "api": "1.4.0",
+  "app": "0.1.67",
+  "api": "1.5.0",
   "channel": "stable",
   "checked_at": "2026-11-22T08:00:00+00:00",
   "latency_ms": 3,
-  "schema": 2026112105,
+  "schema": 2026112106,
   "database": {"connected": true, "driver": "mysql", "latency_ms": 3},
   "content": {"published_posts": 19, "approved_comments": 5, "media": 3, "tags": 4},
   "checks": [
@@ -66,6 +67,29 @@
   ]
 }
 ```
+
+
+### 受保护接口与 API 令牌
+
+管理接口统一挂在 `/api/v1/admin/` 下，必须携带 Bearer 令牌：
+
+```http
+GET /api/v1/admin/status HTTP/1.1
+Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+令牌在后台“API”菜单创建，作用域包括：
+
+| 作用域 | 允许访问 |
+| --- | --- |
+| `status:read` | `/api/v1/admin/status` 运行状态 |
+| `content:read` | `/api/v1/admin/posts` 后台文章列表 |
+| `comments:read` | `/api/v1/admin/comments` 后台留言列表 |
+
+- 缺少、无效、过期或已撤销：`401`，响应头带 `WWW-Authenticate: Bearer`。
+- 令牌有效但作用域不足：`403`，`type=/problems/api-scope-forbidden`。
+- 令牌明文只在创建成功时显示一次；后台和审计只保留前缀，不保留完整值。
+- 管理接口响应均为 `Cache-Control: no-store`；留言接口不返回邮箱。
 
 ### `GET /api/v1/posts`
 

@@ -41,6 +41,7 @@ if ($headerTitle === '') {
       <a class="<?= $current === 'comments' ? 'is-current' : '' ?>" href="/admin/comments.html">评论</a>
       <a class="<?= $current === 'media' ? 'is-current' : '' ?>" href="/admin/media.html">媒体</a>
       <a class="<?= $current === 'audit' ? 'is-current' : '' ?>" href="/admin/audit.html">审计</a>
+      <a class="<?= $current === 'tokens' ? 'is-current' : '' ?>" href="/admin/tokens.html">API</a>
       <a class="<?= $current === 'updates' ? 'is-current' : '' ?>" href="/admin/updates.html">版本</a>
       <a href="/" target="_blank" rel="noopener">查看站点 <?= cream_icon('external', 'icon-xs') ?></a>
       <span class="admin-user"><?= cream_e($admin->username) ?></span>
@@ -89,15 +90,20 @@ if ($headerTitle === '') {
               <span class="nav-drawer-text">审计</span>
               <span class="nav-drawer-index">05</span>
             </a>
+            <a class="nav-drawer-link<?= $current === 'tokens' ? ' is-current' : '' ?>" href="/admin/tokens.html"<?= $current === 'tokens' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('plug', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">API 令牌</span>
+              <span class="nav-drawer-index">06</span>
+            </a>
             <a class="nav-drawer-link<?= $current === 'updates' ? ' is-current' : '' ?>" href="/admin/updates.html"<?= $current === 'updates' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('refresh', 'icon-sm') ?></span>
               <span class="nav-drawer-text">版本与升级</span>
-              <span class="nav-drawer-index">06</span>
+              <span class="nav-drawer-index">07</span>
             </a>
             <a class="nav-drawer-link" href="/" target="_blank" rel="noopener">
               <span class="nav-drawer-icon"><?= cream_icon('external', 'icon-sm') ?></span>
               <span class="nav-drawer-text">查看站点</span>
-              <span class="nav-drawer-index">07</span>
+              <span class="nav-drawer-index">08</span>
             </a>
           </div>
           <div class="nav-drawer-foot admin-mobile-foot">

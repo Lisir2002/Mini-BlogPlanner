@@ -17,6 +17,7 @@
 - 登录失败按 IP 节流：15 分钟内 5 次；超限返回 429。
 - 所有写操作必须带 `_csrf`；失败返回 419。
 - 版本与一键升级：见 `docs/ADMIN-UPDATES.md`，页面入口为 `GET /admin/updates.html`。
+- API 令牌：见“API 令牌管理”一节，页面入口为 `GET /admin/tokens.html`。
 
 ## 文章管理
 
@@ -36,6 +37,9 @@
 | POST | `/admin/media/{id}/delete.html` | 删除图片与文件 |
 | GET | `/admin/audit.html` | 审计事件列表，支持分类、关键词、操作者、结果、日期筛选与分页 |
 | GET | `/admin/audit/export.csv` | 按当前筛选导出审计 CSV，单次最多 5000 条 |
+| GET | `/admin/tokens.html` | API 令牌列表，每页 10 条 |
+| POST | `/admin/tokens.html` | 创建令牌，字段 `name`、`scopes[]`、`expires`、`_csrf` |
+| POST | `/admin/tokens/{id}/revoke.html` | 撤销令牌 |
 
 表单字段：
 
@@ -69,6 +73,16 @@
 - `page`：每页 10 篇；筛选后为空时显示专用空状态。
 - 列表在桌面显示七列表格，760px 以下及平板宽度切换为卡片；行菜单提供预览草稿、公开页、版本历史、归档/恢复。
 
+## API 令牌管理
+
+后台导航“API”进入令牌页，页面分为令牌列表和创建表单。
+
+- 令牌格式为 `mbp_` 加 64 位随机十六进制；数据库只保存 SHA-256 哈希，原始值只在创建成功后的当前页面显示一次。
+- 作用域：`status:read` 访问 `/api/v1/admin/status`，`content:read` 访问 `/api/v1/admin/posts`，`comments:read` 访问 `/api/v1/admin/comments`。
+- 有效期可选 7、30、90、365 天或长期有效；撤销后立即失效，列表保留记录、前缀、最近使用时间与撤销状态。
+- 创建和撤销写入审计事件 `api.token.created`、`api.token.revoked`；payload 只记录 id、前缀、名称、作用域和到期时间，不记录完整令牌。
+- 管理接口不接受后台会话代替令牌，必须使用 `Authorization: Bearer <token>`。
+
 ## 异步表单约定
 
 - 后台所有普通表单由 `assets/cream.js` 接管，默认把响应中的 `#admin-main` 替换回当前页面；服务端不需要额外 JSON 接口。
@@ -95,7 +109,7 @@
 ## 预览与审计
 
 - 预览必须登录，公开页使用的模板会显示“预览模式”，响应带 `X-Robots-Tag: noindex, nofollow`。
-- 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived/restored`、`post.bulk_archived/bulk_restored`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`。
+- 审计页只读；事件包括 `admin.login.succeeded/failed`、`admin.logout`、`post.created/updated/archived/restored`、`post.bulk_archived/bulk_restored`、`media.uploaded/deleted`、`tag.renamed/merged/deleted`、`system.audit.pruned`、`api.token.created/revoked`。
 - 查询参数：`category`（`admin/post/comment/media/tag/system/other`）、`q`（事件、操作者或字段）、`event` 精确事件名、`actor` 精确用户名、`result`（`success/failed`）、`range`（`today/24h/7d/30d/90d`）、`from`/`to`（`YYYY-MM-DD`）、每页固定 10 条（不再提供切换）、`page` 页码；超出页数会夹到最后一页。
 - 审计详情展开后显示结构化字段和脱敏后的原始 JSON；密码、令牌、Cookie、授权头、CSRF 和会话字段在写入和读取时都会遮蔽。
 - CSV 导出复用当前筛选，单次上限 5000 条，导出动作本身写入 `admin.audit.exported`；后台不提供编辑或删除入口。

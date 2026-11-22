@@ -19,6 +19,9 @@ use Core\Theme\ErrorPage;
 use Core\Theme\Theme;
 use Core\Page\PageRepository;
 use Core\Page\Pagination;
+use Core\Api\ApiAuthenticator;
+use Core\Api\ApiToken;
+use Core\Api\ApiTokenRepository;
 use Core\Status\SiteStatus;
 use Core\Routing\Route;
 use Core\Routing\Router;
@@ -1773,6 +1776,65 @@ check('Site status page and API share one safe report', function () use ($validV
     truthy($controller !== false && str_contains($controller, 'no-store') && str_contains($controller, 'noindex'), 'Status page must stay uncached and unindexed');
     truthy($api !== false && str_contains($api, 'function status') && str_contains($api, 'SiteStatus'), 'Health controller must expose the rich status report');
     truthy($plugin !== false && str_contains($plugin, "'/api/v1/status'"), 'API plugin must route the rich status report');
+});
+
+check('API tokens enforce scopes and stay hashed', function (): void {
+    $row = [
+        'id' => 7,
+        'name' => '监控',
+        'token_prefix' => 'mbp_abcdef12',
+        'scopes_json' => '["status:read"]',
+        'created_at' => '2026-11-22 08:00:00',
+        'last_used_at' => null,
+        'expires_at' => null,
+        'revoked_at' => null,
+    ];
+    $repository = new ApiTokenRepository(new FakeConnection($row));
+    $raw = 'mbp_' . str_repeat('a', 64);
+    $request = new Request('GET', '/api/v1/admin/status', ['authorization' => 'Bearer ' . $raw], []);
+    $token = (new ApiAuthenticator($repository))->requireScope($request, 'status:read');
+    truthy($token instanceof ApiToken && $token->hasScope('status:read'), 'Valid token must pass its scope');
+
+    $missing = (new ApiAuthenticator($repository))->requireScope(
+        new Request('GET', '/api/v1/admin/status', [], []),
+        'status:read',
+    );
+    truthy($missing instanceof Response && $missing->status() === 401, 'Missing token must return 401');
+    truthy(!str_contains($missing->body(), $raw), 'Auth errors must not echo the token');
+
+    $forbidden = (new ApiAuthenticator($repository))->requireScope($request, 'content:read');
+    truthy($forbidden instanceof Response && $forbidden->status() === 403, 'Missing scope must return 403');
+
+    $expired = new ApiToken(
+        8,
+        '过期',
+        'mbp_abcdef34',
+        ['status:read'],
+        '2026-11-01 00:00:00',
+        null,
+        '2026-11-20 00:00:00',
+        null,
+    );
+    truthy(!$expired->isActive(), 'Expired token must be inactive');
+
+    $root = dirname(__DIR__);
+    $migration = file_get_contents($root . '/database/migrations/2026112106_create_api_tokens.php');
+    $admin = file_get_contents($root . '/plugins/admin/src/ApiTokenAdminController.php');
+    $template = file_get_contents($root . '/themes/cream/templates/admin/tokens.php');
+    $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
+    $apiPlugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
+    truthy($migration !== false && str_contains($migration, 'api_tokens') && str_contains($migration, 'token_hash'), 'Token migration must store hashes');
+    $auditAt = strpos($admin, "append('api.token.created'");
+    truthy($auditAt !== false, 'Create action must append an audit event');
+    $auditEnd = strpos($admin, ']);', (int) $auditAt);
+    truthy($auditEnd !== false, 'Create audit payload must be closed');
+    $auditBlock = substr($admin, (int) $auditAt, (int) $auditEnd - (int) $auditAt);
+    truthy(!str_contains($auditBlock, "'token'"), 'Create audit must not store the raw token');
+    truthy($template !== false && str_contains($template, 'data-copy-token') && str_contains($template, '创建令牌'), 'Token page needs one-time secret and create form');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/tokens'") && str_contains($plugin, "'/admin/tokens/{id}/revoke'"), 'Admin plugin must route token management');
+    truthy($apiPlugin !== false && str_contains($apiPlugin, "'/api/v1/admin/status'") && str_contains($apiPlugin, "'/api/v1/admin/posts'") && str_contains($apiPlugin, "'/api/v1/admin/comments'"), 'API plugin must route protected management endpoints');
+    same('创建 API 令牌', AuditPresenter::label('api.token.created'));
+    same('admin', AuditPresenter::category('api.token.created'));
 });
 
 check('Compressed assets match their source files', function (): void {
