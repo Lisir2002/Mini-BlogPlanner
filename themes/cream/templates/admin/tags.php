@@ -139,13 +139,13 @@ $sortLabels = ['usage' => '按使用量', 'name' => '按名称', 'recent' => '�
         <div class="tag-admin-action-panel">
           <form method="post" action="/admin/tags/<?= (int) $tag['id'] ?>/rename.html" class="tag-action-line">
             <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
-            <label>重命名 <input name="name" maxlength="60" value="<?= cream_e((string) $tag['name']) ?>" required></label>
+            <label><span>重命名</span><input name="name" maxlength="60" value="<?= cream_e((string) $tag['name']) ?>" required></label>
             <button class="admin-button ghost" type="submit">保存</button>
           </form>
           <?php if (count($tagOptions) > 1): ?>
           <form method="post" action="/admin/tags/<?= (int) $tag['id'] ?>/merge.html" class="tag-action-line" onsubmit="return confirm('确认把这个标签的文章合并到目标标签？合并后这个标签会消失。')">
             <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
-            <label>合并到 <select name="target_id" aria-label="合并目标">
+            <label><span>合并到</span><select name="target_id" aria-label="合并目标">
               <?php foreach ($tagOptions as $target): if ((int) $target['id'] === (int) $tag['id']) { continue; } ?>
               <option value="<?= (int) $target['id'] ?>"><?= cream_e((string) $target['name']) ?></option>
               <?php endforeach; ?>

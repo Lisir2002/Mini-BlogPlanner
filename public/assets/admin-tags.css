@@ -93,10 +93,9 @@
 .tag-admin-stats small { color: var(--muted); font-size: 11px; }
 
 .tag-admin-toolbar {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(315px, 0.75fr);
+  align-items: start;
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--line);
@@ -109,7 +108,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  flex: 1 1 560px;
+  min-width: 0;
 }
 
 .tag-search-field {
@@ -146,6 +145,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding-left: 9px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
@@ -172,7 +173,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 330px;
+  min-width: 0;
   justify-content: flex-end;
 }
 
@@ -371,22 +372,24 @@
 }
 
 .tag-action-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .tag-action-line label {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
   gap: 6px;
-  flex: 1 1 220px;
   min-width: 0;
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
 }
+
+.tag-action-line label > span { white-space: nowrap; }
 
 .tag-action-line input,
 .tag-action-line select {
@@ -420,6 +423,7 @@
   .tag-admin-hero { grid-template-columns: 1fr; }
   .tag-admin-hero-note { transform: none; }
   .tag-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tag-admin-toolbar { grid-template-columns: 1fr; }
   .tag-admin-grid { grid-template-columns: 1fr; }
   .tag-create-form { justify-content: flex-start; }
 }
@@ -433,7 +437,7 @@
   .tag-search-field { flex-basis: 100%; }
   .tag-select-field { flex: 1 1 auto; }
   .tag-select-field select { max-width: none; width: 100%; }
-  .tag-create-form { flex-basis: 100%; }
+  .tag-create-form { flex-wrap: wrap; }
   .tag-card-top { align-items: center; }
   .tag-admin-identity h3 { font-size: 17px; }
   .tag-admin-count strong { font-size: 21px; }
