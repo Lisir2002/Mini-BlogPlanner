@@ -59,6 +59,7 @@
 - 超限响应为 429，带 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` 和 `X-RateLimit-Scope`。
 - 这些措施降低应用层刷量和慢连接影响，但不能替代 CDN、带宽清洗和机房防火墙。
 - Nginx 对动态请求设置 5/10/20 秒的 FastCGI 连接、发送、读取超时，避免慢上游长期占用 PHP-FPM；安全响应头由网关统一补齐。
+- 80 端口的域名跳转和默认站点也纳入单 IP 限速；默认站点只跳到正式域名，不再通过服务器 IP 直接暴露应用。
 
 ## 7. 已知缺口
 

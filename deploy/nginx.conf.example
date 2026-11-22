@@ -7,6 +7,8 @@ server {
     listen 80;
     listen [::]:80;
     server_name example.com;
+    limit_req zone=cream_general burst=20 nodelay;
+    limit_conn cream_conn 30;
     return 301 https://$host$request_uri;
 }
 
