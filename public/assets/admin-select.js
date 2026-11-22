@@ -175,7 +175,7 @@
       if (!state || !current) return;
       var rect = state.trigger.getBoundingClientRect();
       var margin = 12;
-      var preferred = variant === 'status' ? Math.max(260, rect.width) : rect.width;
+      var preferred = Math.max(260, Math.ceil(rect.width));
       var width = Math.min(preferred, window.innerWidth - margin * 2);
       state.menu.style.width = width + 'px';
       state.menu.style.left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin)) + 'px';

@@ -824,6 +824,18 @@ check('Admin tag API, scopes and docs stay wired together', function (): void {
     truthy($openapi !== false && str_contains($openapi, '/api/v1/admin/tags/{id}/merge') && str_contains($openapi, 'AdminTagListMeta'), 'OpenAPI must document admin tags');
 });
 
+
+check('Admin dropdowns keep readable menus on narrow screens', function (): void {
+    $root = dirname(__DIR__);
+    $script = file_get_contents($root . '/public/assets/admin-select.js');
+    $css = file_get_contents($root . '/public/assets/admin.css');
+    $tags = file_get_contents($root . '/public/assets/admin-tags.css');
+    truthy($script !== false && str_contains($script, 'Math.max(260, Math.ceil(rect.width))'), 'Dropdown menus must not copy narrow trigger widths');
+    truthy($css !== false && str_contains($css, 'min-width: min(260px, calc(100vw - 24px))'), 'Dropdown menus need a readable minimum width');
+    truthy($css !== false && str_contains($css, '.admin-select-option-main { overflow-wrap: anywhere; white-space: normal;'), 'Long option labels must wrap instead of being clipped');
+    truthy($tags !== false && str_contains($tags, '.tag-filter-form { display: grid; grid-template-columns: 1fr; gap: 7px; }'), 'Tag filters must stack into one column on phones');
+});
+
 check('Auth logs in, expires idle sessions and logs out', function (): void {
     Session::start();
     $_SESSION = [];
