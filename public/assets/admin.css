@@ -82,6 +82,19 @@
   padding: 30px 0 64px;
 }
 
+html.is-visually-zoomed .admin-header-inner,
+html.is-visually-zoomed .admin-main {
+  width: min(1180px, var(--admin-fit-width));
+  margin-left: var(--admin-fit-left);
+  margin-right: auto;
+}
+
+html.is-visually-zoomed .nav-mobile-panel {
+  right: var(--admin-right-inset);
+  bottom: var(--admin-bottom-inset);
+  width: min(318px, calc(var(--admin-visible-width) - 12px));
+}
+
 .admin-page { container-type: inline-size; }
 
 .admin-page-head {
@@ -940,8 +953,8 @@
 .admin-select-menu {
   position: fixed;
   z-index: 1200;
-  min-width: min(260px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
+  min-width: min(260px, calc(var(--admin-visible-width, 100vw) - 24px));
+  max-width: calc(var(--admin-visible-width, 100vw) - 24px);
   max-height: min(52vh, 420px);
   overflow: auto;
   padding: 6px;

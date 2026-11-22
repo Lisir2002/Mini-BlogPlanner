@@ -506,3 +506,18 @@
 @media (max-width: 360px) {
   .admin-body .admin-brand { max-width: 46vw; }
 }
+
+/* 页面放大时，批量操作条和确认弹层贴着实际可视区域，避免被屏幕边缘截断。 */
+html.is-visually-zoomed .post-admin-bulk-bar {
+  left: var(--admin-fit-left);
+  width: var(--admin-fit-width);
+  max-width: none;
+  justify-content: center;
+  transform: none;
+  bottom: calc(var(--admin-bottom-inset) + 18px);
+}
+
+html.is-visually-zoomed .post-admin-confirm {
+  right: var(--admin-right-inset);
+  bottom: var(--admin-bottom-inset);
+}

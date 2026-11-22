@@ -1518,3 +1518,10 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outlin
   .page-pager-step { padding: 6px 10px; }
   .page-pager-number, .page-pager-gap { min-width: 26px; height: 26px; }
 }
+
+/* 页面放大时，提示条留在实际可视区域内。 */
+html.is-visually-zoomed .cream-toast {
+  right: calc(var(--admin-right-inset, 0px) + 20px);
+  bottom: calc(var(--admin-bottom-inset, 0px) + 20px);
+  max-width: calc(var(--admin-visible-width, 100vw) - 40px);
+}

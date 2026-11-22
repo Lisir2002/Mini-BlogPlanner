@@ -831,9 +831,31 @@ check('Admin dropdowns keep readable menus on narrow screens', function (): void
     $css = file_get_contents($root . '/public/assets/admin.css');
     $tags = file_get_contents($root . '/public/assets/admin-tags.css');
     truthy($script !== false && str_contains($script, 'Math.max(260, Math.ceil(rect.width))'), 'Dropdown menus must not copy narrow trigger widths');
-    truthy($css !== false && str_contains($css, 'min-width: min(260px, calc(100vw - 24px))'), 'Dropdown menus need a readable minimum width');
+    truthy($css !== false && str_contains($css, 'min-width: min(260px, calc(var(--admin-visible-width, 100vw) - 24px))'), 'Dropdown menus need a readable minimum width');
     truthy($css !== false && str_contains($css, '.admin-select-option-main { overflow-wrap: anywhere; white-space: normal;'), 'Long option labels must wrap instead of being clipped');
     truthy($tags !== false && str_contains($tags, 'grid-template-columns: 1fr;') && str_contains($tags, 'width: 100%;'), 'Tag filters must stack into one column on phones');
+});
+
+check('Admin pages fit the visual viewport when the browser is zoomed', function (): void {
+    $root = dirname(__DIR__);
+    $script = file_get_contents($root . '/public/assets/admin-viewport.js');
+    $css = file_get_contents($root . '/public/assets/admin.css');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    $select = file_get_contents($root . '/public/assets/admin-select.js');
+    $posts = file_get_contents($root . '/public/assets/admin-posts.css');
+    $editor = file_get_contents($root . '/public/assets/editor.css');
+    $cream = file_get_contents($root . '/public/assets/cream.css');
+    truthy($script !== false && str_contains($script, 'window.visualViewport'), 'Admin layout must observe the visual viewport');
+    truthy($script !== false && str_contains($script, "classList.toggle('is-visually-zoomed'"), 'Admin layout must mark page zoom without changing normal rendering');
+    truthy($script !== false && str_contains($script, "'--admin-fit-width'"), 'Admin layout must publish a fitted content width');
+    truthy($script !== false && str_contains($script, "'--admin-right-inset'") && str_contains($script, "'--admin-bottom-inset'"), 'Fixed overlays need the visible viewport insets');
+    truthy($css !== false && str_contains($css, 'html.is-visually-zoomed .admin-header-inner'), 'Admin container width must follow the fitted content width');
+    truthy($css !== false && str_contains($css, 'html.is-visually-zoomed .nav-mobile-panel'), 'The mobile navigation drawer must stay inside the visible viewport');
+    truthy($layout !== false && str_contains($layout, "cream_asset('admin-viewport.js')"), 'The layout must load the visual viewport helper');
+    truthy($select !== false && str_contains($select, 'viewportBounds()') && str_contains($select, 'view.left + view.width'), 'Dropdown menus must stay inside the visual viewport');
+    truthy($posts !== false && str_contains($posts, 'html.is-visually-zoomed .post-admin-bulk-bar'), 'Batch actions must stay inside the visible viewport');
+    truthy($editor !== false && str_contains($editor, 'html.is-visually-zoomed .editor-mobile-bar'), 'The editor action bar must stay inside the visible viewport');
+    truthy($cream !== false && str_contains($cream, 'html.is-visually-zoomed .cream-toast'), 'Toasts must stay inside the visible viewport');
 });
 
 check('Admin filter cards collapse on phones and reopen on demand', function (): void {

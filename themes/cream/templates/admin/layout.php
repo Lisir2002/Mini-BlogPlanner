@@ -165,6 +165,7 @@ if ($headerTitle === '') {
 <?= $content ?>
 </main>
 <script src="<?= cream_asset('cream.js') ?>" defer onerror="document.getElementById('cream-loader').hidden=true"></script>
+<script src="<?= cream_asset('admin-viewport.js') ?>" defer></script>
 <script src="<?= cream_asset('admin-select.js') ?>" defer></script>
 <script src="<?= cream_asset('admin-filters.js') ?>" defer></script>
 <?php foreach (($page_scripts ?? []) as $script): ?>

@@ -925,3 +925,14 @@
   .editor-prompt-card { width: 100%; padding: 18px 16px calc(14px + env(safe-area-inset-bottom)); border-radius: 16px 16px 12px 12px; }
   .editor-prompt-actions .admin-button { flex: 1; }
 }
+
+/* 页面放大时，编辑器底栏和确认弹层跟随实际可视区域收缩。 */
+html.is-visually-zoomed .editor-mobile-bar {
+  right: var(--admin-right-inset, 0px);
+  bottom: var(--admin-bottom-inset, 0px);
+}
+
+html.is-visually-zoomed .editor-prompt {
+  right: var(--admin-right-inset, 0px);
+  bottom: var(--admin-bottom-inset, 0px);
+}

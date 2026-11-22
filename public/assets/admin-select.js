@@ -171,19 +171,34 @@
       }
     }
 
+    function viewportBounds() {
+      var viewport = window.visualViewport;
+      if (!viewport) {
+        return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      }
+      return {
+        left: Number(viewport.offsetLeft) || 0,
+        top: Number(viewport.offsetTop) || 0,
+        width: Number(viewport.width) || window.innerWidth,
+        height: Number(viewport.height) || window.innerHeight
+      };
+    }
+
     function position(state) {
       if (!state || !current) return;
       var rect = state.trigger.getBoundingClientRect();
+      var view = viewportBounds();
       var margin = 12;
       var preferred = Math.max(260, Math.ceil(rect.width));
-      var width = Math.min(preferred, window.innerWidth - margin * 2);
+      var width = Math.min(preferred, view.width - margin * 2);
+      var maxLeft = view.left + view.width - width - margin;
       state.menu.style.width = width + 'px';
-      state.menu.style.left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin)) + 'px';
+      state.menu.style.left = Math.max(view.left + margin, Math.min(rect.left, maxLeft)) + 'px';
       state.menu.hidden = false;
       var height = state.menu.offsetHeight;
       var top = rect.bottom + 8;
-      if (top + height > window.innerHeight - margin) top = rect.top - height - 8;
-      if (top < margin) top = margin;
+      if (top + height > view.top + view.height - margin) top = rect.top - height - 8;
+      if (top < view.top + margin) top = view.top + margin;
       state.menu.style.top = top + 'px';
     }
 
