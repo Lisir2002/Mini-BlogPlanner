@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.8.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.9.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8；媒体上传使用 `multipart/form-data`。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -239,7 +239,7 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 | 方法 | 路径 | 作用域 | 说明 |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/admin/media` | `media:read` | 列表，支持 `q`、`type`、`sort`、`page`、`per_page` |
+| `GET` | `/api/v1/admin/media` | `media:read` | 列表，支持 `q`、`type`、`shape`、`weight`、`period`、`sort`、`page`、`per_page` |
 | `GET` | `/api/v1/admin/media/{id}` | `media:read` | 图片详情 |
 | `POST` | `/api/v1/admin/media` | `media:write` | `multipart/form-data` 上传，最多 5 张，成功 `201` |
 | `PATCH` | `/api/v1/admin/media/{id}` | `media:write` | 修改显示名称，不改磁盘文件名和地址 |
@@ -271,13 +271,16 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     "per_page": 10,
     "q": "",
     "type": "",
+    "shape": "",
+    "weight": "",
+    "period": "",
     "sort": "newest",
     "summary": {"total": 3, "bytes": 982311, "latest_at": "2026-11-22T05:40:00+00:00", "types": {"jpg": 1, "png": 2, "webp": 0, "gif": 0}}
   }
 }
 ```
 
-- `q` 匹配显示名称或图片编号；`type=jpg|png|webp|gif`；`sort=newest|oldest|largest|name`。
+- `q` 匹配显示名称或图片编号；`type=jpg|png|webp|gif`；`shape=landscape|portrait|square` 按画幅；`weight=small|medium|large` 按体积（100KB、1MB 分界）；`period=today|week|month` 按最近 1、7、30 天；`sort=newest|oldest|largest|name`。
 - 上传字段名为 `file`，单张不超过 5MB，服务端以 `finfo` 和 `getimagesize` 校验类型与尺寸；部分失败时 `201` 仍返回成功项，`meta.errors` 列出失败原因。
 - 重命名请求体为 `{"name":"新的显示名称"}`，名称去 HTML 标签后 1–190 字。
 - 删除会同时移除数据库记录和磁盘文件，文章里的旧引用会失效；批量删除响应返回 `affected` 和实际删除的 `ids`。

@@ -29,6 +29,42 @@
     return node ? node.closest('[data-media-item]') : null;
   }
 
+  function closeDetail() {
+    if (!dialog) {
+      return;
+    }
+    dialog.classList.remove('is-fallback-open');
+    document.body.classList.remove('media-dialog-open');
+    if (typeof dialog.close === 'function') {
+      if (dialog.open) {
+        dialog.close();
+      }
+      return;
+    }
+    dialog.removeAttribute('open');
+  }
+
+  function showDetail() {
+    if (!dialog) {
+      return false;
+    }
+    if (typeof dialog.showModal === 'function') {
+      try {
+        if (dialog.open) {
+          closeDetail();
+        }
+        dialog.showModal();
+        return true;
+      } catch (error) {
+        // 原生弹层不可用时继续走普通定位方案。
+      }
+    }
+    dialog.setAttribute('open', '');
+    dialog.classList.add('is-fallback-open');
+    document.body.classList.add('media-dialog-open');
+    return true;
+  }
+
   function inputById(id) {
     return id ? document.getElementById(id) : null;
   }
@@ -96,9 +132,6 @@
     if (!card || !dialog) {
       return false;
     }
-    if (typeof dialog.showModal !== 'function') {
-      return false;
-    }
     const fields = {
       name: card.dataset.mediaName || '图片详情',
       url: card.dataset.mediaUrl || '',
@@ -139,8 +172,7 @@
     if (bytesNode) { bytesNode.textContent = bytesLabel; }
     if (createdNode) { createdNode.textContent = fields.created; }
 
-    dialog.showModal();
-    return true;
+    return showDetail();
   }
 
   document.addEventListener('click', function (event) {
@@ -180,7 +212,7 @@
     }
 
     if (target.closest('[data-media-close]')) {
-      if (dialog) { dialog.close(); }
+      closeDetail();
       return;
     }
 
@@ -212,16 +244,14 @@
   });
 
   if (dialog) {
-    if (typeof dialog.showModal !== 'function') {
-      dialog.hidden = true;
-    }
     dialog.addEventListener('click', function (event) {
       if (event.target === dialog) {
-        dialog.close();
+        closeDetail();
       }
     });
     dialog.addEventListener('cancel', function () {
-      // 关闭由浏览器处理。
+      dialog.classList.remove('is-fallback-open');
+      document.body.classList.remove('media-dialog-open');
     });
   }
 

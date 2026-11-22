@@ -6,7 +6,7 @@ info:
     所有响应均为 JSON。错误使用 RFC 9457 problem+json。
     公开内容接口匿名可读；`/api/v1/admin/*` 需要 `Authorization: Bearer mbp_<token>`。
     版本号与 version.json 的 `api` 轴保持一致。
-  version: 1.8.0
+  version: 1.9.0
   contact:
     name: Mini-BlogPlanner
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
@@ -506,7 +506,7 @@ paths:
     get:
       operationId: listAdminMedia
       summary: 列出后台媒体
-      description: 需要 `media:read` 作用域。支持文件名或编号搜索、格式筛选和排序，返回全库概览。
+      description: 需要 `media:read` 作用域。支持文件名或编号搜索，并按格式、画幅、体积、上传时间和排序组合筛选，返回全库概览。
       security:
         - bearerAuth: []
       parameters:
@@ -517,6 +517,18 @@ paths:
         - name: type
           in: query
           schema: { type: string, enum: [jpg, png, webp, gif] }
+        - name: shape
+          in: query
+          description: 按画幅筛选，方图允许宽高相差 5%。
+          schema: { type: string, enum: [landscape, portrait, square] }
+        - name: weight
+          in: query
+          description: 按文件体积筛选，分界为 100KB 和 1MB。
+          schema: { type: string, enum: [small, medium, large] }
+        - name: period
+          in: query
+          description: 按上传时间筛选，分别为最近 1、7、30 天。
+          schema: { type: string, enum: [today, week, month] }
         - name: sort
           in: query
           schema: { type: string, enum: [newest, oldest, largest, name], default: newest }
@@ -1193,7 +1205,7 @@ components:
             gif: { type: integer, minimum: 0 }
     MediaListMeta:
       type: object
-      required: [total, page, pages, per_page, q, type, sort, summary]
+      required: [total, page, pages, per_page, q, type, shape, weight, period, sort, summary]
       properties:
         total: { type: integer, minimum: 0 }
         page: { type: integer, minimum: 1 }
@@ -1201,6 +1213,9 @@ components:
         per_page: { type: integer, minimum: 1 }
         q: { type: string }
         type: { type: string }
+        shape: { type: string, enum: [landscape, portrait, square, ""] }
+        weight: { type: string, enum: [small, medium, large, ""] }
+        period: { type: string, enum: [today, week, month, ""] }
         sort: { type: string, enum: [newest, oldest, largest, name] }
         summary:
           $ref: "#/components/schemas/MediaSummary"

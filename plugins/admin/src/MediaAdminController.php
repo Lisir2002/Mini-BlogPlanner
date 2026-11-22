@@ -42,6 +42,9 @@ final class MediaAdminController
         $filters = MediaRepository::normalizeFilters([
             'q' => (string) ($query['q'] ?? ''),
             'type' => (string) ($query['type'] ?? ''),
+            'shape' => (string) ($query['shape'] ?? ''),
+            'weight' => (string) ($query['weight'] ?? ''),
+            'period' => (string) ($query['period'] ?? ''),
             'sort' => (string) ($query['sort'] ?? 'newest'),
         ]);
 
@@ -64,9 +67,13 @@ final class MediaAdminController
                 'url' => $number === null ? null : $this->pageUrl($filters, $number),
             ];
         }
-        $hasFilters = $filters['q'] !== '' || $filters['type'] !== '' || $filters['sort'] !== 'newest';
+        $hasFilters = $filters['q'] !== '' || $filters['type'] !== '' || $filters['shape'] !== ''
+            || $filters['weight'] !== '' || $filters['period'] !== '' || $filters['sort'] !== 'newest';
         $activeFilterCount = ($filters['q'] !== '' ? 1 : 0)
             + ($filters['type'] !== '' ? 1 : 0)
+            + ($filters['shape'] !== '' ? 1 : 0)
+            + ($filters['weight'] !== '' ? 1 : 0)
+            + ($filters['period'] !== '' ? 1 : 0)
             + ($filters['sort'] !== 'newest' ? 1 : 0);
 
         return $this->render($admin, $media, [
@@ -315,6 +322,15 @@ final class MediaAdminController
         }
         if ($filters['type'] !== '') {
             $params['type'] = $filters['type'];
+        }
+        if ($filters['shape'] !== '') {
+            $params['shape'] = $filters['shape'];
+        }
+        if ($filters['weight'] !== '') {
+            $params['weight'] = $filters['weight'];
+        }
+        if ($filters['period'] !== '') {
+            $params['period'] = $filters['period'];
         }
         if ($filters['sort'] !== 'newest') {
             $params['sort'] = $filters['sort'];

@@ -1,4 +1,6 @@
 <?php
+use Core\Content\MediaRepository;
+
 $media = is_array($media ?? null) ? $media : [];
 $summary = is_array($summary ?? null) ? $summary : ['total' => 0, 'bytes' => 0, 'latest_at' => null, 'types' => []];
 $total = (int) ($total ?? count($media));
@@ -45,6 +47,9 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
       <div class="media-summary-item media-summary-latest"><small>最近上传</small><strong><?= cream_e($latest) ?></strong></div>
     </div>
 
+  </div>
+
+  <div class="media-filter-shell">
     <form class="media-filterbar<?= $hasFilters ? ' has-filter' : '' ?>" method="get" action="/admin/media.html" role="search" data-admin-filter-panel data-admin-filter-label="筛选图片" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="media-search">
         <span class="visually-hidden">搜索图片</span>
@@ -61,6 +66,33 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
         </select>
       </label>
       <label class="media-select-field">
+        <span class="visually-hidden">按画幅筛选</span>
+        <select name="shape" aria-label="按画幅筛选">
+          <option value="">全部画幅</option>
+          <?php foreach (MediaRepository::SHAPES as $key => $label): ?>
+          <option value="<?= cream_e($key) ?>"<?= ($filters['shape'] ?? '') === $key ? ' selected' : '' ?>><?= cream_e($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="media-select-field">
+        <span class="visually-hidden">按体积筛选</span>
+        <select name="weight" aria-label="按体积筛选">
+          <option value="">全部体积</option>
+          <?php foreach (MediaRepository::WEIGHTS as $key => $label): ?>
+          <option value="<?= cream_e($key) ?>"<?= ($filters['weight'] ?? '') === $key ? ' selected' : '' ?>><?= cream_e($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="media-select-field">
+        <span class="visually-hidden">按上传时间筛选</span>
+        <select name="period" aria-label="按上传时间筛选">
+          <option value="">全部时间</option>
+          <?php foreach (MediaRepository::PERIODS as $key => $label): ?>
+          <option value="<?= cream_e($key) ?>"<?= ($filters['period'] ?? '') === $key ? ' selected' : '' ?>><?= cream_e($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="media-select-field media-select-sort">
         <span class="visually-hidden">排序方式</span>
         <select name="sort" aria-label="排序方式">
           <option value="newest"<?= $sort === 'newest' ? ' selected' : '' ?>>最近上传</option>

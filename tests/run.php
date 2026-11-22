@@ -781,19 +781,29 @@ check('Media repository filters, sorts and summarizes the library', function ():
         'created_at' => '2026-11-22 05:40:00',
     ]];
     $repository = new MediaRepository($connection);
-    $media = $repository->adminPage(['q' => '海', 'type' => 'png', 'sort' => 'largest'], 10, 20);
+    $media = $repository->adminPage([
+        'q' => '海',
+        'type' => 'png',
+        'shape' => 'landscape',
+        'weight' => 'small',
+        'period' => 'week',
+        'sort' => 'largest',
+    ], 10, 20);
     same(1, count($media));
     same('海边.png', $media[0]->originalName);
     $pageQuery = $connection->queries[0];
     truthy(str_contains($pageQuery['sql'], 'original_name LIKE ?'), 'Search must match the display name');
     truthy(str_contains($pageQuery['sql'], 'CAST(id AS CHAR) LIKE ?'), 'Search must also match the image id');
     truthy(str_contains($pageQuery['sql'], 'mime = ?'), 'Type filter must use the MIME column');
+    truthy(str_contains($pageQuery['sql'], 'width > height * 1.05'), 'Landscape filter must compare dimensions');
+    truthy(str_contains($pageQuery['sql'], 'size_bytes < 102400'), 'Small weight filter must cap file size');
+    truthy(str_contains($pageQuery['sql'], 'created_at >= NOW() - INTERVAL 7 DAY'), 'Period filter must use upload time');
     truthy(str_contains($pageQuery['sql'], 'ORDER BY size_bytes DESC'), 'Largest sort must use file size');
     truthy(str_contains($pageQuery['sql'], 'LIMIT 10 OFFSET 20'), 'Pagination must be bounded');
     same(['%海%', '%海%', 'image/png'], $pageQuery['params']);
 
     $connection->row = ['total' => 1];
-    same(1, $repository->adminCount(['q' => '海', 'type' => 'png', 'sort' => 'largest']));
+    same(1, $repository->adminCount(['q' => '海', 'type' => 'png', 'shape' => 'landscape', 'weight' => 'small', 'period' => 'week', 'sort' => 'largest']));
     truthy(str_contains($connection->queries[1]['sql'], 'COUNT(*) AS total FROM media'), 'Count must reuse the same filters');
 
     $connection->row = [
@@ -809,7 +819,21 @@ check('Media repository filters, sorts and summarizes the library', function ():
     same(4, $summary['total']);
     same(1500746, $summary['bytes']);
     same(2, $summary['types']['png']);
-    same(['q' => '海', 'type' => '', 'sort' => 'newest'], MediaRepository::normalizeFilters(['q' => ' 海 ', 'type' => 'svg', 'sort' => 'random']));
+    same([
+        'q' => '海',
+        'type' => '',
+        'shape' => '',
+        'weight' => '',
+        'period' => '',
+        'sort' => 'newest',
+    ], MediaRepository::normalizeFilters([
+        'q' => ' 海 ',
+        'type' => 'svg',
+        'shape' => 'wide',
+        'weight' => 'huge',
+        'period' => 'year',
+        'sort' => 'random',
+    ]));
 });
 
 check('Media upload errors separate input mistakes from storage failures', function (): void {
@@ -824,11 +848,13 @@ check('Media admin page and API stay wired together', function (): void {
     $template = file_get_contents($root . '/themes/cream/templates/admin/media.php');
     $css = file_get_contents($root . '/public/assets/admin-media.css');
     $script = file_get_contents($root . '/public/assets/admin-media.js');
-    truthy($template !== false && str_contains($template, 'data-admin-filter-panel') && str_contains($template, 'data-media-dialog'), 'Media page must use the shared filter panel and a detail dialog');
+    truthy($template !== false && str_contains($template, 'data-admin-filter-panel') && str_contains($template, 'media-filter-shell') && str_contains($template, 'name="shape"') && str_contains($template, 'name="weight"') && str_contains($template, 'name="period"'), 'Media page must use a standalone shared filter card with shape, weight and period rules');
+    truthy($template !== false && str_contains($template, 'data-media-dialog'), 'Media page must keep a detail dialog');
     truthy($template !== false && str_contains($template, 'name="file[]"') && str_contains($template, 'multiple'), 'Upload must accept multiple images');
     truthy($template !== false && str_contains($template, 'name="ids[]"'), 'Cards must expose bulk selection');
     truthy($css !== false && str_contains($css, '@media (max-width: 760px)') && str_contains($css, 'grid-template-columns: repeat(2, minmax(0, 1fr))'), 'Media grid must stay readable on phones');
-    truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details, copy and select-all');
+    truthy($css !== false && str_contains($css, '.media-bulk-bar {') && str_contains($css, 'position: fixed') && str_contains($css, '.media-card.is-selected .media-preview::after'), 'Selection must be visible and the bulk bar must float in the viewport');
+    truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'is-fallback-open') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details with a fallback, copy and select-all');
 
     $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
     $scopes = file_get_contents($root . '/core/Api/ApiScope.php');

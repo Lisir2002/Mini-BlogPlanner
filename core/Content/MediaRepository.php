@@ -19,6 +19,27 @@ final class MediaRepository
     /** @var list<string> */
     public const SORTS = ['newest', 'oldest', 'largest', 'name'];
 
+    /** @var array<string, string> */
+    public const SHAPES = [
+        'landscape' => '横图',
+        'portrait' => '竖图',
+        'square' => '方图',
+    ];
+
+    /** @var array<string, string> */
+    public const WEIGHTS = [
+        'small' => '100KB 以下',
+        'medium' => '100KB–1MB',
+        'large' => '1MB 以上',
+    ];
+
+    /** @var array<string, string> */
+    public const PERIODS = [
+        'today' => '24 小时内',
+        'week' => '7 天内',
+        'month' => '30 天内',
+    ];
+
     public function __construct(private readonly ConnectionInterface $db) {}
 
     public function create(
@@ -128,7 +149,7 @@ final class MediaRepository
     }
 
     /**
-     * @param array{q?:string,type?:string,sort?:string} $filters
+     * @param array{q?:string,type?:string,shape?:string,weight?:string,period?:string,sort?:string} $filters
      * @return list<Media>
      */
     public function adminPage(array $filters, int $limit = 10, int $offset = 0): array
@@ -154,7 +175,7 @@ final class MediaRepository
         return array_map(fn (array $row): Media => $this->map($row), $rows);
     }
 
-    /** @param array{q?:string,type?:string,sort?:string} $filters */
+    /** @param array{q?:string,type?:string,shape?:string,weight?:string,period?:string,sort?:string} $filters */
     public function adminCount(array $filters): int
     {
         $filters = self::normalizeFilters($filters);
@@ -193,21 +214,27 @@ final class MediaRepository
         return $this->adminCount([]);
     }
 
-    /** @param array{q?:string,type?:string,sort?:string} $filters
-     *  @return array{q:string,type:string,sort:string} */
+    /** @param array{q?:string,type?:string,shape?:string,weight?:string,period?:string,sort?:string} $filters
+     *  @return array{q:string,type:string,shape:string,weight:string,period:string,sort:string} */
     public static function normalizeFilters(array $filters): array
     {
         $q = trim((string) ($filters['q'] ?? ''));
         $q = mb_substr($q, 0, 80);
         $type = (string) ($filters['type'] ?? '');
         $type = array_key_exists($type, self::TYPES) ? $type : '';
+        $shape = (string) ($filters['shape'] ?? '');
+        $shape = array_key_exists($shape, self::SHAPES) ? $shape : '';
+        $weight = (string) ($filters['weight'] ?? '');
+        $weight = array_key_exists($weight, self::WEIGHTS) ? $weight : '';
+        $period = (string) ($filters['period'] ?? '');
+        $period = array_key_exists($period, self::PERIODS) ? $period : '';
         $sort = (string) ($filters['sort'] ?? 'newest');
         $sort = in_array($sort, self::SORTS, true) ? $sort : 'newest';
 
-        return ['q' => $q, 'type' => $type, 'sort' => $sort];
+        return ['q' => $q, 'type' => $type, 'shape' => $shape, 'weight' => $weight, 'period' => $period, 'sort' => $sort];
     }
 
-    /** @param array{q:string,type:string,sort:string} $filters
+    /** @param array{q:string,type:string,shape:string,weight:string,period:string,sort:string} $filters
      *  @return array{0:string,1:list<string>} */
     private function where(array $filters): array
     {
@@ -221,6 +248,27 @@ final class MediaRepository
         if ($filters['type'] !== '') {
             $where[] = 'mime = ?';
             $params[] = self::TYPES[$filters['type']];
+        }
+        if ($filters['shape'] !== '') {
+            $where[] = match ($filters['shape']) {
+                'landscape' => 'width > height * 1.05',
+                'portrait' => 'height > width * 1.05',
+                default => 'width >= height * 0.95 AND width <= height * 1.05',
+            };
+        }
+        if ($filters['weight'] !== '') {
+            $where[] = match ($filters['weight']) {
+                'small' => 'size_bytes < 102400',
+                'medium' => 'size_bytes >= 102400 AND size_bytes < 1048576',
+                default => 'size_bytes >= 1048576',
+            };
+        }
+        if ($filters['period'] !== '') {
+            $where[] = match ($filters['period']) {
+                'today' => 'created_at >= NOW() - INTERVAL 1 DAY',
+                'week' => 'created_at >= NOW() - INTERVAL 7 DAY',
+                default => 'created_at >= NOW() - INTERVAL 30 DAY',
+            };
         }
 
         return [$where === [] ? '' : ' WHERE ' . implode(' AND ', $where), $params];

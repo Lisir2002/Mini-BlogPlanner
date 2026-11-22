@@ -38,6 +38,9 @@ final class MediaAdminApiController
             $filters = MediaRepository::normalizeFilters([
                 'q' => (string) ($query['q'] ?? ''),
                 'type' => (string) ($query['type'] ?? ''),
+                'shape' => (string) ($query['shape'] ?? ''),
+                'weight' => (string) ($query['weight'] ?? ''),
+                'period' => (string) ($query['period'] ?? ''),
                 'sort' => (string) ($query['sort'] ?? 'newest'),
             ]);
             $page = max(1, (int) ($query['page'] ?? 1));
@@ -60,6 +63,9 @@ final class MediaAdminApiController
                 'per_page' => $state['per_page'],
                 'q' => $filters['q'],
                 'type' => $filters['type'],
+                'shape' => $filters['shape'],
+                'weight' => $filters['weight'],
+                'period' => $filters['period'],
                 'sort' => $filters['sort'],
                 'summary' => $summary,
             ],
