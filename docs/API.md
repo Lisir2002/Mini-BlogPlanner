@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.5.2`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.6.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -85,6 +85,8 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | `status:read` | `/api/v1/admin/status` 运行状态 |
 | `content:read` | `/api/v1/admin/posts` 后台文章列表 |
 | `comments:read` | `/api/v1/admin/comments` 后台留言列表 |
+| `tags:read` | `/api/v1/admin/tags` 查看标签统计、列表与单个标签 |
+| `tags:write` | `/api/v1/admin/tags` 创建、重命名、合并和删除标签 |
 
 - 缺少、无效、过期或已撤销：`401`，响应头带 `WWW-Authenticate: Bearer`。
 - 令牌有效但作用域不足：`403`，`type=/problems/api-scope-forbidden`。
@@ -177,6 +179,56 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 - `404 /problems/tag-not-found`：标签不存在或没有已发布文章。
 - `503 /problems/service-unavailable`：数据库不可用。
+
+### 后台标签
+
+后台标签接口需要 `tags:read` 或 `tags:write` 作用域，响应统一 `Cache-Control: no-store`。
+
+| 方法 | 路径 | 作用域 | 说明 |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/admin/tags` | `tags:read` | 列表，支持 `q`、`status`、`sort`、`page`、`per_page` |
+| `GET` | `/api/v1/admin/tags/{id}` | `tags:read` | 单个标签详情 |
+| `POST` | `/api/v1/admin/tags` | `tags:write` | 新建标签，成功 `201` 并返回 `Location` |
+| `PATCH` | `/api/v1/admin/tags/{id}` | `tags:write` | 重命名，只改名称，不改 slug |
+| `POST` | `/api/v1/admin/tags/{id}/merge` | `tags:write` | 合并到 `target_id`，来源标签随后删除 |
+| `DELETE` | `/api/v1/admin/tags/{id}` | `tags:write` | 删除空标签，成功 `204` |
+
+列表响应：
+
+```json
+{
+  "data": [
+    {
+      "id": 3,
+      "name": "手账",
+      "slug": "shou-zhang",
+      "url": "/tags/shou-zhang.html",
+      "post_count": 6,
+      "published_count": 4,
+      "status": "used",
+      "created_at": "2026-10-01T08:00:00+00:00",
+      "last_used_at": "2026-11-22T06:30:00+00:00"
+    }
+  ],
+  "meta": {
+    "total": 12,
+    "page": 1,
+    "pages": 2,
+    "per_page": 10,
+    "status": "all",
+    "sort": "usage",
+    "q": "",
+    "summary": {"total": 12, "used": 9, "empty": 3, "links": 24, "top_name": "手账", "top_count": 6}
+  }
+}
+```
+
+- `status=used` 只返回有文章关联的标签，`status=empty` 只返回空标签；`sort=usage|name|recent`。
+- 名称去 HTML 标签、合并空白后最多 60 字；名称冲突返回 `409 /problems/tag-name-conflict`。
+- 有文章的标签不能直接删除，返回 `409 /problems/tag-not-empty`，应先合并。
+- 合并目标必须存在且不能是来源自身，否则 `422 /problems/tag-merge-invalid`。
+- 标签不存在返回 `404 /problems/tag-not-found`；请求体不是 JSON 对象返回 `400 /problems/tag-body-invalid`。
+- API 写操作会写入审计，操作者记录为 `api:<令牌名称>`。
 
 ## 订阅端点
 

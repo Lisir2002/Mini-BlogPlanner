@@ -87,6 +87,46 @@ final class RecordingRateLimiter implements RateLimiterInterface
     }
 }
 
+final class TagAdminConnection implements ConnectionInterface
+{
+    /** @var list<array{sql:string,params:array<int|string,mixed>}> */
+    public array $queries = [];
+
+    /** @var list<array<string,mixed>> */
+    public array $rows = [];
+
+    /** @var array<string,mixed>|null */
+    public ?array $row = null;
+
+    public int $affected = 0;
+
+    public function fetchOne(string $sql, array $params = []): ?array
+    {
+        $this->queries[] = ['sql' => $sql, 'params' => $params];
+
+        return $this->row;
+    }
+
+    public function fetchAll(string $sql, array $params = []): array
+    {
+        $this->queries[] = ['sql' => $sql, 'params' => $params];
+
+        return $this->rows;
+    }
+
+    public function execute(string $sql, array $params = []): int
+    {
+        $this->queries[] = ['sql' => $sql, 'params' => $params];
+
+        return $this->affected;
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        return $callback($this);
+    }
+}
+
 final class FakeConnection implements ConnectionInterface
 {
     /** @param array<string, mixed>|null $row */
@@ -729,6 +769,59 @@ check('Media URL uses stable id and disk basename', function (): void {
 check('TagRepository normalizes names and caps at eight', function (): void {
     $names = TagRepository::normalize([' 生活 ', '生活', '手账', '', 'A', 'a', '二', '三', '四', '五', '六', '七']);
     same(['生活', '手账', 'A', '二', '三', '四', '五', '六'], $names);
+});
+
+
+check('Tag admin queries filter, sort and count empty tags', function (): void {
+    $connection = new TagAdminConnection();
+    $connection->rows = [[
+        'id' => 3,
+        'name' => '手账',
+        'slug' => 'shou-zhang',
+        'post_count' => 6,
+        'published_count' => 4,
+        'created_at' => '2026-10-01 08:00:00',
+        'last_used_at' => '2026-11-22 06:30:00',
+    ]];
+    $repository = new TagRepository($connection);
+    $tags = $repository->adminPage(10, 20, ['q' => '手账', 'status' => 'empty', 'sort' => 'recent']);
+    same(1, count($tags));
+    same(6, $tags[0]['count']);
+    same(4, $tags[0]['published_count']);
+    $query = $connection->queries[0];
+    truthy(str_contains($query['sql'], 'LIKE ?'), 'Search must use a bound LIKE');
+    truthy(str_contains($query['sql'], 'HAVING post_count = 0'), 'Empty filter must use HAVING');
+    truthy(str_contains($query['sql'], 'ORDER BY last_used_at DESC'), 'Recent sort must use last usage');
+    truthy(str_contains($query['sql'], 'LIMIT 10 OFFSET 20'), 'Pagination must be bounded');
+    same(['%手账%', '%手账%'], $query['params']);
+
+    $connection->row = ['total' => 2];
+    same(2, $repository->adminCount(['q' => '手账', 'status' => 'empty', 'sort' => 'recent']));
+    $countQuery = $connection->queries[1];
+    truthy(str_contains($countQuery['sql'], 'SELECT COUNT(*) AS total FROM ('), 'Count must use the filtered subquery');
+
+    $connection->affected = 3;
+    same(3, $repository->cleanupEmpty());
+    truthy(str_contains($connection->queries[2]['sql'], 'LEFT JOIN post_tags'), 'Cleanup must only target unlinked tags');
+});
+
+check('Request parses raw JSON bodies without breaking older constructors', function (): void {
+    $request = new Request('POST', '/api/v1/admin/tags', ['content-type' => 'application/json'], [], [], '{"name":"手账"}');
+    same('{"name":"手账"}', $request->body());
+    same(['name' => '手账'], $request->json());
+    same(null, (new Request('POST', '/api/v1/admin/tags', [], []))->json());
+    same(null, (new Request('POST', '/api/v1/admin/tags', [], [], [], '{bad'))->json());
+});
+
+check('Admin tag API, scopes and docs stay wired together', function (): void {
+    $root = dirname(__DIR__);
+    $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
+    $scopes = file_get_contents($root . '/core/Api/ApiScope.php');
+    $openapi = file_get_contents($root . '/docs/openapi.yaml');
+    truthy($plugin !== false && str_contains($plugin, "'/api/v1/admin/tags'") && str_contains($plugin, "'/api/v1/admin/tags/{id}/merge'"), 'API plugin must register admin tag routes');
+    truthy($plugin !== false && str_contains($plugin, "'PATCH'") && str_contains($plugin, "'DELETE'"), 'Admin tag API must support PATCH and DELETE');
+    truthy($scopes !== false && str_contains($scopes, "'tags:read'") && str_contains($scopes, "'tags:write'"), 'Tag scopes must be selectable');
+    truthy($openapi !== false && str_contains($openapi, '/api/v1/admin/tags/{id}/merge') && str_contains($openapi, 'AdminTagListMeta'), 'OpenAPI must document admin tags');
 });
 
 check('Auth logs in, expires idle sessions and logs out', function (): void {

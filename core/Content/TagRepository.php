@@ -9,6 +9,14 @@ use RuntimeException;
 
 final class TagRepository
 {
+    private const ADMIN_SELECT = "SELECT t.id, t.name, t.slug, t.created_at,
+        COUNT(pt.post_id) AS post_count,
+        COALESCE(SUM(CASE WHEN p.status = 'published' AND p.published_at IS NOT NULL AND p.published_at <= NOW() THEN 1 ELSE 0 END), 0) AS published_count,
+        MAX(p.updated_at) AS last_used_at
+        FROM tags t
+        LEFT JOIN post_tags pt ON pt.tag_id = t.id
+        LEFT JOIN posts p ON p.id = pt.post_id";
+
     public function __construct(private readonly ConnectionInterface $db) {}
 
     /** @return list<array{name:string,slug:string,count:int}> */
@@ -55,74 +63,160 @@ final class TagRepository
         return $row === null ? null : ['name' => (string) $row['name'], 'slug' => (string) $row['slug']];
     }
 
-    /** @return list<array{id:int,name:string,slug:string,count:int}> */
+    /**
+     * 后台标签入口共用的筛选条件。
+     *
+     * @param array{q?:string,status?:string,sort?:string} $filters
+     * @return array{where:string,params:list<string>,having:string,order:string}
+     */
+    private function adminQuery(array $filters): array
+    {
+        $where = '';
+        $params = [];
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where = 'WHERE (t.name LIKE ? OR t.slug LIKE ?)';
+            $params = ['%' . $q . '%', '%' . $q . '%'];
+        }
+
+        $status = (string) ($filters['status'] ?? 'all');
+        $having = $status === 'used' ? 'HAVING post_count > 0' : ($status === 'empty' ? 'HAVING post_count = 0' : '');
+
+        $sort = (string) ($filters['sort'] ?? 'usage');
+        $order = match ($sort) {
+            'name' => 'ORDER BY t.name ASC, t.id ASC',
+            'recent' => 'ORDER BY last_used_at DESC, t.name ASC',
+            default => 'ORDER BY post_count DESC, t.name ASC',
+        };
+
+        return ['where' => $where, 'params' => $params, 'having' => $having, 'order' => $order];
+    }
+
+    /** @return list<array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}> */
     public function adminAll(): array
     {
         $rows = $this->db->fetchAll(
-            'SELECT t.id, t.name, t.slug, COUNT(pt.post_id) AS post_count
-             FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id
-             GROUP BY t.id, t.name, t.slug
+            self::ADMIN_SELECT . '
+             GROUP BY t.id, t.name, t.slug, t.created_at
              ORDER BY t.name'
         );
 
-        return array_map(static fn (array $row): array => [
-            'id' => (int) $row['id'],
-            'name' => (string) $row['name'],
-            'slug' => (string) $row['slug'],
-            'count' => (int) $row['post_count'],
-        ], $rows);
+        return $this->adminRows($rows);
     }
 
-    /** @return list<array{id:int,name:string,slug:string,count:int}> */
-    public function adminPage(int $limit = 10, int $offset = 0): array
+    /**
+     * @param array{q?:string,status?:string,sort?:string} $filters
+     * @return list<array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}>
+     */
+    public function adminPage(int $limit = 10, int $offset = 0, array $filters = []): array
     {
         $limit = max(1, min(100, $limit));
         $offset = max(0, min(10000, $offset));
+        $query = $this->adminQuery($filters);
         $rows = $this->db->fetchAll(
-            'SELECT t.id, t.name, t.slug, COUNT(pt.post_id) AS post_count
-             FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id
-             GROUP BY t.id, t.name, t.slug
-             ORDER BY t.name
-             LIMIT ' . $limit . ' OFFSET ' . $offset
+            self::ADMIN_SELECT . ' ' . $query['where'] . '
+             GROUP BY t.id, t.name, t.slug, t.created_at
+             ' . $query['having'] . '
+             ' . $query['order'] . '
+             LIMIT ' . $limit . ' OFFSET ' . $offset,
+            $query['params']
         );
 
-        return array_map(static fn (array $row): array => [
-            'id' => (int) $row['id'],
-            'name' => (string) $row['name'],
-            'slug' => (string) $row['slug'],
-            'count' => (int) $row['post_count'],
-        ], $rows);
+        return $this->adminRows($rows);
     }
 
-    public function adminCount(): int
+    /** @param array{q?:string,status?:string,sort?:string} $filters */
+    public function adminCount(array $filters = []): int
     {
-        $row = $this->db->fetchOne('SELECT COUNT(*) AS total FROM tags');
+        $query = $this->adminQuery($filters);
+        $row = $this->db->fetchOne(
+            'SELECT COUNT(*) AS total FROM (' . self::ADMIN_SELECT . ' ' . $query['where'] . '
+             GROUP BY t.id, t.name, t.slug, t.created_at ' . $query['having'] . ') counted',
+            $query['params']
+        );
 
         return $row === null ? 0 : (int) $row['total'];
     }
 
-    /** @return array{id:int,name:string,slug:string,count:int}|null */
+    /**
+     * 标签管理页顶部的概览数据。
+     *
+     * @return array{total:int,used:int,empty:int,links:int,top_name:string,top_count:int}
+     */
+    public function adminSummary(): array
+    {
+        $tags = $this->adminAll();
+        $used = 0;
+        $links = 0;
+        $topName = '';
+        $topCount = 0;
+        foreach ($tags as $tag) {
+            $links += $tag['count'];
+            if ($tag['count'] > 0) {
+                $used++;
+            }
+            if ($tag['count'] > $topCount) {
+                $topCount = $tag['count'];
+                $topName = $tag['name'];
+            }
+        }
+
+        return [
+            'total' => count($tags),
+            'used' => $used,
+            'empty' => count($tags) - $used,
+            'links' => $links,
+            'top_name' => $topName,
+            'top_count' => $topCount,
+        ];
+    }
+
+    /** @return array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}|null */
     public function findById(int $id): ?array
     {
-        $row = $this->db->fetchOne(
-            'SELECT t.id, t.name, t.slug, COUNT(pt.post_id) AS post_count
-             FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id
-             WHERE t.id = ? GROUP BY t.id, t.name, t.slug LIMIT 1',
-            [$id],
+        $rows = $this->db->fetchAll(
+            self::ADMIN_SELECT . '
+             WHERE t.id = ?
+             GROUP BY t.id, t.name, t.slug, t.created_at
+             LIMIT 1',
+            [$id]
         );
 
-        return $row === null ? null : [
-            'id' => (int) $row['id'],
-            'name' => (string) $row['name'],
-            'slug' => (string) $row['slug'],
-            'count' => (int) $row['post_count'],
-        ];
+        $normalized = $this->adminRows($rows);
+
+        return $normalized[0] ?? null;
+    }
+
+    /**
+     * 新建一个空标签。
+     *
+     * @return array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}|null
+     */
+    public function create(string $name): ?array
+    {
+        $name = $this->cleanName($name);
+        if ($name === null || $this->db->fetchOne('SELECT id FROM tags WHERE name = ? LIMIT 1', [$name]) !== null) {
+            return null;
+        }
+
+        $slug = $this->uniqueSlug($name);
+        $inserted = $this->db->execute('INSERT IGNORE INTO tags (name, slug) VALUES (?, ?)', [$name, $slug]);
+        if ($inserted === 0) {
+            return null;
+        }
+
+        $row = $this->db->fetchOne('SELECT id FROM tags WHERE name = ? AND slug = ? LIMIT 1', [$name, $slug]);
+        if ($row === null) {
+            return null;
+        }
+
+        return $this->findById((int) $row['id']);
     }
 
     public function rename(int $id, string $name): bool
     {
-        $name = trim(preg_replace('/\s+/u', ' ', strip_tags($name)) ?? '');
-        if ($name === '' || mb_strlen($name) > 60) {
+        $name = $this->cleanName($name);
+        if ($name === null || $this->findById($id) === null) {
             return false;
         }
         $duplicate = $this->db->fetchOne('SELECT id FROM tags WHERE name = ? AND id <> ? LIMIT 1', [$name, $id]);
@@ -165,6 +259,18 @@ final class TagRepository
         $this->db->execute('DELETE FROM tags WHERE id = ?', [$id]);
 
         return true;
+    }
+
+    /**
+     * 删除所有没有文章关联的标签。
+     *
+     * 只按关联表判断，名称相近但仍有内容的标签不会被清理。
+     */
+    public function cleanupEmpty(): int
+    {
+        return $this->db->execute(
+            'DELETE t FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id WHERE pt.tag_id IS NULL'
+        );
     }
 
     /** @return list<string> */
@@ -250,15 +356,35 @@ final class TagRepository
             return (int) $row['id'];
         }
 
-        $slug = $this->uniqueSlug($name);
-        $this->db->execute('INSERT IGNORE INTO tags (name, slug) VALUES (?, ?)', [$name, $slug]);
-
-        $row = $this->db->fetchOne('SELECT id FROM tags WHERE name = ? LIMIT 1', [$name]);
-        if ($row === null) {
+        $created = $this->create($name);
+        if ($created === null) {
             throw new RuntimeException('Tag could not be created.');
         }
 
-        return (int) $row['id'];
+        return $created['id'];
+    }
+
+    /** @param list<array<string, mixed>> $rows
+     *  @return list<array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}>
+     */
+    private function adminRows(array $rows): array
+    {
+        return array_map(static fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'slug' => (string) $row['slug'],
+            'count' => (int) $row['post_count'],
+            'published_count' => (int) $row['published_count'],
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'last_used_at' => (string) ($row['last_used_at'] ?? ''),
+        ], $rows);
+    }
+
+    private function cleanName(string $name): ?string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', strip_tags($name)) ?? '');
+
+        return $name === '' || mb_strlen($name) > 60 ? null : $name;
     }
 
     private function uniqueSlug(string $name): string

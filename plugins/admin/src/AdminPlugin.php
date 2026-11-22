@@ -88,6 +88,8 @@ final class AdminPlugin implements PluginInterface
             new Route(['GET'], '/admin/updates/status', static fn (Request $request, array $params): Response => $updates->status($request), 'admin.updates.status'),
             new Route(['POST'], '/admin/updates/apply', static fn (Request $request, array $params): Response => $updates->apply($request), 'admin.updates.apply'),
             new Route(['GET'], '/admin/tags', static fn (Request $request, array $params): Response => $tags->index($request), 'admin.tags.index'),
+            new Route(['POST'], '/admin/tags', static fn (Request $request, array $params): Response => $tags->create($request), 'admin.tags.create'),
+            new Route(['POST'], '/admin/tags/cleanup-empty', static fn (Request $request, array $params): Response => $tags->cleanup($request), 'admin.tags.cleanup'),
             new Route(['POST'], '/admin/tags/{id}/rename', static fn (Request $request, array $params): Response => $tags->rename($request, $params), 'admin.tags.rename'),
             new Route(['POST'], '/admin/tags/{id}/merge', static fn (Request $request, array $params): Response => $tags->merge($request, $params), 'admin.tags.merge'),
             new Route(['POST'], '/admin/tags/{id}/delete', static fn (Request $request, array $params): Response => $tags->delete($request, $params), 'admin.tags.delete'),

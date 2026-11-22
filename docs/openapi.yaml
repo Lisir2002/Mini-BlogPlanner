@@ -6,7 +6,7 @@ info:
     所有响应均为 JSON。错误使用 RFC 9457 problem+json。
     公开内容接口匿名可读；`/api/v1/admin/*` 需要 `Authorization: Bearer mbp_<token>`。
     版本号与 version.json 的 `api` 轴保持一致。
-  version: 1.5.2
+  version: 1.6.0
   contact:
     name: Mini-BlogPlanner
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
@@ -362,13 +362,360 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
       tags: [admin]
+  /api/v1/admin/tags:
+    get:
+      operationId: listAdminTags
+      summary: 列出后台标签
+      description: 需要 `tags:read` 作用域。返回包含空标签、使用量、已发布文章数、创建与最近使用时间的完整列表，并带全站标签概览。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: 按名称或 slug 模糊检索。
+          schema: { type: string, maxLength: 60 }
+        - name: status
+          in: query
+          schema: { type: string, enum: [all, used, empty], default: all }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [usage, name, recent], default: usage }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: 后台标签列表与概览。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminTag"
+                  meta:
+                    $ref: "#/components/schemas/AdminTagListMeta"
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+    post:
+      operationId: createAdminTag
+      summary: 新建标签
+      description: 需要 `tags:write` 作用域。名称去除 HTML 标签、合并空白后最多 60 个字；名称或生成的 slug 冲突时返回 409。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 60 }
+      responses:
+        "201":
+          description: 标签已创建，`Location` 指向新资源。
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminTag"
+        "400":
+          description: 请求体不是 JSON 对象。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "409":
+          description: 名称或 slug 已存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: 名称无效。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+  /api/v1/admin/tags/{id}:
+    get:
+      operationId: getAdminTag
+      summary: 读取单个标签
+      description: 需要 `tags:read` 作用域。
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      responses:
+        "200":
+          description: 标签详情。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminTag"
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "404":
+          description: 标签不存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+    patch:
+      operationId: renameAdminTag
+      summary: 重命名标签
+      description: 需要 `tags:write` 作用域。只修改显示名称，slug 保持不变。
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 60 }
+      responses:
+        "200":
+          description: 更新后的标签。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminTag"
+        "400":
+          description: 请求体不是 JSON 对象。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "404":
+          description: 标签不存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: 新名称已存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: 名称无效。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+    delete:
+      operationId: deleteAdminTag
+      summary: 删除空标签
+      description: 需要 `tags:write` 作用域。只有没有任何文章关联的空标签可以删除；有文章时必须先合并。
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      responses:
+        "204":
+          description: 标签已删除，无响应体。
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "404":
+          description: 标签不存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: 标签仍有文章关联。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
+  /api/v1/admin/tags/{id}/merge:
+    post:
+      operationId: mergeAdminTag
+      summary: 合并标签
+      description: 需要 `tags:write` 作用域。把来源标签的文章关联全部转到目标标签，并删除来源标签。
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_id]
+              properties:
+                target_id: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: 合并结果与目标标签。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [merged, source_id, target]
+                    properties:
+                      merged: { type: boolean }
+                      source_id: { type: integer }
+                      target:
+                        $ref: "#/components/schemas/AdminTag"
+        "400":
+          description: 请求体不是 JSON 对象。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/TokenRequired"
+        "403":
+          $ref: "#/components/responses/TokenForbidden"
+        "404":
+          description: 来源标签不存在。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: 目标标签无效或与来源相同。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: 管理接口暂时不可用。
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+      tags: [admin]
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: mbp_<token>
+  parameters:
+    TagId:
+      name: id
+      in: path
+      required: true
+      description: 标签主键。
+      schema: { type: integer, minimum: 1 }
   schemas:
+    AdminTag:
+      type: object
+      required: [id, name, slug, url, post_count, published_count, status, created_at, last_used_at]
+      properties:
+        id: { type: integer, minimum: 1 }
+        name: { type: string }
+        slug: { type: string }
+        url: { type: string }
+        post_count: { type: integer, minimum: 0 }
+        published_count: { type: integer, minimum: 0 }
+        status: { type: string, enum: [used, empty] }
+        created_at: { type: string, format: date-time, nullable: true }
+        last_used_at: { type: string, format: date-time, nullable: true }
+    AdminTagListMeta:
+      type: object
+      required: [total, page, pages, per_page, status, sort, q, summary]
+      properties:
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pages: { type: integer, minimum: 1 }
+        per_page: { type: integer, minimum: 1 }
+        status: { type: string, enum: [all, used, empty] }
+        sort: { type: string, enum: [usage, name, recent] }
+        q: { type: string }
+        summary:
+          type: object
+          required: [total, used, empty, links, top_name, top_count]
+          properties:
+            total: { type: integer, minimum: 0 }
+            used: { type: integer, minimum: 0 }
+            empty: { type: integer, minimum: 0 }
+            links: { type: integer, minimum: 0 }
+            top_name: { type: string }
+            top_count: { type: integer, minimum: 0 }
     PostSummary:
       type: object
       required: [slug, title, excerpt, published_at, reading_minutes, url, tags]

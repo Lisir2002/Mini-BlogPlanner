@@ -34,35 +34,93 @@ final class TagAdminController
             return $admin;
         }
 
+        $q = mb_substr(trim((string) ($request->query()['q'] ?? '')), 0, 60);
+        $status = (string) ($request->query()['status'] ?? 'all');
+        $status = in_array($status, ['all', 'used', 'empty'], true) ? $status : 'all';
+        $sort = (string) ($request->query()['sort'] ?? 'usage');
+        $sort = in_array($sort, ['usage', 'name', 'recent'], true) ? $sort : 'usage';
+        $filters = ['q' => $q, 'status' => $status, 'sort' => $sort];
+
         try {
             $repository = new TagRepository(Connection::fromEnv());
-            $total = $repository->adminCount();
+            $summary = $repository->adminSummary();
+            $total = $repository->adminCount($filters);
             $state = Pagination::resolve(max(1, (int) ($request->query()['page'] ?? 1)), $total);
-            $tags = $repository->adminPage($state['per_page'], $state['offset']);
+            $tags = $repository->adminPage($state['per_page'], $state['offset'], $filters);
             $tagOptions = $repository->adminAll();
         } catch (Throwable) {
             return $this->adminError($request, 503, '后台暂时无法连接数据库。');
         }
 
-        $page = $state['page'];
-        $pages = $state['pages'];
+        $pageUrl = static function (int $page) use ($filters): string {
+            $query = [];
+            if ($filters['q'] !== '') {
+                $query['q'] = $filters['q'];
+            }
+            if ($filters['status'] !== 'all') {
+                $query['status'] = $filters['status'];
+            }
+            if ($filters['sort'] !== 'usage') {
+                $query['sort'] = $filters['sort'];
+            }
+            if ($page > 1) {
+                $query['page'] = $page;
+            }
+
+            return '/admin/tags.html' . ($query === [] ? '' : '?' . http_build_query($query));
+        };
+
         $pageLinks = [];
-        foreach (Pagination::window($page, $pages) as $number) {
+        foreach (Pagination::window($state['page'], $state['pages']) as $number) {
             $pageLinks[] = [
                 'number' => $number,
-                'url' => $number === null ? null : ($number <= 1 ? '/admin/tags.html' : '/admin/tags.html?page=' . $number),
+                'url' => $number === null ? null : $pageUrl($number),
             ];
         }
 
-        return $this->render($admin, $tags, isset($_GET['ok']) ? (string) $_GET['ok'] : null, [
+        return $this->render($admin, $tags, [
+            'summary' => $summary,
+            'filters' => $filters,
             'tagOptions' => $tagOptions,
             'total' => $total,
-            'page' => $page,
-            'pages' => $pages,
+            'page' => $state['page'],
+            'pages' => $state['pages'],
             'page_links' => $pageLinks,
-            'prev_url' => $page > 1 ? ($page === 2 ? '/admin/tags.html' : '/admin/tags.html?page=' . ($page - 1)) : null,
-            'next_url' => $page < $pages ? '/admin/tags.html?page=' . ($page + 1) : null,
+            'prev_url' => $state['page'] > 1 ? $pageUrl($state['page'] - 1) : null,
+            'next_url' => $state['page'] < $state['pages'] ? $pageUrl($state['page'] + 1) : null,
+            'ok' => isset($_GET['ok']) ? (string) $_GET['ok'] : null,
+            'err' => isset($_GET['err']) ? (string) $_GET['err'] : null,
+            'cleaned' => isset($_GET['count']) ? max(0, (int) $_GET['count']) : 0,
         ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        $name = $this->cleanName((string) ($_POST['name'] ?? ''));
+        if ($name === null) {
+            return $this->back('invalid');
+        }
+
+        try {
+            $tag = (new TagRepository(Connection::fromEnv()))->create($name);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '标签创建失败。');
+        }
+        if ($tag === null) {
+            return $this->back('duplicate');
+        }
+
+        $this->audit($admin, 'tag.created', ['id' => $tag['id'], 'name' => $tag['name']]);
+
+        return $this->back('created');
     }
 
     /** @param array<string, string> $params */
@@ -75,23 +133,31 @@ final class TagAdminController
         if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
+
         $id = $this->id($params);
-        $name = trim((string) ($_POST['name'] ?? ''));
-        if ($id === null || $name === '') {
-            return $this->adminError($request, 422, '标签参数无效。');
+        $name = $this->cleanName((string) ($_POST['name'] ?? ''));
+        if ($id === null) {
+            return $this->back('notfound');
+        }
+        if ($name === null) {
+            return $this->back('invalid');
         }
 
         try {
-            $renamed = (new TagRepository(Connection::fromEnv()))->rename($id, $name);
+            $repository = new TagRepository(Connection::fromEnv());
+            if ($repository->findById($id) === null) {
+                return $this->back('notfound');
+            }
+            $renamed = $repository->rename($id, $name);
         } catch (Throwable) {
             return $this->adminError($request, 503, '标签重命名失败。');
         }
         if (!$renamed) {
-            return $this->adminError($request, 422, '重命名失败：名称为空或已存在。');
+            return $this->back('duplicate');
         }
         $this->audit($admin, 'tag.renamed', ['id' => $id, 'name' => $name]);
 
-        return Response::redirect('/admin/tags.html?ok=renamed', 303);
+        return $this->back('renamed');
     }
 
     /** @param array<string, string> $params */
@@ -104,23 +170,34 @@ final class TagAdminController
         if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
+
         $id = $this->id($params);
         $target = (string) ($_POST['target_id'] ?? '');
-        if ($id === null || preg_match('/^[1-9][0-9]*$/', $target) !== 1 || (int) $target === $id) {
-            return $this->adminError($request, 422, '合并目标无效。');
+        if ($id === null) {
+            return $this->back('notfound');
+        }
+        if (preg_match('/^[1-9][0-9]*$/', $target) !== 1 || (int) $target === $id) {
+            return $this->back('merge');
         }
 
         try {
-            $merged = (new TagRepository(Connection::fromEnv()))->merge($id, (int) $target);
+            $repository = new TagRepository(Connection::fromEnv());
+            if ($repository->findById($id) === null) {
+                return $this->back('notfound');
+            }
+            if ($repository->findById((int) $target) === null) {
+                return $this->back('merge');
+            }
+            $merged = $repository->merge($id, (int) $target);
         } catch (Throwable) {
             return $this->adminError($request, 503, '标签合并失败。');
         }
         if (!$merged) {
-            return $this->adminError($request, 422, '合并失败：标签不存在。');
+            return $this->back('merge');
         }
         $this->audit($admin, 'tag.merged', ['source' => $id, 'target' => (int) $target]);
 
-        return Response::redirect('/admin/tags.html?ok=merged', 303);
+        return $this->back('merged');
     }
 
     /** @param array<string, string> $params */
@@ -133,22 +210,53 @@ final class TagAdminController
         if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
+
         $id = $this->id($params);
         if ($id === null) {
-            return $this->adminError($request, 404, 'Not Found');
+            return $this->back('notfound');
         }
 
         try {
-            $deleted = (new TagRepository(Connection::fromEnv()))->delete($id);
+            $repository = new TagRepository(Connection::fromEnv());
+            $tag = $repository->findById($id);
+            if ($tag === null) {
+                return $this->back('notfound');
+            }
+            if ($tag['count'] > 0) {
+                return $this->back('notempty');
+            }
+            $deleted = $repository->delete($id);
         } catch (Throwable) {
             return $this->adminError($request, 503, '标签删除失败。');
         }
         if (!$deleted) {
-            return $this->adminError($request, 422, '只能删除没有文章的空标签。');
+            return $this->back('notempty');
         }
         $this->audit($admin, 'tag.deleted', ['id' => $id]);
 
-        return Response::redirect('/admin/tags.html?ok=deleted', 303);
+        return $this->back('deleted');
+    }
+
+    public function cleanup(Request $request): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        try {
+            $count = (new TagRepository(Connection::fromEnv()))->cleanupEmpty();
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '空标签清理失败。');
+        }
+        if ($count > 0) {
+            $this->audit($admin, 'tag.cleaned', ['count' => $count]);
+        }
+
+        return Response::redirect('/admin/tags.html?ok=cleaned&count=' . $count, 303);
     }
 
     /** @param array<string, mixed> $payload */
@@ -169,11 +277,23 @@ final class TagAdminController
         return preg_match('/^[1-9][0-9]*$/', $value) === 1 ? (int) $value : null;
     }
 
+    private function cleanName(string $name): ?string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', strip_tags($name)) ?? '');
+
+        return $name === '' || mb_strlen($name) > 60 ? null : $name;
+    }
+
+    private function back(string $result): Response
+    {
+        return Response::redirect('/admin/tags.html?' . (in_array($result, ['created', 'renamed', 'merged', 'deleted', 'cleaned'], true) ? 'ok=' : 'err=') . $result, 303);
+    }
+
     /**
-     * @param list<array{id:int,name:string,slug:string,count:int}> $tags
-     * @param array<string, mixed> $list
+     * @param list<array{id:int,name:string,slug:string,count:int,published_count:int,created_at:string,last_used_at:string}> $tags
+     * @param array<string, mixed> $data
      */
-    private function render(Admin $admin, array $tags, ?string $ok, array $list = []): Response
+    private function render(Admin $admin, array $tags, array $data): Response
     {
         $html = $this->theme->render('admin/tags', [
             'site' => [
@@ -186,8 +306,9 @@ final class TagAdminController
             'admin' => $admin,
             'csrf' => Csrf::token(),
             'tags' => $tags,
-            'ok' => $ok,
-        ] + $list, 'admin/layout');
+            'body_class' => 'admin-tags-body',
+            'page_styles' => ['admin-tags.css'],
+        ] + $data, 'admin/layout');
 
         return Response::html($html)->withHeader('Cache-Control', 'no-store');
     }

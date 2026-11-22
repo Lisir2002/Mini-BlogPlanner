@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Core\Http;
 
+use JsonException;
+
 final class Request
 {
     /** @param array<string, string> $headers
@@ -16,6 +18,7 @@ final class Request
         private readonly array $headers,
         private readonly array $query,
         private readonly array $cookies = [],
+        private readonly string $body = '',
     ) {}
 
     public static function fromGlobals(): self
@@ -40,6 +43,7 @@ final class Request
             $headers,
             $_GET,
             self::cookies(),
+            (string) file_get_contents('php://input'),
         );
     }
 
@@ -69,6 +73,28 @@ final class Request
     public function header(string $name): ?string
     {
         return $this->headers[strtolower($name)] ?? null;
+    }
+
+    public function body(): string
+    {
+        return $this->body;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function json(): ?array
+    {
+        $body = trim($this->body);
+        if ($body === '') {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return null;
+        }
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     public function cookie(string $name): ?string

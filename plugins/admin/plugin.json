@@ -1,7 +1,7 @@
 {
   "id": "admin",
   "name": "Admin",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "priority": 10,
   "class": "Plugin\\Admin\\AdminPlugin",
   "runtime": true,
@@ -18,7 +18,8 @@
     "/admin",
     "/admin/login",
     "/admin/posts",
-    "/admin/api-docs"
+    "/admin/api-docs",
+    "/admin/tags"
   ],
   "route_prefixes": [
     "/admin"

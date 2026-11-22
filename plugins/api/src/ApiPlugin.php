@@ -31,6 +31,7 @@ final class ApiPlugin implements PluginInterface
         $posts = new PostApiController();
         $tags = new TagApiController();
         $admin = new AdminApiController($this->version);
+        $tagAdmin = new TagAdminApiController();
 
         return [
             new Route(['GET'], '/api/v1/health', static fn (Request $request, array $params): Response => $health($request), 'api.health'),
@@ -44,6 +45,12 @@ final class ApiPlugin implements PluginInterface
             new Route(['GET'], '/api/v1/admin/status', static fn (Request $request, array $params): Response => $admin->status($request), 'api.admin.status'),
             new Route(['GET'], '/api/v1/admin/posts', static fn (Request $request, array $params): Response => $admin->posts($request), 'api.admin.posts'),
             new Route(['GET'], '/api/v1/admin/comments', static fn (Request $request, array $params): Response => $admin->comments($request), 'api.admin.comments'),
+            new Route(['GET'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->index($request), 'api.admin.tags.index'),
+            new Route(['POST'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->create($request), 'api.admin.tags.create'),
+            new Route(['GET'], '/api/v1/admin/tags/{id}', static fn (Request $request, array $params): Response => $tagAdmin->show($request, $params), 'api.admin.tags.show'),
+            new Route(['PATCH'], '/api/v1/admin/tags/{id}', static fn (Request $request, array $params): Response => $tagAdmin->update($request, $params), 'api.admin.tags.update'),
+            new Route(['POST'], '/api/v1/admin/tags/{id}/merge', static fn (Request $request, array $params): Response => $tagAdmin->merge($request, $params), 'api.admin.tags.merge'),
+            new Route(['DELETE'], '/api/v1/admin/tags/{id}', static fn (Request $request, array $params): Response => $tagAdmin->delete($request, $params), 'api.admin.tags.delete'),
         ];
     }
 }
