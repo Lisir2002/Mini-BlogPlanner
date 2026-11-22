@@ -16,7 +16,7 @@ GET /sitemap.xml
 - 已发布文章 `/posts/{slug}.html`，带 `lastmod`
 - 有已发布文章的标签 `/tags/{slug}.html`
 
-草稿、归档、未来文章和搜索结果不会进入站点地图。地址优先取 `APP_URL`，未配置时按当前请求的 Host 生成。响应为 `application/xml`，缓存 1 小时。
+草稿、归档、未来文章和搜索结果不会进入站点地图。地址按当前请求的 Host 与协议生成，请求头缺失时回退到 `APP_URL`。响应为 `application/xml`，缓存 1 小时。
 
 ## 爬虫规则
 

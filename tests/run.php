@@ -1646,6 +1646,33 @@ check('Sitemap XML escapes locations and formats priorities', function (): void 
     truthy(str_contains($xml, '<priority>0.9</priority>'), 'Sitemap must format priority to one decimal');
 });
 
+check('SEO base URL follows the request host', function (): void {
+    $controller = new \Plugin\Web\SeoController(Version::fromArray([
+        'app' => '0.1.81',
+        'channel' => 'stable',
+        'schema' => 2026112106,
+        'schema_min' => 2026112106,
+        'api' => '1.6.0',
+        'php' => '>=8.5.0',
+        'mysql' => '>=9.7.4',
+        'plugins' => [],
+        'themes' => [],
+    ]));
+    $method = new ReflectionMethod($controller, 'baseUrl');
+
+    $secure = new Request('GET', '/robots.txt', [
+        'host' => 'planner.low-ai.online',
+        'x-forwarded-proto' => 'https',
+    ], []);
+    truthy($method->invoke($controller, $secure) === 'https://planner.low-ai.online', 'SEO base URL must use the request host and forwarded scheme');
+
+    $plain = new Request('GET', '/robots.txt', ['host' => 'planner.low-ai.online'], []);
+    truthy($method->invoke($controller, $plain) === 'https://planner.low-ai.online', 'SEO base URL must default to HTTPS without a forwarded scheme');
+
+    $invalid = new Request('GET', '/robots.txt', ['host' => 'bad host/'], []);
+    truthy($method->invoke($controller, $invalid) === 'http://localhost', 'SEO base URL must ignore malformed hosts and fall back safely');
+});
+
 check('Website structured data exposes search action', function (): void {
     $data = StructuredData::website([
         'title' => '日记Planner',

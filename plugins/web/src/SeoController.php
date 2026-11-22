@@ -113,13 +113,22 @@ final class SeoController
 
     private function baseUrl(Request $request): string
     {
-        $configured = trim((string) Env::get('APP_URL', ''));
-        if ($configured !== '') {
-            return rtrim($configured, '/');
+        $configured = rtrim(trim((string) Env::get('APP_URL', '')), '/');
+        $host = strtolower(trim((string) ($request->header('host') ?? '')));
+
+        if (preg_match('/^(?:[a-z0-9-]+\.)+[a-z0-9-]+(?::\d{1,5})?$/', $host) === 1) {
+            $forwarded = strtolower(trim((string) ($request->header('x-forwarded-proto') ?? '')));
+            $scheme = in_array($forwarded, ['http', 'https'], true)
+                ? $forwarded
+                : (string) parse_url($configured, PHP_URL_SCHEME);
+
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                $scheme = 'https';
+            }
+
+            return $scheme . '://' . $host;
         }
 
-        $host = trim((string) ($request->header('host') ?? 'localhost'));
-
-        return 'http://' . ($host === '' ? 'localhost' : $host);
+        return $configured !== '' ? $configured : 'http://localhost';
     }
 }
