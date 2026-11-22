@@ -18,6 +18,7 @@ final class RequestGuard
     private const PAGE_WINDOW = 60;
     private const API_IP_LIMIT = 300;
     private const API_IP_WINDOW = 60;
+    private const ADMIN_API_IP_LIMIT = 600;
     private const API_TOKEN_LIMIT = 240;
     private const API_TOKEN_WINDOW = 60;
     private const ADMIN_LOGIN_POST_LIMIT = 60;
@@ -78,7 +79,7 @@ final class RequestGuard
             $checks[] = [
                 'scope' => 'api-ip',
                 'identity' => $ipKey,
-                'limit' => self::API_IP_LIMIT,
+                'limit' => self::ADMIN_API_IP_LIMIT,
                 'window' => self::API_IP_WINDOW,
             ];
         } elseif (str_starts_with($path, '/api/')) {

@@ -1919,6 +1919,7 @@ check('Request guard applies token, route and global quotas', function (): void 
     $api = new Request('GET', '/api/v1/admin/status', ['authorization' => 'Bearer mbp_abcdef'], []);
     truthy($guard->check($api, '203.0.113.8') === null, 'Allowed request must pass');
     same(['api-token', 'api-ip', 'general'], array_column($limiter->hits, 'scope'));
+    same(600, $limiter->hits[1]['limit'], 'Admin API IP ceiling must match the documented fallback');
 
     $limiter->hits = [];
     $login = new Request('POST', '/admin/login.html', [], []);
