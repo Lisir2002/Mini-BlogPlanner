@@ -278,14 +278,16 @@
     if (!picked) {
       return;
     }
+    picked.classList.toggle('has-files', Boolean(files && files.length > 0));
     if (!files || files.length === 0) {
       picked.textContent = '还没有选择文件';
+      picked.removeAttribute('title');
       return;
     }
     const names = Array.from(files).map(function (file) { return file.name; });
-    picked.textContent = names.length === 1
-      ? names[0]
-      : names.length + ' 张：' + names.slice(0, 2).join('、') + (names.length > 2 ? '…' : '');
+    const head = names.length === 1 ? '已选择 1 张' : '已选择 ' + names.length + ' 张';
+    picked.textContent = head + '：' + names.slice(0, 3).join('、') + (names.length > 3 ? ' 等' : '');
+    picked.title = names.join('、');
   }
 
   if (fileInput) {

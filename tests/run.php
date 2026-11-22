@@ -855,6 +855,8 @@ check('Media admin page and API stay wired together', function (): void {
     truthy($css !== false && str_contains($css, '@media (max-width: 760px)') && str_contains($css, 'grid-template-columns: repeat(2, minmax(0, 1fr))'), 'Media grid must stay readable on phones');
     truthy($css !== false && str_contains($css, '.media-bulk-bar {') && str_contains($css, 'position: fixed') && str_contains($css, '.media-card.is-selected .media-preview::after'), 'Selection must be visible and the bulk bar must float in the viewport');
     truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'is-fallback-open') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details with a fallback, copy and select-all');
+    truthy($css !== false && str_contains($css, '.media-picked.has-files'), 'Picked upload files must stay visible on narrow screens');
+    truthy($script !== false && str_contains($script, '已选择') && str_contains($script, 'has-files'), 'Picked upload feedback must show the selected count');
 
     $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
     $scopes = file_get_contents($root . '/core/Api/ApiScope.php');

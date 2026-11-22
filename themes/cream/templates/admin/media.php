@@ -127,7 +127,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
         <strong>拖入图片，或点此选择</strong>
         <small>JPEG / PNG / WebP / GIF · 单张不超过 5MB · 最多 5 张</small>
       </span>
-      <span class="media-picked" data-media-picked>还没有选择文件</span>
+      <span class="media-picked" data-media-picked aria-live="polite">还没有选择文件</span>
     </label>
     <button class="admin-button primary media-upload-submit" type="submit"><?= cream_icon('plus', 'icon-xs') ?> 上传</button>
   </form>
