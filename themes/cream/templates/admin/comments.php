@@ -78,13 +78,13 @@ $excerpt = static function (string $text, int $limit = 90): string {
     <span class="comment-inbox-tab-note"><?= cream_icon('shield', 'icon-xs') ?> 默认先审后发</span>
   </div>
 
-  <div class="comment-inbox-filterbar">
+  <div class="comment-inbox-filterbar<?= $q !== '' || $postId > 0 ? ' has-filter' : '' ?>">
     <form class="comment-inbox-filter" method="get" action="<?= cream_e($baseUrl) ?>" role="search">
       <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= cream_e($status) ?>"><?php endif; ?>
       <label class="comment-inbox-search">
         <span class="visually-hidden">搜索留言</span>
         <?= cream_icon('search', 'icon-sm') ?>
-        <input name="q" value="<?= cream_e($q) ?>" maxlength="80" placeholder="搜索称呼、正文、邮箱或文章" autocomplete="off">
+        <input name="q" value="<?= cream_e($q) ?>" maxlength="80" placeholder="搜索称呼、正文或文章" autocomplete="off">
       </label>
       <label class="comment-inbox-post">
         <span class="visually-hidden">按文章筛选</span>

@@ -239,27 +239,30 @@
 .comment-inbox-empty { margin-top: 4px; }
 
 @media (max-width: 760px) {
-  .comment-inbox-hero { grid-template-columns: 1fr; gap: 12px; padding: 16px 15px 14px; }
-  .comment-inbox-hero-copy h2 { font-size: 23px; }
-  .comment-inbox-hero-note { grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 4px 10px; transform: none; }
-  .comment-inbox-hero-note > span { grid-column: 1 / -1; }
-  .comment-inbox-hero-note strong { font-size: 26px; }
-  .comment-inbox-hero-note small { justify-self: start; }
-  .comment-inbox-hero-note a { grid-column: 1 / -1; margin-top: 0; }
-  .comment-inbox-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  .comment-inbox-tab { justify-content: space-between; }
+  .comment-inbox-hero { display: none; }
+  .comment-inbox-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 8px; }
+  .comment-inbox-tab { justify-content: space-between; gap: 3px; min-width: 0; padding: 7px 8px; border-radius: 10px; font-size: 10.5px; }
+  .comment-inbox-tab strong { min-width: 1.35em; padding: 1px 3px; font-size: 9px; }
   .comment-inbox-tab-note { display: none; }
-  .comment-inbox-filterbar { display: grid; justify-content: stretch; justify-items: stretch; gap: 7px; padding: 10px; }
-  .comment-inbox-filter { display: grid; grid-template-columns: 1fr; gap: 7px; }
-  .comment-inbox-search { flex-basis: auto; }
-  .comment-inbox-post { flex-basis: auto; }
-  .comment-inbox-filter-submit { width: 100%; }
-  .comment-inbox-clear { justify-self: center; }
-  .comment-inbox-result { justify-self: start; }
+  .comment-inbox-filterbar { display: block; margin-bottom: 8px; padding: 8px; }
+  .comment-inbox-filter { display: grid; grid-template-columns: minmax(0, 1fr) 112px 46px; gap: 5px; align-items: center; }
+  .comment-inbox-search { min-height: 36px; padding: 0 9px; }
+  .comment-inbox-search input { padding: 7px 0; font-size: 12px; }
+  .comment-inbox-post { min-width: 0; }
+  .comment-inbox-post select { min-height: 36px; padding: 6px 24px 6px 8px; font-size: 11px; }
+  .comment-inbox-filter-submit { width: 46px; min-height: 36px; padding: 0; font-size: 11px; }
+  .comment-inbox-clear { grid-column: 1 / -1; justify-self: end; font-size: 10px; }
+  .comment-inbox-result { display: none; }
+  .comment-inbox-filterbar.has-filter .comment-inbox-result { display: block; margin-top: 6px; font-size: 10px; }
+  .comment-inbox-empty { margin-top: 0; padding: 26px 16px; }
+  .comment-inbox-empty .icon { width: 30px; height: 30px; }
+  .comment-inbox-empty h2 { margin: 8px 0 4px; font-size: 16px; }
+  .comment-inbox-empty p { font-size: 12px; line-height: 1.6; }
   .comment-bulk-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
-  .comment-bulk-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .comment-bulk-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: 100%; }
   .comment-bulk-actions .admin-button,
-  .comment-bulk-actions .link-button { width: 100%; justify-content: center; }
+  .comment-bulk-actions .link-button { width: 100%; min-height: 34px; padding: 5px 4px; justify-content: center; font-size: 10.5px; }
+  .comment-bulk-actions .icon { width: 10px; height: 10px; }
   .comment-inbox-card { grid-template-columns: 18px minmax(0, 1fr); gap: 7px; padding: 12px 12px 11px; }
   .comment-inbox-card-head { display: grid; gap: 6px; }
   .comment-inbox-state { grid-template-columns: auto auto; align-items: center; justify-content: space-between; justify-items: start; }
