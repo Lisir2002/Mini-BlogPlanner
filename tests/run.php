@@ -850,6 +850,8 @@ check('Admin pages fit the visual viewport when the browser is zoomed', function
     truthy($script !== false && str_contains($script, "'--admin-fit-width'"), 'Admin layout must publish a fitted content width');
     truthy($script !== false && str_contains($script, "'--admin-right-inset'") && str_contains($script, "'--admin-bottom-inset'"), 'Fixed overlays need the visible viewport insets');
     truthy($css !== false && str_contains($css, 'html.is-visually-zoomed .admin-header-inner'), 'Admin container width must follow the fitted content width');
+    truthy($css !== false && str_contains($css, 'grid-auto-columns: minmax(0, 1fr)'), 'Admin page roots must not let wide content stretch their implicit grid column');
+    truthy($css !== false && str_contains($css, 'margin-left: 11px') && str_contains($css, 'margin-right: 11px'), 'Phone gutters must be reserved on both sides of the admin container');
     truthy($css !== false && str_contains($css, 'html.is-visually-zoomed .nav-mobile-panel'), 'The mobile navigation drawer must stay inside the visible viewport');
     truthy($layout !== false && str_contains($layout, "cream_asset('admin-viewport.js')"), 'The layout must load the visual viewport helper');
     truthy($select !== false && str_contains($select, 'viewportBounds()') && str_contains($select, 'view.left + view.width'), 'Dropdown menus must stay inside the visual viewport');

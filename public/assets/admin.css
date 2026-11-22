@@ -78,8 +78,36 @@
 
 .admin-main {
   width: min(1180px, calc(100% - 32px));
+  max-width: 100%;
   margin: 0 auto;
   padding: 30px 0 64px;
+}
+
+/*
+ * 后台页面根容器不能由内容的最大宽度决定列宽。
+ * 隐式网格列使用 minmax(0, 1fr) 后，长输入框、长标签名和不可断词
+ * 只会被压缩或在容器内换行，不会再向右撑出可视区域。
+ */
+.admin-main > * {
+  min-width: 0;
+  max-width: 100%;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+/*
+ * 页面内部的纵向列表同样使用隐式网格列，长文件名、令牌和地址
+ * 不能把这些单列列表撑到卡片之外。
+ */
+.admin-main :where(
+  .media-meta,
+  .token-list,
+  .audit-list,
+  .post-admin-cards,
+  .comment-admin-list,
+  .update-details
+) {
+  min-width: 0;
+  grid-auto-columns: minmax(0, 1fr);
 }
 
 html.is-visually-zoomed .admin-header-inner,
@@ -664,7 +692,12 @@ html.is-visually-zoomed .nav-mobile-panel {
 }
 
 @media (max-width: 460px) {
-  .admin-header-inner, .admin-main { width: calc(100% - 22px); }
+  .admin-header-inner, .admin-main {
+    width: auto;
+    max-width: none;
+    margin-left: 11px;
+    margin-right: 11px;
+  }
   .admin-brand-copy { display: grid; }
   .admin-brand-copy small { display: none; }
   .admin-brand-title { font-size: 14px; }
@@ -713,11 +746,14 @@ html.is-visually-zoomed .nav-mobile-panel {
 .media-meta {
   display: grid;
   gap: 0.3rem;
+  min-width: 0;
+  grid-auto-columns: minmax(0, 1fr);
   padding: 0.8rem 0.9rem 1rem;
   font-size: 0.84rem;
 }
 
 .media-meta span { color: var(--muted); }
+.media-meta strong { overflow-wrap: anywhere; }
 .media-meta code {
   overflow-wrap: anywhere;
   color: var(--ink-soft);
