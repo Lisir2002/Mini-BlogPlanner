@@ -2,7 +2,8 @@
 
 ## 入口与认证
 
-- 登录页：`GET /admin/login.html`
+- 登录入口：后台菜单中的“登录”，匿名访问 `GET /admin` 会跳转到 `GET /admin/login.html`；公开站点不再放置登录链接。
+- 接口文档：`GET /admin/api-docs.html`，仅登录后可见；OpenAPI 源文件由 `GET /admin/api-docs/openapi.yaml` 在同一会话内输出。
 - 图形验证码：`GET /admin/captcha`
 - 登录提交：`POST /admin/login.html`，必须带 `captcha` 字段
 - 退出：`POST /admin/logout.html`
@@ -17,7 +18,7 @@
 - 登录失败按 IP 节流：15 分钟内 20 次；入口另有 60 次 POST / 5 分钟与 Nginx 5r/s 限速，超限返回 429。
 - 所有写操作必须带 `_csrf`；失败返回 419。
 - 版本与一键升级：见 `docs/ADMIN-UPDATES.md`，页面入口为 `GET /admin/updates.html`。
-- API 令牌：见“API 令牌管理”一节，页面入口为 `GET /admin/tokens.html`。
+- API 令牌：见“API 令牌管理”一节，页面入口为 `GET /admin/tokens.html`；接口文档入口为 `GET /admin/api-docs.html`。
 
 ## 文章管理
 

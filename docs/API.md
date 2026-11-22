@@ -190,8 +190,10 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ## OpenAPI
 
-- 源文件：`public/docs/openapi.yaml`（OpenAPI 3.2.1）。
-- 渲染页：`/api.html`（Scalar，读取 YAML）。
+- 源文件：`docs/openapi.yaml`（OpenAPI 3.2.1，位于 Web 根目录之外）。
+- 渲染页：`/admin/api-docs.html`（Scalar，读取 `/admin/api-docs/openapi.yaml`）。
+- 访问权限：页面与 YAML 都要求有效管理员会话；公开站点的首页、页头、页脚、状态页不再提供入口。
+- 公开静态路径 `/api.html` 与 `/docs/` 在 Nginx 层直接返回 404，避免旧缓存或直接地址绕过登录。
 - 变更接口时必须同步修改：控制器、OpenAPI、`docs/API.md`、契约测试。
 
 ## 新增接口检查表

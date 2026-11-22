@@ -12,7 +12,7 @@
 |---|---|---|---|
 | 应用 | SemVer `MAJOR.MINOR.PATCH` | `version.json` 的 `app` | 破坏性升 major，加功能升 minor，修 bug 升 patch |
 | 数据库结构 | 单调整数 `YYYYMMDDNN` | `schema_meta.schema_version` | 只增不减；每次结构变更一个版本 |
-| API | SemVer | `public/docs/openapi.yaml` 的 `info.version` | `/api/v1` 只做加法；破坏性变更开 `/api/v2` |
+| API | SemVer | `docs/openapi.yaml` 的 `info.version` | `/api/v1` 只做加法；破坏性变更开 `/api/v2` |
 | 插件 / 主题 | SemVer | `plugin.json` / `theme.json` | 与内核解耦，但必须声明 `requires` |
 | 页面包 | SemVer | `content/pages/{slug}/page.json` | 页面代码/样式变更，不写数据库结构 |
 

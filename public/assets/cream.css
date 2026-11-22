@@ -1001,8 +1001,7 @@ body.nav-open { overflow: hidden; }
   gap: 6px;
 }
 
-.footer-link,
-.footer-admin {
+.footer-link {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1017,29 +1016,12 @@ body.nav-open { overflow: hidden; }
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.footer-link .icon,
-.footer-admin .icon { width: 12px; height: 12px; }
+.footer-link .icon { width: 12px; height: 12px; }
 
 .footer-link:hover {
   border-color: color-mix(in oklch, var(--butter) 72%, transparent);
   background: oklch(1 0 0 / 0.08);
   color: var(--butter);
-}
-
-.footer-admin {
-  margin-left: 2px;
-  border-color: var(--butter);
-  background: var(--butter);
-  color: var(--ink);
-  font-weight: 700;
-  box-shadow: 2px 2px 0 oklch(0 0 0 / 0.24);
-}
-
-.footer-admin:hover {
-  border-color: var(--cream-1);
-  background: var(--cream-1);
-  color: var(--ink);
-  transform: translateY(-1px);
 }
 
 .footer-meta {
@@ -1058,9 +1040,6 @@ body.nav-open { overflow: hidden; }
 
 .footer-product { color: oklch(0.84 0.012 80); }
 .footer-sep { color: oklch(1 0 0 / 0.28); }
-
-.nav-drawer-admin { display: inline-flex; align-items: center; gap: 3px; color: var(--coral); text-decoration: none; }
-.nav-drawer-admin:hover { color: var(--ink); }
 
 /* 纸张层：评论区与文章页共用同一套纤维、叠边和胶带语言。 */
 .comment-item, .comment-form {

@@ -44,7 +44,6 @@ $lastPublished = (string) ($content['last_published_at'] ?? '');
   <div class="status-actions">
     <a class="button button-primary" href="/status.html"><?= cream_icon('refresh') ?> 重新检查</a>
     <a class="button button-ghost" href="/api/v1/status" target="_blank" rel="noopener"><?= cream_icon('plug') ?> 查看 JSON</a>
-    <a class="button button-ghost" href="/api.html"><?= cream_icon('book') ?> 接口文档</a>
   </div>
 
   <div class="status-metrics">

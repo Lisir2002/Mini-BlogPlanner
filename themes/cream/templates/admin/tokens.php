@@ -25,7 +25,7 @@ $pager_label = 'API 令牌分页';
     <aside class="token-hero-note">
       <span>调用方式</span>
       <code>Authorization: Bearer &lt;token&gt;</code>
-      <a href="/api.html">查看接口文档 <?= cream_icon('arrow-right', 'icon-xs') ?></a>
+      <a href="/admin/api-docs.html">查看接口文档 <?= cream_icon('arrow-right', 'icon-xs') ?></a>
     </aside>
   </header>
 

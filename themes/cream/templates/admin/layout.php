@@ -30,7 +30,7 @@ if ($headerTitle === '') {
 <a class="skip-link" href="#admin-main">跳到正文</a>
 <header class="admin-header">
   <div class="admin-header-inner">
-    <a class="admin-brand" href="/admin/posts.html">
+    <a class="admin-brand" href="/admin">
       <span class="admin-brand-mark"><?= cream_icon('planner') ?></span>
       <div class="admin-brand-copy"><small>MINI-BLOGPLANNER</small><h1 class="admin-brand-title" title="<?= cream_e($headerTitle) ?>"><?= cream_e($headerTitle) ?></h1></div>
     </a>
@@ -42,6 +42,7 @@ if ($headerTitle === '') {
       <a class="<?= $current === 'media' ? 'is-current' : '' ?>" href="/admin/media.html">媒体</a>
       <a class="<?= $current === 'audit' ? 'is-current' : '' ?>" href="/admin/audit.html">审计</a>
       <a class="<?= $current === 'tokens' ? 'is-current' : '' ?>" href="/admin/tokens.html">API</a>
+      <a class="<?= $current === 'apidocs' ? 'is-current' : '' ?>" href="/admin/api-docs.html">接口文档</a>
       <a class="<?= $current === 'updates' ? 'is-current' : '' ?>" href="/admin/updates.html">版本</a>
       <a href="/" target="_blank" rel="noopener">查看站点 <?= cream_icon('external', 'icon-xs') ?></a>
       <span class="admin-user"><?= cream_e($admin->username) ?></span>
@@ -95,15 +96,20 @@ if ($headerTitle === '') {
               <span class="nav-drawer-text">API 令牌</span>
               <span class="nav-drawer-index">06</span>
             </a>
+            <a class="nav-drawer-link<?= $current === 'apidocs' ? ' is-current' : '' ?>" href="/admin/api-docs.html"<?= $current === 'apidocs' ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">接口文档</span>
+              <span class="nav-drawer-index">07</span>
+            </a>
             <a class="nav-drawer-link<?= $current === 'updates' ? ' is-current' : '' ?>" href="/admin/updates.html"<?= $current === 'updates' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('refresh', 'icon-sm') ?></span>
               <span class="nav-drawer-text">版本与升级</span>
-              <span class="nav-drawer-index">07</span>
+              <span class="nav-drawer-index">08</span>
             </a>
             <a class="nav-drawer-link" href="/" target="_blank" rel="noopener">
               <span class="nav-drawer-icon"><?= cream_icon('external', 'icon-sm') ?></span>
               <span class="nav-drawer-text">查看站点</span>
-              <span class="nav-drawer-index">08</span>
+              <span class="nav-drawer-index">09</span>
             </a>
           </div>
           <div class="nav-drawer-foot admin-mobile-foot">
@@ -112,6 +118,42 @@ if ($headerTitle === '') {
               <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
               <button type="submit"><?= cream_icon('arrow-left', 'icon-xs') ?> 退出登录</button>
             </form>
+          </div>
+        </div>
+      </nav>
+    </details>
+    <?php else: ?>
+    <nav class="admin-nav nav-desktop" aria-label="后台登录导航">
+      <a class="is-current" href="/admin/login.html">登录</a>
+      <a href="/">返回站点 <?= cream_icon('external', 'icon-xs') ?></a>
+    </nav>
+    <details class="nav-mobile admin-mobile">
+      <summary aria-label="打开后台登录菜单">
+        <span class="nav-icon-open"><?= cream_icon('menu') ?></span>
+        <span class="nav-icon-close"><?= cream_icon('close') ?></span>
+      </summary>
+      <span class="nav-mobile-scrim admin-mobile-scrim" aria-hidden="true"></span>
+      <nav class="nav-mobile-panel admin-mobile-panel" aria-label="后台登录移动导航">
+        <div class="nav-mobile-sheet admin-mobile-sheet">
+          <div class="nav-drawer-head">
+            <span class="nav-drawer-eyebrow">BACKSTAGE · PRIVATE</span>
+            <strong class="nav-drawer-title">后台目录</strong>
+            <p class="nav-drawer-sub">登录后继续。</p>
+          </div>
+          <div class="nav-drawer-links">
+            <a class="nav-drawer-link is-current" href="/admin/login.html" aria-current="page">
+              <span class="nav-drawer-icon"><?= cream_icon('lock', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">登录</span>
+              <span class="nav-drawer-index">01</span>
+            </a>
+            <a class="nav-drawer-link" href="/">
+              <span class="nav-drawer-icon"><?= cream_icon('arrow-left', 'icon-sm') ?></span>
+              <span class="nav-drawer-text">返回站点</span>
+              <span class="nav-drawer-index">02</span>
+            </a>
+          </div>
+          <div class="nav-drawer-foot">
+            <span>MINI-BLOGPLANNER</span>
           </div>
         </div>
       </nav>

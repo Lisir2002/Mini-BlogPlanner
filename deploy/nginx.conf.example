@@ -102,9 +102,9 @@ server {
 
     location ^~ /storage/ { deny all; }
     location ^~ /vendor/ { deny all; }
-    location ^~ /docs/ {
-        add_header Cache-Control "public, max-age=300";
-    }
+    # 接口文档只在后台会话内渲染，公开静态路径一律关闭。
+    location = /api.html { return 404; }
+    location ^~ /docs/ { return 404; }
     location ~ /\. { deny all; }
 
     location ~* \.(?:css|js|svg|png|jpg|jpeg|webp|avif|woff2)$ {

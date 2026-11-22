@@ -1167,15 +1167,38 @@ check('Article metadata pairs every value with an icon', function (): void {
     truthy($posts !== false && str_contains($posts, '.post-meta .meta-item { min-height: 24px;'), 'Mobile metadata must stay compact');
 });
 
-check('Admin entry is reachable from public navigation', function (): void {
+check('Admin login entry lives in the backstage menu', function (): void {
     $root = dirname(__DIR__);
     $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
     $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
-    $css = file_get_contents($root . '/public/assets/cream.css');
-    truthy($footer !== false && str_contains($footer, 'href="/admin/login.html"'), 'Footer needs an admin login link');
-    truthy($footer !== false && str_contains($footer, 'footer-admin'), 'Footer admin link needs its own style');
-    truthy($header !== false && str_contains($header, 'nav-drawer-admin') && str_contains($header, 'href="/admin/login.html"'), 'Mobile drawer needs an admin login link');
-    truthy($css !== false && str_contains($css, '.footer-admin') && str_contains($css, '.nav-drawer-admin'), 'Admin entry links must be themed');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    truthy($footer !== false && !str_contains($footer, 'admin/login'), 'Public footer must not expose an admin login link');
+    truthy($header !== false && !str_contains($header, 'admin/login'), 'Public navigation must not expose an admin login link');
+    truthy($layout !== false && str_contains($layout, '后台登录导航') && str_contains($layout, 'href="/admin/login.html"'), 'Backstage menu must carry the login entry');
+    truthy($layout !== false && str_contains($layout, '后台登录移动导航'), 'Backstage mobile menu must carry the login entry');
+});
+
+check('API docs are private and admin-only', function (): void {
+    $root = dirname(__DIR__);
+    $plugin = file_get_contents($root . '/plugins/admin/src/AdminPlugin.php');
+    $controller = file_get_contents($root . '/plugins/admin/src/ApiDocsAdminController.php');
+    $template = file_get_contents($root . '/themes/cream/templates/admin/api-docs.php');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    $header = file_get_contents($root . '/themes/cream/templates/partials/site-header.php');
+    $footer = file_get_contents($root . '/themes/cream/templates/partials/site-footer.php');
+    $home = file_get_contents($root . '/themes/cream/templates/home.php');
+    $status = file_get_contents($root . '/themes/cream/templates/status.php');
+    truthy(!is_file($root . '/public/api.html'), 'Public API docs page must be removed');
+    truthy(!is_file($root . '/public/docs/openapi.yaml'), 'OpenAPI source must not stay under the web root');
+    truthy(is_file($root . '/docs/openapi.yaml'), 'OpenAPI source must live outside the web root');
+    truthy($plugin !== false && str_contains($plugin, "'/admin/api-docs'") && str_contains($plugin, "'/admin/api-docs/openapi.yaml'"), 'Admin plugin must expose guarded docs routes');
+    truthy($controller !== false && str_contains($controller, 'new AdminGuard(') && substr_count($controller, 'authenticate($request)') >= 2, 'Both docs routes must require an admin session');
+    truthy($controller !== false && str_contains($controller, "'/docs/openapi.yaml'") && str_contains($controller, "'Cache-Control', 'no-store, private, max-age=0'"), 'Private YAML must be read from outside public and must not be cached');
+    truthy($template !== false && str_contains($template, 'data-url="/admin/api-docs/openapi.yaml"'), 'Docs page must load the guarded YAML endpoint');
+    truthy($layout !== false && str_contains($layout, 'href="/admin/api-docs.html"'), 'Backstage menu must link the private docs page');
+    foreach ([$header, $footer, $home, $status] as $publicTemplate) {
+        truthy($publicTemplate !== false && !str_contains($publicTemplate, '/api.html'), 'Public templates must not link the removed docs page');
+    }
 });
 
 check('Page headings live in the top bar', function (): void {

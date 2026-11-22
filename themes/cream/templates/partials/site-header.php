@@ -23,7 +23,6 @@ $searchEnabled = empty($error_status);
       <a class="nav-link<?= $current === 'archive' ? ' is-current' : '' ?>" href="/archive.html"<?= $current === 'archive' ? ' aria-current="page"' : '' ?>>归档</a>
       <a class="nav-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>标签</a>
       <a class="nav-link<?= $current === 'about' ? ' is-current' : '' ?>" href="/about.html"<?= $current === 'about' ? ' aria-current="page"' : '' ?>>关于</a>
-      <a class="nav-link" href="/api.html">接口文档</a>
       <a class="nav-link<?= $current === 'status' ? ' is-current' : '' ?>" href="/status.html"<?= $current === 'status' ? ' aria-current="page"' : '' ?>>站点状态</a>
     </nav>
 
@@ -73,20 +72,14 @@ $searchEnabled = empty($error_status);
               <span class="nav-drawer-text">关于</span>
               <span class="nav-drawer-index">05</span>
             </a>
-            <a class="nav-drawer-link" href="/api.html">
-              <span class="nav-drawer-icon"><?= cream_icon('plug', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">接口文档</span>
-              <span class="nav-drawer-index">06</span>
-            </a>
             <a class="nav-drawer-link<?= $current === 'status' ? ' is-current' : '' ?>" href="/status.html"<?= $current === 'status' ? ' aria-current="page"' : '' ?>>
               <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
               <span class="nav-drawer-text">站点状态</span>
-              <span class="nav-drawer-index">07</span>
+              <span class="nav-drawer-index">06</span>
             </a>
           </div>
           <div class="nav-drawer-foot">
             <span>MINI-BLOGPLANNER</span>
-            <a class="nav-drawer-admin" href="/admin/login.html"><?= cream_icon('lock', 'icon-xs') ?> 后台入口</a>
           </div>
         </div>
       </nav>
