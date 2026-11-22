@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.5.1`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.5.2`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -10,7 +10,7 @@
 - 缓存：读取接口默认 `no-store`；公开只读内容可按资源单独协商。
 - 认证：公开文章、搜索、标签与站点状态无需认证；`/api/v1/admin/*` 必须携带 `Authorization: Bearer mbp_<token>`，并按令牌作用域授权。
 - 令牌：后台“API”菜单创建，明文只显示一次，数据库仅保存 SHA-256 哈希；可设置有效期并随时撤销。
-- 限流：默认按 IP 计数；超限返回 `429`，响应头带 `Retry-After`。
+- 限流：公开接口按 IP 120 次/分钟，管理接口再按令牌 120 次/分钟；超限返回 `429`，响应头带 `Retry-After` 和 `X-RateLimit-*`。
 - 页面列表：固定每页 10 条，超出自动分页；API 读取接口使用 `?page=1&per_page=20`，响应包含 `data`、`meta`，`per_page` 上限 100。
 
 ## 已实现接口
@@ -24,8 +24,8 @@
 ```json
 {
   "status": "ok",
-  "app": "0.1.40",
-  "api": "1.5.1",
+  "app": "0.1.69",
+  "api": "1.5.2",
   "schema": 2026112106
 }
 ```
@@ -54,8 +54,8 @@
 ```json
 {
   "status": "ok",
-  "app": "0.1.68",
-  "api": "1.5.1",
+  "app": "0.1.69",
+  "api": "1.5.2",
   "channel": "stable",
   "checked_at": "2026-11-22T08:00:00+00:00",
   "latency_ms": 3,

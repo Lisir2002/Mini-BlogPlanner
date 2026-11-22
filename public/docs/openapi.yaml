@@ -6,7 +6,7 @@ info:
     所有响应均为 JSON。错误使用 RFC 9457 problem+json。
     公开内容接口匿名可读；`/api/v1/admin/*` 需要 `Authorization: Bearer mbp_<token>`。
     版本号与 version.json 的 `api` 轴保持一致。
-  version: 1.5.1
+  version: 1.5.2
   contact:
     name: Mini-BlogPlanner
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
@@ -439,8 +439,8 @@ components:
         status:
           type: string
           enum: [ok, degraded]
-        app: { type: string, examples: ["0.1.68"] }
-        api: { type: string, examples: ["1.5.1"] }
+        app: { type: string, examples: ["0.1.69"] }
+        api: { type: string, examples: ["1.5.2"] }
         channel: { type: string, examples: [stable] }
         checked_at: { type: string, format: date-time }
         latency_ms: { type: integer, minimum: 0 }

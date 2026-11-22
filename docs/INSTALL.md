@@ -29,7 +29,7 @@ release 部署时把 `STORAGE_DIR` 指向部署根的 `storage`，安装器会�
 
 - **安装锁**：`flock storage/install.lock` 独占；并发请求返回 409。
 - **CSRF**：安装会话内随机 token；缺失或不匹配返回 419。
-- **限流**：默认 10 次 POST / 分钟 / IP，超限 429。
+- **安装限流**：安装步骤 POST 10 次/分钟/IP，超限 429；全站入口另有分级限流。
 - **HTTPS**：非 loopback 地址必须 HTTPS，否则 403；loopback 允许 HTTP 开发。
 - **密码**：数据库密码只在当前请求内存中使用；不写会话、不写日志。执行前在确认页重新输入。
 - **管理员密码**：只保存 Argon2id 哈希；不写会话明文。
@@ -61,6 +61,21 @@ client_max_body_size 12m;
 ```
 
 改完执行 `systemctl reload php8.5-fpm` 与 `systemctl reload nginx`。安装器的环境检查只给警告，不会替用户修改系统配置；默认 `2M` 会让 2MB 以上的合法图片在进入应用前被拒绝。
+
+## 抗压基线
+
+生产 Nginx 需要先装两个 `http` 块配置，再使用 `deploy/nginx.conf.example` 的 server 段：
+
+```bash
+install -m 0644 deploy/nginx-cloudflare-realip.conf.example /etc/nginx/conf.d/00-cloudflare-realip.conf
+install -m 0644 deploy/nginx-rate-limit.conf.example /etc/nginx/conf.d/10-cream-rate-limit.conf
+nginx -t && systemctl reload nginx
+```
+
+- 只有站点确实经 Cloudflare 回源时才装 `00-cloudflare-realip.conf`；直连源站不要信任转发头。
+- `10-cream-rate-limit.conf` 定义单 IP 的请求速率与并发连接 zone，缺少时 server 段会 `nginx -t` 失败。
+- 应用层限流默认开启，`RATE_LIMIT_DRIVER=auto` 优先 SysV 共享内存，失败时回退 `storage/rate-limit` 文件。
+- 多台 PHP 节点各自计数；需要全局限额时改用共享 Redis 或网关集中限流。
 
 ## 验收命令
 

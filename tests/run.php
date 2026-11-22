@@ -12,6 +12,11 @@ use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
 use Core\Http\Csrf;
 use Core\Http\Request;
+use Core\Http\RateLimitResult;
+use Core\Http\RateLimitResponder;
+use Core\Http\RequestGuard;
+use Core\Http\FileRateLimiter;
+use Core\Http\RateLimiterInterface;
 use Core\Http\Response;
 use Core\Http\Session;
 use Core\Security\GraphicCaptcha;
@@ -55,6 +60,30 @@ require dirname(__DIR__) . '/bootstrap/autoload.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
+}
+
+final class RecordingRateLimiter implements RateLimiterInterface
+{
+    /** @var list<array{scope:string,identity:string,limit:int,window:int}> */
+    public array $hits = [];
+
+    public ?RateLimitResult $denied = null;
+
+    public function hit(string $scope, string $identity, int $limit, int $window): RateLimitResult
+    {
+        $this->hits[] = ['scope' => $scope, 'identity' => $identity, 'limit' => $limit, 'window' => $window];
+        if ($this->denied !== null) {
+            return new RateLimitResult(
+                $this->denied->allowed,
+                $scope,
+                $this->denied->limit,
+                $this->denied->remaining,
+                $this->denied->retryAfter,
+            );
+        }
+
+        return RateLimitResult::permit($scope, $limit, max(0, $limit - 1), $window);
+    }
 }
 
 final class FakeConnection implements ConnectionInterface
@@ -222,6 +251,11 @@ use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
 use Core\Http\Csrf;
 use Core\Http\Request;
+use Core\Http\RateLimitResult;
+use Core\Http\RateLimitResponder;
+use Core\Http\RequestGuard;
+use Core\Http\FileRateLimiter;
+use Core\Http\RateLimiterInterface;
 use Core\Http\Response;
 use Core\Http\Session;
 use Core\Theme\ErrorPage;
@@ -273,6 +307,11 @@ use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
 use Core\Http\Csrf;
 use Core\Http\Request;
+use Core\Http\RateLimitResult;
+use Core\Http\RateLimitResponder;
+use Core\Http\RequestGuard;
+use Core\Http\FileRateLimiter;
+use Core\Http\RateLimiterInterface;
 use Core\Http\Response;
 use Core\Http\Session;
 use Core\Theme\ErrorPage;
@@ -378,6 +417,11 @@ use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
 use Core\Http\Csrf;
 use Core\Http\Request;
+use Core\Http\RateLimitResult;
+use Core\Http\RateLimitResponder;
+use Core\Http\RequestGuard;
+use Core\Http\FileRateLimiter;
+use Core\Http\RateLimiterInterface;
 use Core\Http\Response;
 use Core\Http\Session;
 use Core\Theme\ErrorPage;
@@ -1837,6 +1881,81 @@ check('API tokens enforce scopes and stay hashed', function (): void {
     truthy($apiPlugin !== false && str_contains($apiPlugin, "'/api/v1/admin/status'") && str_contains($apiPlugin, "'/api/v1/admin/posts'") && str_contains($apiPlugin, "'/api/v1/admin/comments'"), 'API plugin must route protected management endpoints');
     same('创建 API 令牌', AuditPresenter::label('api.token.created'));
     same('admin', AuditPresenter::category('api.token.created'));
+});
+
+check('File rate limiter enforces a fixed window without storing identities', function (): void {
+    $directory = sys_get_temp_dir() . '/cream-rate-' . bin2hex(random_bytes(4));
+    $now = 1000;
+    $clock = static function () use (&$now): int {
+        return $now;
+    };
+    $limiter = new FileRateLimiter($directory, $clock);
+    $identity = '203.0.113.77';
+
+    $first = $limiter->hit('comment', $identity, 2, 60);
+    truthy($first->allowed && $first->remaining === 1, 'First request must be allowed');
+    $second = $limiter->hit('comment', $identity, 2, 60);
+    truthy($second->allowed && $second->remaining === 0, 'Second request must consume the bucket');
+    $third = $limiter->hit('comment', $identity, 2, 60);
+    truthy(!$third->allowed && $third->retryAfter === 60, 'Third request must be limited');
+    $third = $limiter->hit('comment', $identity, 2, 60);
+    truthy(!$third->allowed && $third->retryAfter === 60, 'Denied requests must not reset the window');
+
+    $files = glob($directory . '/*.json') ?: [];
+    same(1, count($files), 'One identity must use one bucket file');
+    truthy(!str_contains((string) ($files[0] ?? ''), $identity), 'Bucket file names must not expose identities');
+
+    $now = 1061;
+    $next = $limiter->hit('comment', $identity, 2, 60);
+    truthy($next->allowed, 'A new window must restore the bucket');
+    rrmdir($directory);
+});
+
+check('Request guard applies token, route and global quotas', function (): void {
+    $limiter = new RecordingRateLimiter();
+    $guard = new RequestGuard($limiter, 'test-secret');
+
+    $api = new Request('GET', '/api/v1/admin/status', ['authorization' => 'Bearer mbp_abcdef'], []);
+    truthy($guard->check($api, '203.0.113.8') === null, 'Allowed request must pass');
+    same(['api-token', 'api-ip', 'general'], array_column($limiter->hits, 'scope'));
+
+    $limiter->hits = [];
+    $login = new Request('POST', '/admin/login.html', [], []);
+    truthy($guard->check($login, '203.0.113.9') === null, 'Login request must pass');
+    same(['admin-login-post', 'general'], array_column($limiter->hits, 'scope'));
+
+    $limiter->hits = [];
+    $comment = new Request('POST', '/posts/hello/comments', [], []);
+    truthy($guard->check($comment, '203.0.113.10') === null, 'Comment request must pass');
+    same(['comment', 'general'], array_column($limiter->hits, 'scope'));
+
+    $limiter->denied = RateLimitResult::deny('comment', 10, 30);
+    $limited = $guard->check($comment, '203.0.113.11');
+    truthy($limited !== null && !$limited->allowed && $limited->scope === 'comment', 'Guard must stop on the first denied scope');
+});
+
+check('Rate limited responses expose retry headers for API and pages', function (): void {
+    $result = RateLimitResult::deny('api-ip', 120, 30);
+    $api = RateLimitResponder::toResponse(new Request('GET', '/api/v1/posts', [], []), $result);
+    same(429, $api->status());
+    same('30', $api->headers()['Retry-After'] ?? null);
+    same('api-ip', $api->headers()['X-RateLimit-Scope'] ?? null);
+    truthy(str_contains($api->body(), '/problems/rate-limited'), 'API denial must use problem+json');
+
+    $page = RateLimitResponder::toResponse(new Request('GET', '/posts/hello', [], []), $result);
+    same(429, $page->status());
+    truthy(str_contains($page->body(), '请求过于频繁') && str_contains($page->body(), '30 秒'), 'Page denial must render a retry hint');
+    same('no-store', $page->headers()['Cache-Control'] ?? null);
+});
+
+check('Nginx baseline carries Cloudflare real IP and bounded request zones', function (): void {
+    $root = dirname(__DIR__);
+    $nginx = file_get_contents($root . '/deploy/nginx.conf.example');
+    $limits = file_get_contents($root . '/deploy/nginx-rate-limit.conf.example');
+    $realIp = file_get_contents($root . '/deploy/nginx-cloudflare-realip.conf.example');
+    truthy($nginx !== false && str_contains($nginx, 'limit_conn cream_conn 30') && str_contains($nginx, 'fastcgi_read_timeout 20s'), 'Nginx needs connection and upstream timeouts');
+    truthy($limits !== false && str_contains($limits, 'zone=cream_api') && str_contains($limits, 'zone=cream_auth') && str_contains($limits, 'zone=cream_write'), 'Nginx needs separate rate zones');
+    truthy($realIp !== false && str_contains($realIp, 'real_ip_header CF-Connecting-IP') && str_contains($realIp, '173.245.48.0/20'), 'Nginx must trust only Cloudflare ranges');
 });
 
 check('Compressed assets match their source files', function (): void {

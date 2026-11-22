@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use Core\Config\Env;
 use Core\Http\InstallGate;
+use Core\Http\RateLimitFactory;
+use Core\Http\RateLimitResponder;
 use Core\Http\Request;
+use Core\Http\RequestGuard;
 use Core\Http\Response;
 use Core\Http\ResponseEmitter;
 use Core\Http\Session;
@@ -22,38 +25,56 @@ $request = Request::fromGlobals();
 $statelessPaths = ['/feed', '/feed.xml', '/atom.xml', '/feed.json', '/sitemap.xml', '/robots.txt', '/healthz'];
 $path = $request->path();
 $stateless = in_array($path, $statelessPaths, true) || $path === '/archive' || $path === '/archive.html' || str_starts_with($path, '/archive/');
+
+$rateLimited = null;
+if (Env::bool('RATE_LIMIT_ENABLED', true)) {
+    try {
+        $secret = (string) (Env::get('APP_KEY', 'cream-rate-limit') ?? 'cream-rate-limit');
+        $rateLimited = (new RequestGuard(RateLimitFactory::create($storage), $secret))->check($request);
+    } catch (Throwable) {
+        $rateLimited = null;
+    }
+}
+
 if (!$stateless) {
-    Session::start();
+    if ($rateLimited === null) {
+        Session::start();
+    }
 }
 
 $version = Version::fromFile($root . '/version.json');
 $emitter = new ResponseEmitter();
 
-$gate = new InstallGate($storage . '/installed.lock', $root . '/public/install.php');
-$response = $gate->handle($request);
+$response = null;
+if ($rateLimited !== null) {
+    $response = RateLimitResponder::toResponse($request, $rateLimited);
+} else {
+    $gate = new InstallGate($storage . '/installed.lock', $root . '/public/install.php');
+    $response = $gate->handle($request);
 
-if ($response === null) {
-    try {
-        $registry = (new PluginLoader($root . '/plugins'))->load($version);
-        $router = new Router();
-        foreach ($registry->routes() as $route) {
-            $router->add($route);
+    if ($response === null) {
+        try {
+            $registry = (new PluginLoader($root . '/plugins'))->load($version);
+            $router = new Router();
+            foreach ($registry->routes() as $route) {
+                $router->add($route);
+            }
+
+            $web = $registry->get('web');
+            $errorRenderer = $web !== null && method_exists($web, 'errorPage')
+                ? [$web, 'errorPage']
+                : null;
+
+            $response = (new Kernel($router, $storage . '/logs', $errorRenderer))->handle($request);
+        } catch (Throwable) {
+            $response = Response::problem([
+                'type' => '/problems/service-unavailable',
+                'title' => 'Service Unavailable',
+                'status' => 503,
+                'detail' => 'The service is temporarily unavailable.',
+                'instance' => $request->path(),
+            ], 503);
         }
-
-        $web = $registry->get('web');
-        $errorRenderer = $web !== null && method_exists($web, 'errorPage')
-            ? [$web, 'errorPage']
-            : null;
-
-        $response = (new Kernel($router, $storage . '/logs', $errorRenderer))->handle($request);
-    } catch (Throwable) {
-        $response = Response::problem([
-            'type' => '/problems/service-unavailable',
-            'title' => 'Service Unavailable',
-            'status' => 503,
-            'detail' => 'The service is temporarily unavailable.',
-            'instance' => $request->path(),
-        ], 503);
     }
 }
 

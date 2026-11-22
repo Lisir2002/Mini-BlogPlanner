@@ -1,4 +1,7 @@
 # Mini-BlogPlanner · Nginx production baseline
+#
+# 先安装同目录的 nginx-cloudflare-realip.conf.example 与 nginx-rate-limit.conf.example
+# 到 /etc/nginx/conf.d/，否则 location 里的 limit_req zone 无法通过 nginx -t。
 # 安装时把 root 指向 current/public；release 目录由 bin/release.php 生成，升级由 bin/upgrade.php 切换。
 server {
     listen 80;
@@ -23,18 +26,50 @@ server {
 
     charset utf-8;
     client_max_body_size 12m;
+    client_header_timeout 10s;
+    client_body_timeout 10s;
+    send_timeout 15s;
+    keepalive_timeout 30s;
+    reset_timedout_connection on;
+    large_client_header_buffers 4 16k;
+    limit_conn cream_conn 30;
+    server_tokens off;
 
     # 伪静态：磁盘文件优先；不存在的 .html 交给 front controller，
     # 由 Router 归一化后匹配 /about、/posts/{slug} 等路由。
     location / {
+        limit_req zone=cream_general burst=20 nodelay;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location = /admin/login.html {
+        limit_req zone=cream_auth burst=5 nodelay;
+        limit_req zone=cream_general burst=20 nodelay;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ^~ /api/ {
+        limit_req zone=cream_api burst=10 nodelay;
+        limit_req zone=cream_general burst=20 nodelay;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ^~ /posts/ {
+        limit_req zone=cream_write burst=8 nodelay;
+        limit_req zone=cream_general burst=20 nodelay;
         try_files $uri /index.php?$query_string;
     }
 
     # 安装入口必须独立可用，且安装器会自行判断 installed.lock。
     location = /install.php {
+        limit_req zone=cream_auth burst=5 nodelay;
+        limit_req zone=cream_general burst=20 nodelay;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
+        fastcgi_connect_timeout 5s;
+        fastcgi_send_timeout 10s;
+        fastcgi_read_timeout 20s;
         fastcgi_pass unix:/run/php/php8.5-fpm.sock;
     }
 
@@ -48,6 +83,7 @@ server {
 
     # 媒体由 PHP 按 media id 输出，不能让静态文件规则先截走。
     location ^~ /media/ {
+        limit_req zone=cream_general burst=20 nodelay;
         try_files $uri /index.php?$query_string;
     }
 

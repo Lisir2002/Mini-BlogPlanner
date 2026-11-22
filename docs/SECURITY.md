@@ -49,10 +49,20 @@
 - 回退分 `release`、`down`、`restore`，有不可逆迁移只能恢复备份。
 - 密钥只放部署根 `.env` 或进程环境，不写入 release、不提交仓库、不进日志。
 
-## 6. 已知缺口
+## 6. 限流与抗压
+
+- Cloudflare 回源时，Nginx 只信任官方地址段发送的 `CF-Connecting-IP`，不信任任意 `X-Forwarded-For`。
+- Nginx 对动态页面、API、登录和 POST 分别限速：一般 10r/s、API 5r/s、登录 1r/s、写请求 2r/s；单 IP 并发连接上限 30，超限返回 429。
+- 应用在路由前执行固定窗口限流：公开页面 240 次/分钟、公开 API 120 次/分钟、管理 API 120 次/分钟、登录 POST 20 次/5 分钟、留言 10 次/分钟、互动 30 次/分钟、全站单 IP 600 次/分钟。
+- 管理 API 同时按 IP 和令牌哈希计数，令牌被滥用时可单独撤销；限流键不保存明文 IP 或令牌。
+- 限流计数优先使用本机 SysV 共享内存，避免每次请求写数据库；共享内存不可用时回退到带文件锁的本地计数。
+- 超限响应为 429，带 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` 和 `X-RateLimit-Scope`。
+- 这些措施降低应用层刷量和慢连接影响，但不能替代 CDN、带宽清洗和机房防火墙。
+
+## 7. 已知缺口
 
 - 无 CSP nonce、无多管理员角色权限、无二步验证。
-- API 令牌暂无单独速率限制和按令牌的访问审计；管理接口依赖全局 IP 限流。
 - 审计保留期清理需手动执行 `bin/audit-prune.php`，尚未接入定时任务；后台审计页只读，并提供带脱敏的 CSV 导出。
 - 无媒体缩略图/WebP 转换和上传配额。
-- 无真实 HTTPS/Nginx 集成测试；`deploy/nginx.conf.example` 是基线，不是已验收配置。
+- 无真实 HTTPS/Nginx 集成测试；`deploy/nginx.conf.example` 是基线，生产已按同目录模板配置并通过 `nginx -t`。
+- 应用限流为单机共享内存，部署多台 PHP 节点时需改为共享存储或每节点独立计数。
