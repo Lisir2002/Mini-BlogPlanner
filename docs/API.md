@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.6.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.7.0`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -84,7 +84,8 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | --- | --- |
 | `status:read` | `/api/v1/admin/status` 运行状态 |
 | `content:read` | `/api/v1/admin/posts` 后台文章列表 |
-| `comments:read` | `/api/v1/admin/comments` 后台留言列表 |
+| `comments:read` | `GET /api/v1/admin/comments` 后台留言列表、筛选与计数 |
+| `comments:write` | `PATCH/DELETE /api/v1/admin/comments/{id}` 与批量接口，审核、撤回、标为垃圾和删除留言 |
 | `tags:read` | `/api/v1/admin/tags` 查看标签统计、列表与单个标签 |
 | `tags:write` | `/api/v1/admin/tags` 创建、重命名、合并和删除标签 |
 
@@ -229,6 +230,37 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 - 合并目标必须存在且不能是来源自身，否则 `422 /problems/tag-merge-invalid`。
 - 标签不存在返回 `404 /problems/tag-not-found`；请求体不是 JSON 对象返回 `400 /problems/tag-body-invalid`。
 - API 写操作会写入审计，操作者记录为 `api:<令牌名称>`。
+
+### 后台留言
+
+`GET /api/v1/admin/comments` 需要 `comments:read`，支持 `status`（`pending`、`approved`、`spam`）、`q`、`post_id`、`page` 和 `per_page`。`q` 匹配称呼、正文、邮箱或文章标题；`meta.counts` 返回 `all`、`pending`、`approved`、`spam` 四个计数。响应包含父留言的作者与 90 字摘要，不返回留言邮箱。
+
+```http
+GET /api/v1/admin/comments?status=pending&post_id=12&q=%E6%84%8F%E6%83%8F&page=1 HTTP/1.1
+Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+单条改状态使用 `PATCH`，请求体只接受 `status`：
+
+```http
+PATCH /api/v1/admin/comments/31 HTTP/1.1
+Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Content-Type: application/json
+
+{"status":"approved"}
+```
+
+`approved` 会写入通过时间，`pending` 撤回到待审队列，`spam` 标为垃圾。状态非法返回 `422`，留言不存在返回 `404`。
+
+删除使用 `DELETE /api/v1/admin/comments/{id}`，成功返回 `204`；删除父留言会级联删除其回复。
+
+批量接口为 `POST /api/v1/admin/comments/bulk`：
+
+```json
+{"action": "approved", "ids": [31, 32, 33]}
+```
+
+`action` 支持 `approved`、`pending`、`spam`、`delete`，编号最多 100 个。响应返回 `action`、`affected` 和去重后的 `ids`。所有写操作写入审计，事件形如 `comment.approved`、`comment.bulk.deleted`，payload 带令牌名称与编号，不记录正文和邮箱。
 
 ## 订阅端点
 

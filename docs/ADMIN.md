@@ -74,12 +74,24 @@
 - `page`：每页 10 篇；筛选后为空时显示专用空状态。
 - 列表在桌面显示七列表格，760px 以下及平板宽度切换为卡片；行菜单提供预览草稿、公开页、版本历史、归档/恢复。
 
+## 留言管理
+
+后台导航“评论”进入留言收件箱，按待审核、已通过、垃圾和全部四种状态组织。
+
+- 页首显示待审计数和总留言数，状态标签保留当前关键词与文章筛选。
+- 筛选支持关键词、文章下拉和状态组合；关键词匹配称呼、正文、邮箱和文章标题，清空后回到全部留言。
+- 列表按时间倒序，每页 10 条；卡片显示作者、邮箱、状态、时间、文章来源，回复会同时显示父留言作者和摘要。
+- 单条操作可通过、撤回待审、标为垃圾或删除；删除父留言会级联删除其回复。
+- 批量栏依赖 `admin-comments.js`：全选本页后可通过、撤回待审、标为垃圾或删除，一次最多 100 条，删除前二次确认。
+- 页面加载 `admin-comments.css`；移动端状态标签改为两列，筛选与单条操作改为整行按钮，卡片勾选框保持可见。
+- 以上操作均校验 CSRF 并写入审计，事件为 `comment.approved`、`comment.pending`、`comment.spam`、`comment.deleted`、`comment.bulk.*`。
+
 ## API 令牌管理
 
 后台导航“API”进入令牌页，页面分为令牌列表和创建表单。
 
 - 令牌格式为 `mbp_` 加 64 位随机十六进制；数据库只保存 SHA-256 哈希，原始值只在创建成功后的当前页面显示一次。
-- 作用域：`status:read` 访问 `/api/v1/admin/status`，`content:read` 访问 `/api/v1/admin/posts`，`comments:read` 访问 `/api/v1/admin/comments`。
+- 作用域：`status:read` 访问 `/api/v1/admin/status`，`content:read` 访问 `/api/v1/admin/posts`，`comments:read` 读取 `/api/v1/admin/comments`，`comments:write` 审核、撤回、标为垃圾和删除留言。
 - 有效期可选 7、30、90、365 天或长期有效；撤销后立即失效，列表保留记录、前缀、最近使用时间与撤销状态。
 - 创建和撤销写入审计事件 `api.token.created`、`api.token.revoked`；payload 只记录 id、前缀、名称、作用域和到期时间，不记录完整令牌。
 - 管理接口不接受后台会话代替令牌，必须使用 `Authorization: Bearer <token>`。

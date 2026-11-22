@@ -1,7 +1,7 @@
 {
   "id": "api",
   "name": "HTTP API",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "priority": 30,
   "class": "Plugin\\Api\\ApiPlugin",
   "runtime": true,

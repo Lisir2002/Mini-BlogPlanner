@@ -87,7 +87,7 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
     </form>
     <form class="tag-create-form" method="post" action="/admin/tags.html">
       <input type="hidden" name="_csrf" value="<?= cream_e($csrf) ?>">
-      <label><span>新建标签</span><input name="name" maxlength="60" placeholder="例如：夜读" required></label>
+      <label><span>新建标签</span><input name="name" maxlength="60" placeholder="新标签名称" required></label>
       <button class="admin-button ghost" type="submit"><?= cream_icon('plus', 'icon-xs') ?> 添加</button>
     </form>
   </div>

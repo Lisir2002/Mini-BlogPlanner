@@ -32,6 +32,7 @@ final class ApiPlugin implements PluginInterface
         $tags = new TagApiController();
         $admin = new AdminApiController($this->version);
         $tagAdmin = new TagAdminApiController();
+        $commentAdmin = new CommentAdminApiController();
 
         return [
             new Route(['GET'], '/api/v1/health', static fn (Request $request, array $params): Response => $health($request), 'api.health'),
@@ -44,7 +45,10 @@ final class ApiPlugin implements PluginInterface
             new Route(['GET'], '/api/v1/tags/{slug}', static fn (Request $request, array $params): Response => $tags->show($request, $params), 'api.tags.show'),
             new Route(['GET'], '/api/v1/admin/status', static fn (Request $request, array $params): Response => $admin->status($request), 'api.admin.status'),
             new Route(['GET'], '/api/v1/admin/posts', static fn (Request $request, array $params): Response => $admin->posts($request), 'api.admin.posts'),
-            new Route(['GET'], '/api/v1/admin/comments', static fn (Request $request, array $params): Response => $admin->comments($request), 'api.admin.comments'),
+            new Route(['GET'], '/api/v1/admin/comments', static fn (Request $request, array $params): Response => $commentAdmin->index($request), 'api.admin.comments.index'),
+            new Route(['PATCH'], '/api/v1/admin/comments/{id}', static fn (Request $request, array $params): Response => $commentAdmin->update($request, $params), 'api.admin.comments.update'),
+            new Route(['DELETE'], '/api/v1/admin/comments/{id}', static fn (Request $request, array $params): Response => $commentAdmin->delete($request, $params), 'api.admin.comments.delete'),
+            new Route(['POST'], '/api/v1/admin/comments/bulk', static fn (Request $request, array $params): Response => $commentAdmin->bulk($request), 'api.admin.comments.bulk'),
             new Route(['GET'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->index($request), 'api.admin.tags.index'),
             new Route(['POST'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->create($request), 'api.admin.tags.create'),
             new Route(['GET'], '/api/v1/admin/tags/{id}', static fn (Request $request, array $params): Response => $tagAdmin->show($request, $params), 'api.admin.tags.show'),

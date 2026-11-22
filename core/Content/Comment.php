@@ -18,5 +18,7 @@ final class Comment
         public readonly ?string $approvedAt = null,
         public readonly string $postTitle = '',
         public readonly string $postSlug = '',
+        public readonly string $parentAuthor = '',
+        public readonly string $parentBody = '',
     ) {}
 }

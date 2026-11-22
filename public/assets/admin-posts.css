@@ -469,12 +469,20 @@
   .post-admin-rail-tab strong { font-size: 9px; }
   .post-admin-rail-spacer { display: none; }
   .post-admin-rail-note { order: 9; padding: 4px 7px; font-size: 10px; }
-  .post-admin-new { order: 8; margin-left: auto; padding: 7px 10px; font-size: 11px; }
+  .post-admin-new {
+    order: 8;
+    width: 100%;
+    margin-left: 0;
+    min-height: 38px;
+    justify-content: center;
+    padding: 8px 13px;
+    font-size: 12px;
+  }
 
   .post-admin-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
   .post-admin-search { grid-column: 1 / -1; flex-basis: auto; }
   .post-admin-select-field { width: 100%; }
-  .post-admin-filter-button { grid-column: 1 / -1; width: 100%; justify-content: center; }
+  .post-admin-filter-button { grid-column: 1 / -1; width: 100%; min-height: 38px; justify-content: center; }
   .post-admin-result { grid-column: 1 / -1; align-self: center; }
   .post-admin-clear, .post-admin-changes-toggle { justify-self: start; }
 
@@ -497,7 +505,7 @@
 
 @media (max-width: 460px) {
   .post-admin-rail-note { display: none; }
-  .post-admin-new { font-size: 11px; }
+  .post-admin-new { font-size: 12px; }
   .post-admin-toolbar { grid-template-columns: 1fr 1fr; }
   .post-admin-pager { flex-wrap: wrap; gap: 8px; }
   .post-admin-pager > span { flex: 1 1 100%; order: -1; }

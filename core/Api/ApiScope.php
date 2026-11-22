@@ -14,6 +14,7 @@ final class ApiScope
         'status:read' => '查看运行状态',
         'content:read' => '查看内容列表',
         'comments:read' => '查看留言列表',
+        'comments:write' => '审核、撤回、标为垃圾和删除留言',
         'tags:read' => '查看后台标签统计与列表',
         'tags:write' => '创建、重命名、合并和删除标签',
     ];

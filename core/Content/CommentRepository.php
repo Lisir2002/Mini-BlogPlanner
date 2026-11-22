@@ -163,15 +163,18 @@ final class CommentRepository
     }
 
     /** @return list<Comment> */
-    public function adminPage(?string $status, int $limit, int $offset): array
+    public function adminPage(?string $status, int $limit, int $offset, string $q = '', ?int $postId = null): array
     {
         $limit = max(1, min(100, $limit));
         $offset = max(0, $offset);
-        $where = $this->statusWhere($status);
+        $where = $this->adminWhere($status, $q, $postId);
         $rows = $this->db->fetchAll(
-            'SELECT c.id, c.post_id, c.parent_id, c.author_name, c.author_email, c.body, c.status, c.created_at, c.approved_at, p.title AS post_title, p.slug AS post_slug
+            'SELECT c.id, c.post_id, c.parent_id, c.author_name, c.author_email, c.body, c.status, c.created_at, c.approved_at,
+                    p.title AS post_title, p.slug AS post_slug,
+                    pc.author_name AS parent_author, pc.body AS parent_body
              FROM comments c
-             JOIN posts p ON p.id = c.post_id'
+             JOIN posts p ON p.id = c.post_id
+             LEFT JOIN comments pc ON pc.id = c.parent_id'
             . $where['sql']
             . ' ORDER BY c.created_at DESC, c.id DESC LIMIT ' . $limit . ' OFFSET ' . $offset,
             $where['params'],
@@ -180,15 +183,99 @@ final class CommentRepository
         return array_map(fn (array $row): Comment => $this->map($row), $rows);
     }
 
-    public function count(?string $status): int
+    public function count(?string $status, string $q = '', ?int $postId = null): int
     {
-        $where = $this->statusWhere($status);
-        $row = $this->db->fetchOne('SELECT COUNT(*) AS total FROM comments c' . $where['sql'], $where['params']);
+        $where = $this->adminWhere($status, $q, $postId);
+        $row = $this->db->fetchOne(
+            'SELECT COUNT(*) AS total FROM comments c JOIN posts p ON p.id = c.post_id' . $where['sql'],
+            $where['params'],
+        );
 
         return (int) ($row['total'] ?? 0);
     }
 
-    public function approve(int $id, int $adminId): bool
+    /** @return array{all:int,pending:int,approved:int,spam:int} */
+    public function statusCounts(): array
+    {
+        $counts = ['all' => 0, 'pending' => 0, 'approved' => 0, 'spam' => 0];
+        $rows = $this->db->fetchAll('SELECT status, COUNT(*) AS total FROM comments GROUP BY status');
+        foreach ($rows as $row) {
+            $status = (string) ($row['status'] ?? '');
+            $total = (int) ($row['total'] ?? 0);
+            if (array_key_exists($status, $counts)) {
+                $counts[$status] = $total;
+            }
+            $counts['all'] += $total;
+        }
+
+        return $counts;
+    }
+
+    /** @return list<array{id:int,title:string,total:int}> */
+    public function postOptions(): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT p.id, p.title, COUNT(c.id) AS total
+             FROM posts p
+             JOIN comments c ON c.post_id = p.id
+             GROUP BY p.id, p.title
+             ORDER BY p.title ASC',
+        );
+
+        return array_map(static fn (array $row): array => [
+            'id' => (int) ($row['id'] ?? 0),
+            'title' => (string) ($row['title'] ?? ''),
+            'total' => (int) ($row['total'] ?? 0),
+        ], $rows);
+    }
+
+    /** @param list<int> $ids */
+    public function setStatusMany(array $ids, string $status, ?int $adminId): int
+    {
+        if (!in_array($status, ['pending', 'approved', 'spam'], true)) {
+            return 0;
+        }
+        $ids = $this->ids($ids);
+        if ($ids === []) {
+            return 0;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+        if ($status === 'approved') {
+            return $this->db->execute(
+                "UPDATE comments SET status = 'approved', approved_at = NOW(), approved_by = ? WHERE id IN (" . $placeholders . ')',
+                array_merge([$adminId], $ids),
+            );
+        }
+
+        return $this->db->execute(
+            'UPDATE comments SET status = ?, approved_at = NULL, approved_by = NULL WHERE id IN (' . $placeholders . ')',
+            array_merge([$status], $ids),
+        );
+    }
+
+    public function setPending(int $id): bool
+    {
+        return $this->db->execute(
+            "UPDATE comments SET status = 'pending', approved_at = NULL, approved_by = NULL WHERE id = ?",
+            [$id],
+        ) > 0;
+    }
+
+    /** @param list<int> $ids */
+    public function deleteMany(array $ids): int
+    {
+        $ids = $this->ids($ids);
+        if ($ids === []) {
+            return 0;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+
+        return $this->db->execute('DELETE FROM comments WHERE id IN (' . $placeholders . ')', $ids);
+    }
+
+    public function approve(int $id, ?int $adminId): bool
     {
         return $this->db->execute(
             "UPDATE comments SET status = 'approved', approved_at = NOW(), approved_by = ? WHERE id = ?",
@@ -209,15 +296,47 @@ final class CommentRepository
         return $this->db->execute('DELETE FROM comments WHERE id = ?', [$id]) > 0;
     }
 
-    /** @return array{sql:string,params:list<string>} */
-    private function statusWhere(?string $status): array
+    /** @return array{sql:string,params:list<int|string>} */
+    private function adminWhere(?string $status, string $q, ?int $postId): array
     {
+        $clauses = [];
+        $params = [];
         $status = $status === null ? '' : trim($status);
-        if (!in_array($status, ['pending', 'approved', 'spam'], true)) {
-            return ['sql' => '', 'params' => []];
+        if (in_array($status, ['pending', 'approved', 'spam'], true)) {
+            $clauses[] = 'c.status = ?';
+            $params[] = $status;
+        }
+        if ($postId !== null && $postId > 0) {
+            $clauses[] = 'c.post_id = ?';
+            $params[] = $postId;
+        }
+        $q = mb_substr(trim($q), 0, 80);
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            $clauses[] = '(c.author_name LIKE ? OR c.body LIKE ? OR c.author_email LIKE ? OR p.title LIKE ?)';
+            array_push($params, $like, $like, $like, $like);
         }
 
-        return ['sql' => ' WHERE c.status = ?', 'params' => [$status]];
+        return [
+            'sql' => $clauses === [] ? '' : ' WHERE ' . implode(' AND ', $clauses),
+            'params' => $params,
+        ];
+    }
+
+    /** @param list<int> $ids
+     *  @return list<int>
+     */
+    private function ids(array $ids): array
+    {
+        $clean = [];
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $clean[$id] = $id;
+            }
+        }
+
+        return array_values($clean);
     }
 
     /** @param array<string, mixed> $row */
@@ -235,6 +354,8 @@ final class CommentRepository
             ($row['approved_at'] ?? null) !== null ? (string) $row['approved_at'] : null,
             (string) ($row['post_title'] ?? ''),
             (string) ($row['post_slug'] ?? ''),
+            (string) ($row['parent_author'] ?? ''),
+            (string) ($row['parent_body'] ?? ''),
         );
     }
 }

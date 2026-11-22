@@ -6,8 +6,6 @@ namespace Plugin\Api;
 
 use Core\Api\ApiAuthenticator;
 use Core\Api\ApiTokenRepository;
-use Core\Content\Comment;
-use Core\Content\CommentRepository;
 use Core\Content\PostAdminRepository;
 use Core\Database\Connection;
 use Core\Http\Request;
@@ -91,51 +89,6 @@ final class AdminApiController
                 'per_page' => $state['per_page'],
                 'status' => $status ?? 'all',
                 'sort' => $sort,
-            ],
-        ])->withHeader('Cache-Control', 'no-store');
-    }
-
-    public function comments(Request $request): Response
-    {
-        try {
-            $db = Connection::fromEnv();
-            $auth = new ApiAuthenticator(new ApiTokenRepository($db));
-            $token = $auth->requireScope($request, 'comments:read');
-            if ($token instanceof Response) {
-                return $token;
-            }
-
-            $query = $request->query();
-            $status = (string) ($query['status'] ?? '');
-            $status = in_array($status, ['pending', 'approved', 'spam'], true) ? $status : null;
-            $page = max(1, (int) ($query['page'] ?? 1));
-            $perPage = max(1, min(50, (int) ($query['per_page'] ?? 10)));
-            $repository = new CommentRepository($db);
-            $total = $repository->count($status);
-            $state = Pagination::resolve($page, $total, $perPage);
-            $comments = $repository->adminPage($status, $state['per_page'], $state['offset']);
-        } catch (Throwable) {
-            return $this->unavailable($request);
-        }
-
-        return Response::json([
-            'data' => array_map(static fn (Comment $comment): array => [
-                'id' => $comment->id,
-                'post_id' => $comment->postId,
-                'post_title' => $comment->postTitle,
-                'post_slug' => $comment->postSlug,
-                'author_name' => $comment->authorName,
-                'body' => $comment->body,
-                'status' => $comment->status,
-                'created_at' => $comment->createdAt,
-                'approved_at' => $comment->approvedAt,
-            ], $comments),
-            'meta' => [
-                'total' => $state['total'],
-                'page' => $state['page'],
-                'pages' => $state['pages'],
-                'per_page' => $state['per_page'],
-                'status' => $status ?? 'all',
             ],
         ])->withHeader('Cache-Control', 'no-store');
     }

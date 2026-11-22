@@ -459,14 +459,21 @@
   .tag-filter-form .admin-button { width: 100%; justify-content: center; }
   .tag-filter-reset { justify-self: center; }
   .tag-create-form {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     width: 100%;
     box-sizing: border-box;
-    padding: 9px 10px;
+    gap: 6px;
+    padding: 8px 9px;
     border: 1px solid var(--line);
     border-radius: 12px;
     background: color-mix(in oklch, var(--cream-1) 76%, var(--paper));
   }
+  .tag-create-form label { display: block; flex: none; min-width: 0; }
+  .tag-create-form label span { display: none; }
+  .tag-create-form input { width: 100%; box-sizing: border-box; padding: 9px 10px; }
+  .tag-create-form .admin-button { width: auto; min-height: 38px; padding: 8px 12px; white-space: nowrap; }
   .tag-card-top { align-items: center; }
   .tag-admin-identity h3 { font-size: 17px; }
   .tag-admin-count strong { font-size: 21px; }
