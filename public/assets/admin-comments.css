@@ -1,4 +1,16 @@
 /* 留言收件箱：状态筛选、搜索、批量审核与移动端卡片。 */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
 .comment-admin-page {
   --comment-accent: var(--coral);
 }
@@ -237,7 +249,7 @@
   .comment-inbox-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .comment-inbox-tab { justify-content: space-between; }
   .comment-inbox-tab-note { display: none; }
-  .comment-inbox-filterbar { display: grid; gap: 7px; padding: 10px; }
+  .comment-inbox-filterbar { display: grid; justify-content: stretch; justify-items: stretch; gap: 7px; padding: 10px; }
   .comment-inbox-filter { display: grid; grid-template-columns: 1fr; gap: 7px; }
   .comment-inbox-search { flex-basis: auto; }
   .comment-inbox-post { flex-basis: auto; }
