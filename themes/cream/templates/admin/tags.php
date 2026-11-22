@@ -33,6 +33,7 @@ foreach ($tags as $tag) {
 $accent = static fn (string $slug): string => ['butter', 'mint', 'coral', 'sky', 'rose'][abs((int) crc32($slug)) % 5];
 $statusLabels = ['all' => '全部', 'used' => '有文章', 'empty' => '待整理'];
 $sortLabels = ['usage' => '按使用量', 'name' => '按名称', 'recent' => '按最近使用'];
+$activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort !== 'usage' ? 1 : 0);
 ?>
 <section class="tag-admin">
   <header class="tag-admin-hero">
@@ -64,7 +65,7 @@ $sortLabels = ['usage' => '按使用量', 'name' => '按名称', 'recent' => '�
 <?php endif; ?>
 
   <div class="tag-admin-toolbar">
-    <form class="tag-filter-form" method="get" action="/admin/tags.html">
+    <form class="tag-filter-form" method="get" action="/admin/tags.html" data-admin-filter-panel data-admin-filter-label="筛选标签" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="tag-search-field">
         <span class="tag-search-icon"><?= cream_icon('search', 'icon-xs') ?></span>
         <input name="q" value="<?= cream_e($q) ?>" maxlength="60" placeholder="搜索标签名或 slug" aria-label="搜索标签">

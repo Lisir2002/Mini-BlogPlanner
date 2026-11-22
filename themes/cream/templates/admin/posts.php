@@ -15,6 +15,7 @@ $notice = (string) ($notice ?? '');
 $statusUrls = is_array($statusUrls ?? null) ? $statusUrls : [];
 $statusKey = is_string($status) && $status !== '' ? $status : 'all';
 $hasFilters = is_string($status) || $q !== '' || $tag !== '' || $sort !== 'updated' || $changes;
+$activeFilterCount = ($q !== '' ? 1 : 0) + ($tag !== '' ? 1 : 0) + ($sort !== 'updated' ? 1 : 0) + ($changes ? 1 : 0);
 $statusTabs = [
     'all' => ['全部', (int) ($summary['total'] ?? 0)],
     'published' => ['已发布', (int) ($summary['published'] ?? 0)],
@@ -39,7 +40,7 @@ $statusTabs = [
       <a class="admin-button primary post-admin-new" href="/admin/posts/new.html"><?= cream_icon('pen', 'icon-sm') ?> 写新文章</a>
     </div>
 
-    <form class="post-admin-toolbar" method="get" action="/admin/posts.html" role="search">
+    <form class="post-admin-toolbar" method="get" action="/admin/posts.html" role="search" data-admin-filter-panel data-admin-filter-label="筛选文章" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="post-admin-search">
         <span class="visually-hidden">搜索文章</span>
         <?= cream_icon('search', 'icon-sm') ?>

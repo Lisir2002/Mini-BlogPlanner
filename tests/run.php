@@ -833,7 +833,24 @@ check('Admin dropdowns keep readable menus on narrow screens', function (): void
     truthy($script !== false && str_contains($script, 'Math.max(260, Math.ceil(rect.width))'), 'Dropdown menus must not copy narrow trigger widths');
     truthy($css !== false && str_contains($css, 'min-width: min(260px, calc(100vw - 24px))'), 'Dropdown menus need a readable minimum width');
     truthy($css !== false && str_contains($css, '.admin-select-option-main { overflow-wrap: anywhere; white-space: normal;'), 'Long option labels must wrap instead of being clipped');
-    truthy($tags !== false && str_contains($tags, '.tag-filter-form { display: grid; grid-template-columns: 1fr; gap: 7px; }'), 'Tag filters must stack into one column on phones');
+    truthy($tags !== false && str_contains($tags, 'grid-template-columns: 1fr;') && str_contains($tags, 'width: 100%;'), 'Tag filters must stack into one column on phones');
+});
+
+check('Admin filter cards collapse on phones and reopen on demand', function (): void {
+    $root = dirname(__DIR__);
+    $script = file_get_contents($root . '/public/assets/admin-filters.js');
+    $css = file_get_contents($root . '/public/assets/admin.css');
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    truthy($script !== false && str_contains($script, "form.classList.add('admin-filter-collapsible')"), 'Filter cards must opt into collapsible behaviour');
+    truthy($script !== false && str_contains($script, "close.setAttribute('aria-label', '关闭筛选')"), 'Expanded filter cards need an accessible close button');
+    truthy($script !== false && str_contains($script, "document.addEventListener('keydown'"), 'Escape must close an open filter card from anywhere on the page');
+    truthy($script !== false && str_contains($script, 'card.close.focus({ preventScroll: true })'), 'Opening a filter card must move focus to its close button');
+    truthy($css !== false && str_contains($css, '.admin-filter-collapsible:not(.is-filter-open) { display: none !important; }'), 'Filter cards must not reserve vertical space while closed');
+    truthy($layout !== false && str_contains($layout, "cream_asset('admin-filters.js')"), 'The layout must load the filter toggle script');
+    foreach (['posts', 'tags', 'audit'] as $page) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $page . '.php');
+        truthy($template !== false && str_contains($template, 'data-admin-filter-panel'), 'Missing filter panel hook on ' . $page);
+    }
 });
 
 check('Auth logs in, expires idle sessions and logs out', function (): void {

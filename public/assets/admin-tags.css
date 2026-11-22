@@ -432,14 +432,41 @@
   .tag-admin-hero { padding: 18px 16px; }
   .tag-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tag-admin-stats article { padding: 10px 12px; }
-  .tag-admin-toolbar { padding: 9px; }
-  .tag-filter-form { display: grid; grid-template-columns: 1fr; gap: 7px; }
+  .tag-admin-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .tag-filter-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 7px;
+    padding: 11px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: color-mix(in oklch, var(--cream-1) 76%, var(--paper));
+  }
+  .tag-admin-toolbar .admin-filter-toggle-row { margin: 0; }
   .tag-search-field { width: 100%; min-width: 0; }
   .tag-select-field { display: flex; width: 100%; }
   .tag-select-field .admin-select { flex: 1 1 auto; width: auto; min-width: 0; }
   .tag-filter-form .admin-button { width: 100%; justify-content: center; }
   .tag-filter-reset { justify-self: center; }
-  .tag-create-form { flex-wrap: wrap; }
+  .tag-create-form {
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: color-mix(in oklch, var(--cream-1) 76%, var(--paper));
+  }
   .tag-card-top { align-items: center; }
   .tag-admin-identity h3 { font-size: 17px; }
   .tag-admin-count strong { font-size: 21px; }

@@ -100,7 +100,7 @@ foreach ($eventOptions as $option) {
     <?php endforeach; ?>
   </nav>
 
-  <form class="audit-filter-panel" method="get" action="/admin/audit.html" id="audit-filter" role="search">
+  <form class="audit-filter-panel" method="get" action="/admin/audit.html" id="audit-filter" role="search" data-admin-filter-panel data-admin-filter-label="筛选日志" data-active-filter-count="<?= count($activeFilters) ?>">
     <input type="hidden" name="category" value="<?= cream_e($category === 'all' ? '' : $category) ?>">
     <div class="audit-filter-grid">
       <label class="audit-field audit-field-search">
