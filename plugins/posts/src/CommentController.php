@@ -92,7 +92,7 @@ final class CommentController
         $ipHash = $this->ipHash();
         try {
             $comments = new CommentRepository($db);
-            if ($comments->countRecentByIp($ipHash) >= 5) {
+            if ($comments->countRecentByIp($ipHash) >= 30) {
                 return ErrorPage::page($this->theme, $request, 429, '留言太频繁，请稍后再试。', $this->version, $this->site());
             }
             if ($comments->duplicateExists($post->id, $ipHash, $body)) {

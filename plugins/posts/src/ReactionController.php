@@ -57,7 +57,7 @@ final class ReactionController
         try {
             $reactions = new ReactionRepository($db);
             $before = $reactions->state($post->id, $visitorHash);
-            if ($value !== 0 && $before['mine'] === 0 && $reactions->countRecentByIp($ipHash) >= 20) {
+            if ($value !== 0 && $before['mine'] === 0 && $reactions->countRecentByIp($ipHash) >= 60) {
                 $response = $this->error($request, 429, '操作太频繁，请稍后再试。', '/problems/rate-limited', 'Too Many Requests');
                 if ($request->wantsJson()) {
                     $response = $response->withHeader('Retry-After', '60');

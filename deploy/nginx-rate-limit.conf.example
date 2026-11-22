@@ -1,8 +1,8 @@
 # Mini-BlogPlanner · 限流与连接保护
 #
 # 放到 /etc/nginx/conf.d/10-cream-rate-limit.conf，由 nginx.conf 的 http 块加载。
-# 服务端 location 使用这里定义的 zone；阈值按单 IP 计，Cloudflare 真实 IP 由
-# 00-cloudflare-realip.conf 还原。
+# 按真实访客 IP 计量，Cloudflare 真实 IP 由 00-cloudflare-realip.conf 还原。
+# 这里是高上限的兜底网关，细粒度配额由应用层按访客会话和令牌执行。
 
 map $request_method $cream_write_key {
     default "";
@@ -12,10 +12,13 @@ map $request_method $cream_write_key {
     DELETE  $binary_remote_addr;
 }
 
-limit_req_zone $binary_remote_addr zone=cream_general:10m rate=10r/s;
-limit_req_zone $binary_remote_addr zone=cream_api:10m rate=5r/s;
-limit_req_zone $binary_remote_addr zone=cream_auth:10m rate=1r/s;
-limit_req_zone $cream_write_key      zone=cream_write:10m rate=2r/s;
+# 一般页面 30 次/秒，API 15 次/秒，登录 5 次/秒，写请求 8 次/秒，媒体 50 次/秒。
+# 突发额度由 server 段按入口分配，避免正常页面切换和图集加载被误判。
+limit_req_zone $binary_remote_addr zone=cream_general:10m rate=30r/s;
+limit_req_zone $binary_remote_addr zone=cream_api:10m rate=15r/s;
+limit_req_zone $binary_remote_addr zone=cream_auth:10m rate=5r/s;
+limit_req_zone $cream_write_key      zone=cream_write:10m rate=8r/s;
+limit_req_zone $binary_remote_addr zone=cream_media:10m rate=50r/s;
 limit_conn_zone $binary_remote_addr zone=cream_conn:10m;
 
 limit_req_status 429;

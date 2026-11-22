@@ -8,12 +8,14 @@ final class Request
 {
     /** @param array<string, string> $headers
      *  @param array<string, mixed> $query
+     *  @param array<string, string> $cookies
      */
     public function __construct(
         private readonly string $method,
         private readonly string $path,
         private readonly array $headers,
         private readonly array $query,
+        private readonly array $cookies = [],
     ) {}
 
     public static function fromGlobals(): self
@@ -37,7 +39,21 @@ final class Request
             $path,
             $headers,
             $_GET,
+            self::cookies(),
         );
+    }
+
+    /** @return array<string, string> */
+    private static function cookies(): array
+    {
+        $cookies = [];
+        foreach ($_COOKIE as $name => $value) {
+            if (is_string($name) && is_string($value)) {
+                $cookies[$name] = $value;
+            }
+        }
+
+        return $cookies;
     }
 
     public function method(): string
@@ -53,6 +69,13 @@ final class Request
     public function header(string $name): ?string
     {
         return $this->headers[strtolower($name)] ?? null;
+    }
+
+    public function cookie(string $name): ?string
+    {
+        $value = $this->cookies[$name] ?? null;
+
+        return is_string($value) ? $value : null;
     }
 
     /** @return array<string, mixed> */

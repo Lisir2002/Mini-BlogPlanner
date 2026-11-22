@@ -7,8 +7,8 @@ server {
     listen 80;
     listen [::]:80;
     server_name example.com;
-    limit_req zone=cream_general burst=20 nodelay;
-    limit_conn cream_conn 30;
+    limit_req zone=cream_general burst=60 nodelay;
+    limit_conn cream_conn 60;
     return 301 https://$host$request_uri;
 }
 
@@ -34,38 +34,38 @@ server {
     keepalive_timeout 30s;
     reset_timedout_connection on;
     large_client_header_buffers 4 16k;
-    limit_conn cream_conn 30;
+    limit_conn cream_conn 60;
     server_tokens off;
 
     # 伪静态：磁盘文件优先；不存在的 .html 交给 front controller，
     # 由 Router 归一化后匹配 /about、/posts/{slug} 等路由。
     location / {
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_general burst=60 nodelay;
         try_files $uri /index.php?$query_string;
     }
 
     location = /admin/login.html {
-        limit_req zone=cream_auth burst=5 nodelay;
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_auth burst=10 nodelay;
+        limit_req zone=cream_general burst=60 nodelay;
         try_files $uri /index.php?$query_string;
     }
 
     location ^~ /api/ {
-        limit_req zone=cream_api burst=10 nodelay;
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_api burst=30 nodelay;
+        limit_req zone=cream_general burst=60 nodelay;
         try_files $uri /index.php?$query_string;
     }
 
     location ^~ /posts/ {
-        limit_req zone=cream_write burst=8 nodelay;
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_write burst=20 nodelay;
+        limit_req zone=cream_general burst=60 nodelay;
         try_files $uri /index.php?$query_string;
     }
 
     # 安装入口必须独立可用，且安装器会自行判断 installed.lock。
     location = /install.php {
-        limit_req zone=cream_auth burst=5 nodelay;
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_auth burst=10 nodelay;
+        limit_req zone=cream_general burst=60 nodelay;
         fastcgi_hide_header X-Frame-Options;
         fastcgi_hide_header X-Content-Type-Options;
         fastcgi_hide_header Referrer-Policy;
@@ -96,7 +96,7 @@ server {
 
     # 媒体由 PHP 按 media id 输出，不能让静态文件规则先截走。
     location ^~ /media/ {
-        limit_req zone=cream_general burst=20 nodelay;
+        limit_req zone=cream_media burst=100 nodelay;
         try_files $uri /index.php?$query_string;
     }
 

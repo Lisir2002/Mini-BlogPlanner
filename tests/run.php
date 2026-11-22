@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Core\Auth\AdminRepository;
 use Core\Auth\Auth;
+use Core\Auth\LoginThrottle;
 use Core\Audit\AuditPresenter;
 use Core\Audit\AuditRepository;
 use Core\Config\Env;
@@ -1923,15 +1924,66 @@ check('Request guard applies token, route and global quotas', function (): void 
     $login = new Request('POST', '/admin/login.html', [], []);
     truthy($guard->check($login, '203.0.113.9') === null, 'Login request must pass');
     same(['admin-login-post', 'general'], array_column($limiter->hits, 'scope'));
+    same(60, $limiter->hits[0]['limit'], 'Login must allow a realistic retry volume');
 
     $limiter->hits = [];
     $comment = new Request('POST', '/posts/hello/comments', [], []);
     truthy($guard->check($comment, '203.0.113.10') === null, 'Comment request must pass');
-    same(['comment', 'general'], array_column($limiter->hits, 'scope'));
+    same(['comment', 'comment-ip', 'general'], array_column($limiter->hits, 'scope'));
+    same(40, $limiter->hits[1]['limit'], 'Comment IP ceiling must stay generous');
 
+    $limiter->hits = [];
+    $visitorComment = new Request('POST', '/posts/hello/reaction', [], [], ['cream_session' => str_repeat('a', 26)]);
+    truthy($guard->check($visitorComment, '203.0.113.10') === null, 'Visitor reaction must pass');
+    same(['reaction', 'reaction-ip', 'general'], array_column($limiter->hits, 'scope'));
+    truthy($limiter->hits[0]['identity'] !== $limiter->hits[1]['identity'], 'Visitor quota must not be keyed by IP');
+
+    $limiter->hits = [];
+    $page = new Request('GET', '/posts/hello', [], [], ['cream_session' => str_repeat('b', 26)]);
+    truthy($guard->check($page, '203.0.113.12') === null, 'Page request must pass');
+    same(['page', 'general'], array_column($limiter->hits, 'scope'));
+    truthy($limiter->hits[0]['identity'] !== $limiter->hits[1]['identity'], 'Page quota must use the visitor session');
+
+    $limiter->hits = [];
+    $publicApi = new Request('GET', '/api/v1/posts', [], []);
+    truthy($guard->check($publicApi, '203.0.113.13') === null, 'Public API request must pass');
+    same(['api-ip', 'general'], array_column($limiter->hits, 'scope'));
+    same(300, $limiter->hits[0]['limit'], 'Public API IP ceiling must stay generous');
+
+    $limiter->hits = [];
     $limiter->denied = RateLimitResult::deny('comment', 10, 30);
     $limited = $guard->check($comment, '203.0.113.11');
     truthy($limited !== null && !$limited->allowed && $limited->scope === 'comment', 'Guard must stop on the first denied scope');
+});
+
+check('Shared IP does not collapse distinct visitors into one quota', function (): void {
+    $directory = sys_get_temp_dir() . '/cream-visitors-' . bin2hex(random_bytes(4));
+    $limiter = new FileRateLimiter($directory);
+    $guard = new RequestGuard($limiter, 'test-secret');
+    $ip = '203.0.113.50';
+
+    for ($visitor = 1; $visitor <= 20; $visitor++) {
+        $session = str_pad(dechex($visitor), 26, '0', STR_PAD_LEFT);
+        for ($page = 1; $page <= 10; $page++) {
+            $request = new Request('GET', '/posts/hello', [], [], ['cream_session' => $session]);
+            truthy($guard->check($request, $ip) === null, 'Normal shared-network browsing must not be limited');
+        }
+    }
+    same(21, count(glob($directory . '/*.json') ?: []), 'Visitors and IP ceilings must use separate buckets');
+    rrmdir($directory);
+});
+
+check('Login throttle allows shared-network retries before blocking', function (): void {
+    $file = sys_get_temp_dir() . '/cream-login-' . bin2hex(random_bytes(4)) . '.json';
+    $throttle = new LoginThrottle($file, 20, 900);
+    for ($attempt = 1; $attempt <= 19; $attempt++) {
+        truthy($throttle->allow('203.0.113.60'), 'Shared IP must get a realistic retry allowance');
+        $throttle->hit('203.0.113.60');
+    }
+    truthy($throttle->allow('203.0.113.60'), 'Twentieth failure is still visible before blocking');
+    $throttle->hit('203.0.113.60');
+    truthy(!$throttle->allow('203.0.113.60'), 'Excess failures must still be blocked');
+    @unlink($file);
 });
 
 check('Rate limited responses expose retry headers for API and pages', function (): void {
@@ -1953,11 +2005,12 @@ check('Nginx baseline carries Cloudflare real IP and bounded request zones', fun
     $nginx = file_get_contents($root . '/deploy/nginx.conf.example');
     $limits = file_get_contents($root . '/deploy/nginx-rate-limit.conf.example');
     $realIp = file_get_contents($root . '/deploy/nginx-cloudflare-realip.conf.example');
-    truthy($nginx !== false && str_contains($nginx, 'limit_conn cream_conn 30'), 'Nginx needs a per-IP connection cap');
+    truthy($nginx !== false && str_contains($nginx, 'limit_conn cream_conn 60'), 'Nginx needs a per-IP connection cap');
     truthy($nginx !== false && substr_count($nginx, 'fastcgi_read_timeout 20s') >= 2, 'Both PHP entry points need upstream timeouts');
     truthy($nginx !== false && str_contains($nginx, 'add_header X-Frame-Options DENY always') && str_contains($nginx, 'fastcgi_hide_header X-Frame-Options'), 'Gateway headers must replace application duplicates');
-    truthy($nginx !== false && str_contains($nginx, "limit_conn cream_conn 30;\n    return 301 https://\$host\$request_uri;"), 'HTTP redirect must stay rate limited');
-    truthy($limits !== false && str_contains($limits, 'zone=cream_api') && str_contains($limits, 'zone=cream_auth') && str_contains($limits, 'zone=cream_write'), 'Nginx needs separate rate zones');
+    truthy($nginx !== false && str_contains($nginx, "limit_conn cream_conn 60;\n    return 301 https://\$host\$request_uri;"), 'HTTP redirect must stay rate limited');
+    truthy($limits !== false && str_contains($limits, 'zone=cream_api') && str_contains($limits, 'zone=cream_auth') && str_contains($limits, 'zone=cream_write') && str_contains($limits, 'zone=cream_media'), 'Nginx needs separate rate zones');
+    truthy($limits !== false && str_contains($limits, 'rate=30r/s') && str_contains($limits, 'rate=50r/s'), 'Nginx thresholds must leave room for normal bursts');
     truthy($realIp !== false && str_contains($realIp, 'real_ip_header CF-Connecting-IP') && str_contains($realIp, '173.245.48.0/20'), 'Nginx must trust only Cloudflare ranges');
 });
 

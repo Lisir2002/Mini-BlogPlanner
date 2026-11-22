@@ -49,7 +49,7 @@ location / {
 
 不要配置成 `try_files $uri $uri.html ...`，否则 `/about.html` 会去找 `about.html.html`。伪静态由 PHP 路由统一处理，静态文件仍然优先。
 
-限流 zone 在 `deploy/nginx-rate-limit.conf.example`，Cloudflare 回源地址在 `deploy/nginx-cloudflare-realip.conf.example`；两者都装进 `/etc/nginx/conf.d/`。一般页面 10r/s、API 5r/s、登录 1r/s、写请求 2r/s，单 IP 并发 30，超限统一 429。应用层还会在路由前按路径再算一轮固定窗口，因此 Nginx 挡突发，PHP 挡持续刷量。
+限流 zone 在 `deploy/nginx-rate-limit.conf.example`，Cloudflare 回源地址在 `deploy/nginx-cloudflare-realip.conf.example`；两者都装进 `/etc/nginx/conf.d/`。一般页面 30r/s、API 15r/s、登录 5r/s、写请求 8r/s、媒体 50r/s，单 IP 并发 60，超限统一 429。应用层还会在路由前按路径再算一轮固定窗口，因此 Nginx 挡突发，PHP 挡持续刷量。
 
 ## 本地开发
 

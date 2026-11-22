@@ -8,7 +8,7 @@ final class LoginThrottle
 {
     public function __construct(
         private readonly string $file,
-        private readonly int $limit = 5,
+        private readonly int $limit = 20,
         private readonly int $window = 900,
     ) {}
 

@@ -18,7 +18,7 @@
 - 管理员密码用 Argon2id 校验；登录成功 `session_regenerate_id(true)`。
 - 会话 Cookie 为 HttpOnly、SameSite=Lax；HTTPS 环境加 Secure。
 - 空闲 7200 秒过期；写操作全部校验 CSRF。
-- 登录失败按 IP 限流：15 分钟窗口，第 6 次返回 429。
+- 登录失败按 IP 限流：15 分钟窗口最多 20 次，超出返回 429。
 - 后台未登录一律 303 到登录页；数据库不可用返回 503，不泄露连接信息。
 - 管理 API 使用 `Authorization: Bearer mbp_<token>`；令牌只存 SHA-256 哈希，明文只在创建成功时显示一次。
 - 令牌按 `status:read`、`content:read`、`comments:read` 授权；缺少、无效、过期、撤销返回 401，作用域不足返回 403。
@@ -52,8 +52,9 @@
 ## 6. 限流与抗压
 
 - Cloudflare 回源时，Nginx 只信任官方地址段发送的 `CF-Connecting-IP`，不信任任意 `X-Forwarded-For`。
-- Nginx 对动态页面、API、登录和 POST 分别限速：一般 10r/s、API 5r/s、登录 1r/s、写请求 2r/s；单 IP 并发连接上限 30，超限返回 429。
-- 应用在路由前执行固定窗口限流：公开页面 240 次/分钟、公开 API 120 次/分钟、管理 API 120 次/分钟、登录 POST 20 次/5 分钟、留言 10 次/分钟、互动 30 次/分钟、全站单 IP 600 次/分钟。
+- Nginx 对动态页面、API、登录、POST 和媒体分别限速：一般 30r/s、API 15r/s、登录 5r/s、写请求 8r/s、媒体 50r/s；单 IP 并发连接上限 60，超限返回 429。
+- 应用在路由前执行固定窗口限流：公开页面 300 次/分钟/访客、后台 600 次/分钟/访客、公开 API 300 次/分钟/IP、管理 API 240 次/分钟/令牌加 600 次/分钟/IP、登录 POST 60 次/5 分钟/IP、留言 10 次/分钟/访客加 40 次/分钟/IP、互动 30 次/分钟/访客加 60 次/分钟/IP、全站 1200 次/分钟/IP。
+- 页面、后台、留言、互动和写请求优先用会话 Cookie 区分访客，IP 仅作高上限兜底，降低公司、校园和运营商共享出口的误判。
 - 管理 API 同时按 IP 和令牌哈希计数，令牌被滥用时可单独撤销；限流键不保存明文 IP 或令牌。
 - 限流计数优先使用本机 SysV 共享内存，避免每次请求写数据库；共享内存不可用时回退到带文件锁的本地计数。
 - 超限响应为 429，带 `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` 和 `X-RateLimit-Scope`。
