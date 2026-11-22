@@ -71,6 +71,8 @@ final class AdminPlugin implements PluginInterface
             new Route(['POST'], '/admin/posts/{id}/restore', static fn (Request $request, array $params): Response => $posts->restore($request, $params), 'admin.posts.restore'),
             new Route(['GET'], '/admin/media', static fn (Request $request, array $params): Response => $media->index($request), 'admin.media.index'),
             new Route(['POST'], '/admin/media', static fn (Request $request, array $params): Response => $media->upload($request), 'admin.media.upload'),
+            new Route(['POST'], '/admin/media/bulk-delete', static fn (Request $request, array $params): Response => $media->bulkDelete($request), 'admin.media.bulk_delete'),
+            new Route(['POST'], '/admin/media/{id}/rename', static fn (Request $request, array $params): Response => $media->rename($request, $params), 'admin.media.rename'),
             new Route(['POST'], '/admin/media/{id}/delete', static fn (Request $request, array $params): Response => $media->delete($request, $params), 'admin.media.delete'),
             new Route(['GET'], '/admin/audit', static fn (Request $request, array $params): Response => $audit->index($request), 'admin.audit.index'),
             new Route(['GET'], '/admin/audit/export.csv', static fn (Request $request, array $params): Response => $audit->export($request), 'admin.audit.export'),

@@ -2,8 +2,8 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.7.0`。URL 前缀 `/api/v1`。
-- 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
+- 版本：`version.json` 的 `api` 轴；当前 `1.8.0`。URL 前缀 `/api/v1`。
+- 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8；媒体上传使用 `multipart/form-data`。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
 - 时间：ISO 8601 UTC；数据库存储 UTC。
@@ -86,6 +86,8 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | `content:read` | `/api/v1/admin/posts` 后台文章列表 |
 | `comments:read` | `GET /api/v1/admin/comments` 后台留言列表、筛选与计数 |
 | `comments:write` | `PATCH/DELETE /api/v1/admin/comments/{id}` 与批量接口，审核、撤回、标为垃圾和删除留言 |
+| `media:read` | `GET /api/v1/admin/media` 与单张详情，支持搜索、格式筛选和排序 |
+| `media:write` | `POST/PATCH/DELETE /api/v1/admin/media`，上传、重命名、删除和批量删除图片 |
 | `tags:read` | `/api/v1/admin/tags` 查看标签统计、列表与单个标签 |
 | `tags:write` | `/api/v1/admin/tags` 创建、重命名、合并和删除标签 |
 
@@ -230,6 +232,56 @@ Authorization: Bearer mbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 - 合并目标必须存在且不能是来源自身，否则 `422 /problems/tag-merge-invalid`。
 - 标签不存在返回 `404 /problems/tag-not-found`；请求体不是 JSON 对象返回 `400 /problems/tag-body-invalid`。
 - API 写操作会写入审计，操作者记录为 `api:<令牌名称>`。
+
+### 后台媒体
+
+媒体接口需要 `media:read` 或 `media:write` 作用域，响应统一 `Cache-Control: no-store`。
+
+| 方法 | 路径 | 作用域 | 说明 |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/admin/media` | `media:read` | 列表，支持 `q`、`type`、`sort`、`page`、`per_page` |
+| `GET` | `/api/v1/admin/media/{id}` | `media:read` | 图片详情 |
+| `POST` | `/api/v1/admin/media` | `media:write` | `multipart/form-data` 上传，最多 5 张，成功 `201` |
+| `PATCH` | `/api/v1/admin/media/{id}` | `media:write` | 修改显示名称，不改磁盘文件名和地址 |
+| `DELETE` | `/api/v1/admin/media/{id}` | `media:write` | 删除记录与磁盘文件，成功 `204` |
+| `POST` | `/api/v1/admin/media/bulk` | `media:write` | 批量删除，编号最多 100 个 |
+
+列表响应：
+
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "name": "海边.png",
+      "mime": "image/png",
+      "format": "PNG",
+      "size_bytes": 284512,
+      "width": 1600,
+      "height": 1000,
+      "created_at": "2026-11-22T05:40:00+00:00",
+      "url": "/media/12/abcdef.png",
+      "html": "<img src=\"/media/12/abcdef.png\" alt=\"海边.png\">"
+    }
+  ],
+  "meta": {
+    "total": 3,
+    "page": 1,
+    "pages": 1,
+    "per_page": 10,
+    "q": "",
+    "type": "",
+    "sort": "newest",
+    "summary": {"total": 3, "bytes": 982311, "latest_at": "2026-11-22T05:40:00+00:00", "types": {"jpg": 1, "png": 2, "webp": 0, "gif": 0}}
+  }
+}
+```
+
+- `q` 匹配显示名称或图片编号；`type=jpg|png|webp|gif`；`sort=newest|oldest|largest|name`。
+- 上传字段名为 `file`，单张不超过 5MB，服务端以 `finfo` 和 `getimagesize` 校验类型与尺寸；部分失败时 `201` 仍返回成功项，`meta.errors` 列出失败原因。
+- 重命名请求体为 `{"name":"新的显示名称"}`，名称去 HTML 标签后 1–190 字。
+- 删除会同时移除数据库记录和磁盘文件，文章里的旧引用会失效；批量删除响应返回 `affected` 和实际删除的 `ids`。
+- 图片本身仍通过 `/media/{id}/{name}` 读取，API 只返回受控地址，不暴露存储路径。
 
 ### 后台留言
 

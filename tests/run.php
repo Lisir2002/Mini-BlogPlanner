@@ -9,6 +9,8 @@ use Core\Audit\AuditPresenter;
 use Core\Audit\AuditRepository;
 use Core\Config\Env;
 use Core\Content\Media;
+use Core\Content\MediaRepository;
+use Core\Content\MediaUploadException;
 use Core\Content\TagRepository;
 use Core\Database\ConnectionInterface;
 use Core\Http\Csrf;
@@ -764,6 +766,79 @@ check('Revision migration and history page are wired', function (): void {
 check('Media URL uses stable id and disk basename', function (): void {
     $media = new Media(7, '2026/11/abcdef.png', '图.png', 'image/png', 100, 20, 10, '2026-11-20 00:00:00');
     same('/media/7/abcdef.png', $media->url());
+});
+
+check('Media repository filters, sorts and summarizes the library', function (): void {
+    $connection = new TagAdminConnection();
+    $connection->rows = [[
+        'id' => 7,
+        'disk_name' => '2026/11/abcdef.png',
+        'original_name' => '海边.png',
+        'mime' => 'image/png',
+        'size_bytes' => 284512,
+        'width' => 1600,
+        'height' => 1000,
+        'created_at' => '2026-11-22 05:40:00',
+    ]];
+    $repository = new MediaRepository($connection);
+    $media = $repository->adminPage(['q' => '海', 'type' => 'png', 'sort' => 'largest'], 10, 20);
+    same(1, count($media));
+    same('海边.png', $media[0]->originalName);
+    $pageQuery = $connection->queries[0];
+    truthy(str_contains($pageQuery['sql'], 'original_name LIKE ?'), 'Search must match the display name');
+    truthy(str_contains($pageQuery['sql'], 'CAST(id AS CHAR) LIKE ?'), 'Search must also match the image id');
+    truthy(str_contains($pageQuery['sql'], 'mime = ?'), 'Type filter must use the MIME column');
+    truthy(str_contains($pageQuery['sql'], 'ORDER BY size_bytes DESC'), 'Largest sort must use file size');
+    truthy(str_contains($pageQuery['sql'], 'LIMIT 10 OFFSET 20'), 'Pagination must be bounded');
+    same(['%海%', '%海%', 'image/png'], $pageQuery['params']);
+
+    $connection->row = ['total' => 1];
+    same(1, $repository->adminCount(['q' => '海', 'type' => 'png', 'sort' => 'largest']));
+    truthy(str_contains($connection->queries[1]['sql'], 'COUNT(*) AS total FROM media'), 'Count must reuse the same filters');
+
+    $connection->row = [
+        'total' => 4,
+        'bytes' => 1500746,
+        'latest_at' => '2026-11-22 06:10:00',
+        'jpg' => 2,
+        'png' => 2,
+        'webp' => 0,
+        'gif' => 0,
+    ];
+    $summary = $repository->summary();
+    same(4, $summary['total']);
+    same(1500746, $summary['bytes']);
+    same(2, $summary['types']['png']);
+    same(['q' => '海', 'type' => '', 'sort' => 'newest'], MediaRepository::normalizeFilters(['q' => ' 海 ', 'type' => 'svg', 'sort' => 'random']));
+});
+
+check('Media upload errors separate input mistakes from storage failures', function (): void {
+    $input = new MediaUploadException('unsupported', '只支持图片。');
+    $storage = new MediaUploadException('storage', '上传目录不可写。');
+    truthy(!$input->isStorageFailure(), 'Unsupported types are input errors');
+    truthy($storage->isStorageFailure(), 'Storage failures must be reported as service errors');
+});
+
+check('Media admin page and API stay wired together', function (): void {
+    $root = dirname(__DIR__);
+    $template = file_get_contents($root . '/themes/cream/templates/admin/media.php');
+    $css = file_get_contents($root . '/public/assets/admin-media.css');
+    $script = file_get_contents($root . '/public/assets/admin-media.js');
+    truthy($template !== false && str_contains($template, 'data-admin-filter-panel') && str_contains($template, 'data-media-dialog'), 'Media page must use the shared filter panel and a detail dialog');
+    truthy($template !== false && str_contains($template, 'name="file[]"') && str_contains($template, 'multiple'), 'Upload must accept multiple images');
+    truthy($template !== false && str_contains($template, 'name="ids[]"'), 'Cards must expose bulk selection');
+    truthy($css !== false && str_contains($css, '@media (max-width: 760px)') && str_contains($css, 'grid-template-columns: repeat(2, minmax(0, 1fr))'), 'Media grid must stay readable on phones');
+    truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details, copy and select-all');
+
+    $plugin = file_get_contents($root . '/plugins/api/src/ApiPlugin.php');
+    $scopes = file_get_contents($root . '/core/Api/ApiScope.php');
+    $openapi = file_get_contents($root . '/docs/openapi.yaml');
+    $apiDoc = file_get_contents($root . '/docs/API.md');
+    truthy($plugin !== false && str_contains($plugin, "'/api/v1/admin/media'") && str_contains($plugin, "'/api/v1/admin/media/{id}'"), 'API plugin must register media routes');
+    truthy($plugin !== false && str_contains($plugin, "'PATCH'"), 'Media API must support renaming');
+    truthy($scopes !== false && str_contains($scopes, "'media:read'") && str_contains($scopes, "'media:write'"), 'Media scopes must be selectable');
+    truthy($openapi !== false && str_contains($openapi, '/api/v1/admin/media/bulk') && str_contains($openapi, 'MediaListMeta') && str_contains($openapi, 'multipart/form-data'), 'OpenAPI must document media list, upload and bulk delete');
+    truthy($apiDoc !== false && str_contains($apiDoc, '后台媒体') && str_contains($apiDoc, '`media:write`'), 'API guide must explain media scopes and uploads');
 });
 
 check('TagRepository normalizes names and caps at eight', function (): void {

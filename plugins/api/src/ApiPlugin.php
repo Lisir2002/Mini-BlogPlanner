@@ -33,6 +33,7 @@ final class ApiPlugin implements PluginInterface
         $admin = new AdminApiController($this->version);
         $tagAdmin = new TagAdminApiController();
         $commentAdmin = new CommentAdminApiController();
+        $mediaAdmin = new MediaAdminApiController();
 
         return [
             new Route(['GET'], '/api/v1/health', static fn (Request $request, array $params): Response => $health($request), 'api.health'),
@@ -49,6 +50,12 @@ final class ApiPlugin implements PluginInterface
             new Route(['PATCH'], '/api/v1/admin/comments/{id}', static fn (Request $request, array $params): Response => $commentAdmin->update($request, $params), 'api.admin.comments.update'),
             new Route(['DELETE'], '/api/v1/admin/comments/{id}', static fn (Request $request, array $params): Response => $commentAdmin->delete($request, $params), 'api.admin.comments.delete'),
             new Route(['POST'], '/api/v1/admin/comments/bulk', static fn (Request $request, array $params): Response => $commentAdmin->bulk($request), 'api.admin.comments.bulk'),
+            new Route(['GET'], '/api/v1/admin/media', static fn (Request $request, array $params): Response => $mediaAdmin->index($request), 'api.admin.media.index'),
+            new Route(['POST'], '/api/v1/admin/media', static fn (Request $request, array $params): Response => $mediaAdmin->create($request), 'api.admin.media.create'),
+            new Route(['POST'], '/api/v1/admin/media/bulk', static fn (Request $request, array $params): Response => $mediaAdmin->bulk($request), 'api.admin.media.bulk'),
+            new Route(['GET'], '/api/v1/admin/media/{id}', static fn (Request $request, array $params): Response => $mediaAdmin->show($request, $params), 'api.admin.media.show'),
+            new Route(['PATCH'], '/api/v1/admin/media/{id}', static fn (Request $request, array $params): Response => $mediaAdmin->update($request, $params), 'api.admin.media.update'),
+            new Route(['DELETE'], '/api/v1/admin/media/{id}', static fn (Request $request, array $params): Response => $mediaAdmin->delete($request, $params), 'api.admin.media.delete'),
             new Route(['GET'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->index($request), 'api.admin.tags.index'),
             new Route(['POST'], '/api/v1/admin/tags', static fn (Request $request, array $params): Response => $tagAdmin->create($request), 'api.admin.tags.create'),
             new Route(['GET'], '/api/v1/admin/tags/{id}', static fn (Request $request, array $params): Response => $tagAdmin->show($request, $params), 'api.admin.tags.show'),

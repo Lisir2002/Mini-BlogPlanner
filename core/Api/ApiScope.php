@@ -15,6 +15,8 @@ final class ApiScope
         'content:read' => '查看内容列表',
         'comments:read' => '查看留言列表',
         'comments:write' => '审核、撤回、标为垃圾和删除留言',
+        'media:read' => '查看媒体列表与图片详情',
+        'media:write' => '上传、重命名和删除图片',
         'tags:read' => '查看后台标签统计与列表',
         'tags:write' => '创建、重命名、合并和删除标签',
     ];

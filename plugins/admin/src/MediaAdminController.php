@@ -7,7 +7,9 @@ namespace Plugin\Admin;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
+use Core\Content\Media;
 use Core\Content\MediaRepository;
+use Core\Content\MediaUploadService;
 use Core\Database\Connection;
 use Core\Http\Csrf;
 use Core\Http\Request;
@@ -19,16 +21,6 @@ use Throwable;
 final class MediaAdminController
 {
     use AdminErrors;
-
-    private const MAX_BYTES = 5 * 1024 * 1024;
-
-    /** @var array<string, string> */
-    private const TYPES = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        'image/gif' => 'gif',
-    ];
 
     private readonly AdminGuard $guard;
 
@@ -46,11 +38,19 @@ final class MediaAdminController
             return $admin;
         }
 
+        $query = $request->query();
+        $filters = MediaRepository::normalizeFilters([
+            'q' => (string) ($query['q'] ?? ''),
+            'type' => (string) ($query['type'] ?? ''),
+            'sort' => (string) ($query['sort'] ?? 'newest'),
+        ]);
+
         try {
             $repository = new MediaRepository(Connection::fromEnv());
-            $total = $repository->count();
-            $state = Pagination::resolve(max(1, (int) ($request->query()['page'] ?? 1)), $total);
-            $media = $repository->latest($state['per_page'], $state['offset']);
+            $summary = $repository->summary();
+            $total = $repository->adminCount($filters);
+            $state = Pagination::resolve(max(1, (int) ($query['page'] ?? 1)), $total);
+            $media = $repository->adminPage($filters, $state['per_page'], $state['offset']);
         } catch (Throwable) {
             return $this->adminError($request, 503, '后台暂时无法连接数据库。');
         }
@@ -61,17 +61,30 @@ final class MediaAdminController
         foreach (Pagination::window($page, $pages) as $number) {
             $pageLinks[] = [
                 'number' => $number,
-                'url' => $number === null ? null : ($number <= 1 ? '/admin/media.html' : '/admin/media.html?page=' . $number),
+                'url' => $number === null ? null : $this->pageUrl($filters, $number),
             ];
         }
+        $hasFilters = $filters['q'] !== '' || $filters['type'] !== '' || $filters['sort'] !== 'newest';
+        $activeFilterCount = ($filters['q'] !== '' ? 1 : 0)
+            + ($filters['type'] !== '' ? 1 : 0)
+            + ($filters['sort'] !== 'newest' ? 1 : 0);
 
         return $this->render($admin, $media, [
+            'summary' => $summary,
             'total' => $total,
             'page' => $page,
             'pages' => $pages,
             'page_links' => $pageLinks,
-            'prev_url' => $page > 1 ? ($page === 2 ? '/admin/media.html' : '/admin/media.html?page=' . ($page - 1)) : null,
-            'next_url' => $page < $pages ? '/admin/media.html?page=' . ($page + 1) : null,
+            'prev_url' => $page > 1 ? $this->pageUrl($filters, $page - 1) : null,
+            'next_url' => $page < $pages ? $this->pageUrl($filters, $page + 1) : null,
+            'filters' => $filters,
+            'has_filters' => $hasFilters,
+            'active_filter_count' => $activeFilterCount,
+            'return_url' => $this->pageUrl($filters, $page),
+            'uploaded' => max(0, (int) ($query['uploaded'] ?? 0)),
+            'failed' => max(0, (int) ($query['failed'] ?? 0)),
+            'upload_error' => mb_substr(trim((string) ($query['error'] ?? '')), 0, 200),
+            'deleted' => max(0, (int) ($query['deleted'] ?? 0)),
         ]);
     }
 
@@ -85,86 +98,132 @@ final class MediaAdminController
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
 
-        $file = $_FILES['file'] ?? null;
-        if (!is_array($file) || !isset($file['error'], $file['tmp_name'], $file['name']) || !is_string($file['tmp_name'])) {
+        $files = $_FILES['file'] ?? null;
+        if (!is_array($files) || !isset($files['name'], $files['tmp_name'], $files['error'])) {
             return $this->adminError($request, 422, '没有收到文件。');
         }
-        if ((int) $file['error'] !== UPLOAD_ERR_OK) {
-            $error = (int) $file['error'];
-            $message = in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
-                ? '图片不能超过 5MB。'
-                : '上传失败，请重试。';
-
-            return $this->adminError($request, 422, $message);
-        }
-        if (!is_uploaded_file($file['tmp_name'])) {
-            return $this->adminError($request, 422, '上传来源无效。');
-        }
-
-        $size = filesize($file['tmp_name']);
-        if ($size === false || $size <= 0 || $size > self::MAX_BYTES) {
-            return $this->adminError($request, 422, '图片大小必须小于 5MB。');
-        }
-
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']);
-        if (!is_string($mime) || !isset(self::TYPES[$mime])) {
-            return $this->adminError($request, 422, '只支持 JPEG、PNG、WebP、GIF 图片。');
-        }
-
-        $info = getimagesize($file['tmp_name']);
-        if (!is_array($info) || $info[0] < 1 || $info[1] < 1 || $info[0] > 10000 || $info[1] > 10000) {
-            return $this->adminError($request, 422, '图片尺寸无效。');
-        }
-
-        $extension = self::TYPES[$mime];
-        $relativeDirectory = date('Y/m');
-        $storage = rtrim(Env::get('STORAGE_DIR', $this->root . '/storage') ?? $this->root . '/storage', '/');
-        $directory = $storage . '/uploads/' . $relativeDirectory;
-        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
-            return $this->adminError($request, 503, '上传目录不可写。');
-        }
-
-        $diskName = $relativeDirectory . '/' . bin2hex(random_bytes(16)) . '.' . $extension;
-        $destination = $storage . '/uploads/' . $diskName;
-        if (!move_uploaded_file($file['tmp_name'], $destination)) {
-            return $this->adminError($request, 503, '保存上传文件失败。');
-        }
-        @chmod($destination, 0640);
-
-        $original = trim(basename((string) $file['name']));
-        $original = mb_substr(preg_replace('/[^\p{L}\p{N}._ -]+/u', '_', $original) ?? 'image', 0, 190);
 
         try {
-            $id = (new MediaRepository(Connection::fromEnv()))->create(
-                $diskName,
-                $original,
-                $mime,
-                $size,
-                (int) $info[0],
-                (int) $info[1],
-                $admin->id,
-            );
-            if ($id === 0) {
-                throw new \RuntimeException('Media insert failed.');
-            }
+            $repository = new MediaRepository(Connection::fromEnv());
+            $service = new MediaUploadService($repository, $this->storageDir());
+            $result = $service->storeBatch($files, $admin->id);
         } catch (Throwable) {
-            @unlink($destination);
+            return $this->adminError($request, 503, '图片服务暂时不可用。');
+        }
 
-            return $this->adminError($request, 503, '保存图片记录失败。');
+        foreach ($result['stored'] as $media) {
+            try {
+                (new AuditRepository(Connection::fromEnv()))->append('media.uploaded', $admin->username, [
+                    'id' => $media->id,
+                    'mime' => $media->mime,
+                    'size' => $media->size,
+                ]);
+            } catch (Throwable) {
+                // 审计失败不能撤销已经保存的图片。
+            }
+        }
+
+        if ($result['stored'] === []) {
+            $message = $result['errors'][0] ?? '没有收到文件。';
+
+            return $this->adminError($request, $result['fatal'] ? 503 : 422, $message);
+        }
+
+        $query = ['uploaded' => count($result['stored'])];
+        if ($result['errors'] !== []) {
+            $query['failed'] = count($result['errors']);
+            $query['error'] = mb_substr($result['errors'][0], 0, 200);
+        }
+
+        return Response::redirect('/admin/media.html?' . http_build_query($query), 303);
+    }
+
+    /** @param array<string, string> $params */
+    public function rename(Request $request, array $params): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        $id = $this->id($params);
+        if ($id === null) {
+            return $this->adminError($request, 404, 'Not Found');
+        }
+        $name = $this->cleanName(isset($_POST['name']) ? (string) $_POST['name'] : '');
+        if ($name === null) {
+            return $this->adminError($request, 422, '名称需为 1–190 个字。');
         }
 
         try {
-            (new AuditRepository(Connection::fromEnv()))->append('media.uploaded', $admin->username, [
+            $repository = new MediaRepository(Connection::fromEnv());
+            $before = $repository->find($id);
+            if ($before === null) {
+                return $this->adminError($request, 404, 'Not Found');
+            }
+            $media = $repository->rename($id, $name);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '重命名失败，请稍后重试。');
+        }
+        if ($media === null) {
+            return $this->adminError($request, 404, 'Not Found');
+        }
+
+        try {
+            (new AuditRepository(Connection::fromEnv()))->append('media.renamed', $admin->username, [
                 'id' => $id,
-                'mime' => $mime,
-                'size' => $size,
+                'from' => $before->originalName,
+                'to' => $media->originalName,
             ]);
         } catch (Throwable) {
-            // 审计失败不能撤销已经保存的图片。
+            // 名称已保存，审计失败不回滚。
         }
 
-        return Response::redirect('/admin/media.html?uploaded=' . $id, 303);
+        return $this->back($request);
+    }
+
+    public function bulkDelete(Request $request): Response
+    {
+        $admin = $this->guard->authenticate($request);
+        if ($admin instanceof Response) {
+            return $admin;
+        }
+        if (!Csrf::validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
+        }
+
+        $ids = $this->ids($_POST['ids'] ?? []);
+        if ($ids === []) {
+            return $this->adminError($request, 422, '请先选择要删除的图片。');
+        }
+        if (count($ids) > 100) {
+            return $this->adminError($request, 422, '一次最多删除 100 张图片。');
+        }
+
+        try {
+            $repository = new MediaRepository(Connection::fromEnv());
+            $deleted = $repository->deleteMany($ids);
+        } catch (Throwable) {
+            return $this->adminError($request, 503, '批量删除失败，请稍后重试。');
+        }
+
+        foreach ($deleted as $media) {
+            $this->removeFile($media);
+        }
+
+        try {
+            (new AuditRepository(Connection::fromEnv()))->append('media.bulk.deleted', $admin->username, [
+                'count' => count($deleted),
+                'ids' => array_map(static fn (Media $item): int => $item->id, $deleted),
+            ]);
+        } catch (Throwable) {
+            // 删除已完成，审计失败不回滚。
+        }
+
+        return $this->back($request, ['deleted' => count($deleted)]);
     }
 
     /** @param array<string, string> $params */
@@ -178,14 +237,14 @@ final class MediaAdminController
             return $this->adminError($request, 419, '页面已过期，请刷新后重试。');
         }
 
-        $id = (string) ($params['id'] ?? '');
-        if (preg_match('/^[1-9][0-9]*$/', $id) !== 1) {
+        $id = $this->id($params);
+        if ($id === null) {
             return $this->adminError($request, 404, 'Not Found');
         }
 
         try {
-            $db = Connection::fromEnv();
-            $media = (new MediaRepository($db))->delete((int) $id);
+            $repository = new MediaRepository(Connection::fromEnv());
+            $media = $repository->delete($id);
         } catch (Throwable) {
             return $this->adminError($request, 503, '删除图片失败。');
         }
@@ -193,12 +252,7 @@ final class MediaAdminController
             return $this->adminError($request, 404, 'Not Found');
         }
 
-        $storage = rtrim(Env::get('STORAGE_DIR', $this->root . '/storage') ?? $this->root . '/storage', '/');
-        $uploads = realpath($storage . '/uploads');
-        $path = realpath($storage . '/uploads/' . $media->diskName);
-        if ($uploads !== false && $path !== false && str_starts_with($path, $uploads . DIRECTORY_SEPARATOR)) {
-            @unlink($path);
-        }
+        $this->removeFile($media);
 
         try {
             (new AuditRepository(Connection::fromEnv()))->append('media.deleted', $admin->username, ['id' => $media->id]);
@@ -206,11 +260,103 @@ final class MediaAdminController
             // 删除已完成，审计失败不回滚文件记录。
         }
 
-        return Response::redirect('/admin/media.html?deleted=' . $media->id, 303);
+        return $this->back($request, ['deleted' => 1]);
+    }
+
+    /** @param array<string, string> $params */
+    private function id(array $params): ?int
+    {
+        $raw = (string) ($params['id'] ?? '');
+        if (preg_match('/^[1-9][0-9]*$/', $raw) !== 1) {
+            return null;
+        }
+        $id = (int) $raw;
+
+        return $id > 0 ? $id : null;
+    }
+
+    /** @param mixed $raw
+     *  @return list<int> */
+    private function ids(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($raw as $value) {
+            if (!is_int($value) && !(is_string($value) && ctype_digit($value))) {
+                continue;
+            }
+            $id = (int) $value;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    private function cleanName(string $name): ?string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', strip_tags($name)) ?? '');
+        if ($name === '' || mb_strlen($name) > 190) {
+            return null;
+        }
+
+        return $name;
+    }
+
+    /** @param array<string, string> $filters */
+    private function pageUrl(array $filters, int $page): string
+    {
+        $params = [];
+        if ($filters['q'] !== '') {
+            $params['q'] = $filters['q'];
+        }
+        if ($filters['type'] !== '') {
+            $params['type'] = $filters['type'];
+        }
+        if ($filters['sort'] !== 'newest') {
+            $params['sort'] = $filters['sort'];
+        }
+        if ($page > 1) {
+            $params['page'] = $page;
+        }
+
+        return '/admin/media.html' . ($params === [] ? '' : '?' . http_build_query($params));
+    }
+
+    private function storageDir(): string
+    {
+        return rtrim(Env::get('STORAGE_DIR', $this->root . '/storage') ?? $this->root . '/storage', '/');
+    }
+
+    private function removeFile(Media $media): void
+    {
+        $storage = $this->storageDir();
+        $uploads = realpath($storage . '/uploads');
+        $path = realpath($storage . '/uploads/' . $media->diskName);
+        if ($uploads !== false && $path !== false && str_starts_with($path, $uploads . DIRECTORY_SEPARATOR)) {
+            @unlink($path);
+        }
+    }
+
+    /** @param array<string, int|string> $query */
+    private function back(Request $request, array $query = []): Response
+    {
+        $return = (string) ($_POST['return'] ?? '');
+        if ($return === '' || !str_starts_with($return, '/admin/media.html') || str_contains($return, '//') || preg_match('/[\r\n]/', $return) === 1) {
+            $return = '/admin/media.html';
+        }
+        if ($query !== []) {
+            $return .= (str_contains($return, '?') ? '&' : '?') . http_build_query($query);
+        }
+
+        return Response::redirect($return, 303);
     }
 
     /**
-     * @param list<\Core\Content\Media> $media
+     * @param list<Media> $media
      * @param array<string, mixed> $list
      */
     private function render(Admin $admin, array $media, array $list = []): Response
@@ -226,7 +372,9 @@ final class MediaAdminController
             'admin' => $admin,
             'csrf' => Csrf::token(),
             'media' => $media,
-            'uploaded' => isset($_GET['uploaded']) && ctype_digit((string) $_GET['uploaded']) ? (int) $_GET['uploaded'] : null,
+            'body_class' => 'admin-media-body',
+            'page_styles' => ['admin-media.css'],
+            'page_scripts' => ['admin-media.js'],
         ] + $list, 'admin/layout');
 
         return Response::html($html)->withHeader('Cache-Control', 'no-store');
