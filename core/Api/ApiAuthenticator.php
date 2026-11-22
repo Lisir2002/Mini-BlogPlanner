@@ -55,9 +55,10 @@ final class ApiAuthenticator
             'instance' => $request->path(),
         ], $status);
 
-        $response = $response
-            ->withHeader('Cache-Control', 'no-store')
-            ->withHeader('WWW-Authenticate', 'Bearer realm="Mini-BlogPlanner API"');
+        $response = $response->withHeader('Cache-Control', 'no-store');
+        if ($status === 401) {
+            $response = $response->withHeader('WWW-Authenticate', 'Bearer realm="Mini-BlogPlanner API"');
+        }
 
         return $response;
     }

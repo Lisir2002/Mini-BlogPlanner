@@ -2,7 +2,7 @@
 
 ## 基本约定
 
-- 版本：`version.json` 的 `api` 轴；当前 `1.5.0`。URL 前缀 `/api/v1`。
+- 版本：`version.json` 的 `api` 轴；当前 `1.5.1`。URL 前缀 `/api/v1`。
 - 传输：仅 HTTPS；请求与响应均为 JSON，字符集 UTF-8。
 - 兼容：新增可选字段不升主版本；破坏性变更升 `minor` 并保留旧路径一个发布周期。
 - 错误：统一 `application/problem+json`，字段 `type`、`title`、`status`、`detail`、`instance`，遵循 RFC 9457。
@@ -25,7 +25,7 @@
 {
   "status": "ok",
   "app": "0.1.40",
-  "api": "1.5.0",
+  "api": "1.5.1",
   "schema": 2026112106
 }
 ```
@@ -54,8 +54,8 @@
 ```json
 {
   "status": "ok",
-  "app": "0.1.67",
-  "api": "1.5.0",
+  "app": "0.1.68",
+  "api": "1.5.1",
   "channel": "stable",
   "checked_at": "2026-11-22T08:00:00+00:00",
   "latency_ms": 3,

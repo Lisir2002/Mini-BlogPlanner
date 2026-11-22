@@ -1801,9 +1801,11 @@ check('API tokens enforce scopes and stay hashed', function (): void {
     );
     truthy($missing instanceof Response && $missing->status() === 401, 'Missing token must return 401');
     truthy(!str_contains($missing->body(), $raw), 'Auth errors must not echo the token');
+    truthy($missing instanceof Response && isset($missing->headers()['WWW-Authenticate']), '401 must advertise Bearer');
 
     $forbidden = (new ApiAuthenticator($repository))->requireScope($request, 'content:read');
     truthy($forbidden instanceof Response && $forbidden->status() === 403, 'Missing scope must return 403');
+    truthy($forbidden instanceof Response && !isset($forbidden->headers()['WWW-Authenticate']), '403 must not trigger a Bearer challenge');
 
     $expired = new ApiToken(
         8,
