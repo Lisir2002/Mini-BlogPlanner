@@ -849,6 +849,8 @@ check('Media admin page and API stay wired together', function (): void {
     $template = file_get_contents($root . '/themes/cream/templates/admin/media.php');
     $css = file_get_contents($root . '/public/assets/admin-media.css');
     $script = file_get_contents($root . '/public/assets/admin-media.js');
+    $cream = file_get_contents($root . '/public/assets/cream.js');
+    $filters = file_get_contents($root . '/public/assets/admin-filters.js');
     truthy($template !== false && str_contains($template, 'data-admin-filter-panel') && str_contains($template, 'media-filter-shell') && str_contains($template, 'name="shape"') && str_contains($template, 'name="weight"') && str_contains($template, 'name="period"'), 'Media page must use a standalone shared filter card with shape, weight and period rules');
     truthy($template !== false && str_contains($template, 'data-media-dialog'), 'Media page must keep a detail dialog');
     truthy($template !== false && str_contains($template, 'name="file[]"') && str_contains($template, 'multiple'), 'Upload must accept multiple images');
@@ -858,6 +860,9 @@ check('Media admin page and API stay wired together', function (): void {
     truthy($script !== false && str_contains($script, 'showModal') && str_contains($script, 'is-fallback-open') && str_contains($script, 'navigator.clipboard') && str_contains($script, 'data-media-select-all'), 'Media interactions must cover details with a fallback, copy and select-all');
     truthy($css !== false && str_contains($css, '.media-picked.has-files'), 'Picked upload files must stay visible on narrow screens');
     truthy($script !== false && str_contains($script, '已选择') && str_contains($script, 'has-files'), 'Picked upload feedback must show the selected count');
+    truthy($cream !== false && str_contains($cream, 'admin:content-replaced') && str_contains($cream, 'AdminSelect.enhance') && str_contains($cream, 'AdminFilters.enhance'), 'Async content replacement must reinitialize page controls');
+    truthy($filters !== false && str_contains($filters, 'window.AdminFilters') && str_contains($filters, 'function start(root)'), 'Filters must expose a scoped reinitializer');
+    truthy($script !== false && str_contains($script, 'admin:content-replaced') && str_contains($script, 'bindMedia'), 'Media actions must rebind after async replacement');
     truthy($css !== false && str_contains($css, "  .media-filterbar {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));"), 'Phone filter card must use two balanced columns');
     truthy($css !== false && str_contains($css, '.media-select-field .admin-select-trigger { width: 100%; min-width: 0;'), 'Phone selects must not overflow their filter column');
 

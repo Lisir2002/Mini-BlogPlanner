@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var closers = new WeakMap();
   var FILTER_ICON = '<svg class="icon admin-filter-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 5.5h15l-5.8 6.5v6.2l-3.4 1.3v-7.5L4.5 5.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
   var panelIndex = 0;
 
@@ -95,22 +96,35 @@
       setOpen(false);
     });
 
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && form.classList.contains('is-filter-open') && window.matchMedia('(max-width: 760px)').matches) {
-        event.preventDefault();
-        setOpen(false);
-      }
-    });
+    closers.set(form, function () { setOpen(false); });
   }
 
-  function start() {
-    var panels = document.querySelectorAll('[data-admin-filter-panel]');
+  function start(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    var panels = scope.querySelectorAll('[data-admin-filter-panel]');
     Array.prototype.forEach.call(panels, enhance);
+    if (scope.matches && scope.matches('[data-admin-filter-panel]')) {
+      enhance(scope);
+    }
   }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !window.matchMedia('(max-width: 760px)').matches) {
+      return;
+    }
+    var open = document.querySelector('[data-admin-filter-panel].is-filter-open');
+    var close = open ? closers.get(open) : null;
+    if (close) {
+      event.preventDefault();
+      close();
+    }
+  });
+
+  window.AdminFilters = { enhance: start };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
+    document.addEventListener('DOMContentLoaded', function () { start(document); }, { once: true });
   } else {
-    start();
+    start(document);
   }
 })();

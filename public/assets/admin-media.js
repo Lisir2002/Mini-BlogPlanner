@@ -1,11 +1,15 @@
 (function () {
   'use strict';
 
-  const dialog = document.querySelector('[data-media-dialog]');
-  const bulkForm = document.querySelector('[data-media-bulk-form]');
-  const selectAll = document.querySelector('[data-media-select-all]');
-  const bulkBar = document.querySelector('[data-media-bulk-bar]');
-  const selectedCount = document.querySelector('[data-media-selected-count]');
+  let dialog = null;
+  let bulkForm = null;
+  let selectAll = null;
+  let bulkBar = null;
+  let selectedCount = null;
+  let uploadForm = null;
+  let fileInput = null;
+  let dropZone = null;
+  let picked = null;
   const toast = (function () {
     let node = null;
     let timer = 0;
@@ -243,96 +247,106 @@
     }
   });
 
-  if (dialog) {
-    dialog.addEventListener('click', function (event) {
-      if (event.target === dialog) {
-        closeDetail();
-      }
-    });
-    dialog.addEventListener('cancel', function () {
-      dialog.classList.remove('is-fallback-open');
-      document.body.classList.remove('media-dialog-open');
-    });
-  }
+  function bindMedia() {
+    dialog = document.querySelector('[data-media-dialog]');
+    bulkForm = document.querySelector('[data-media-bulk-form]');
+    selectAll = document.querySelector('[data-media-select-all]');
+    bulkBar = document.querySelector('[data-media-bulk-bar]');
+    selectedCount = document.querySelector('[data-media-selected-count]');
+    uploadForm = document.querySelector('[data-media-upload]');
+    fileInput = document.querySelector('[data-media-files]');
+    dropZone = document.querySelector('[data-media-drop]');
+    picked = document.querySelector('[data-media-picked]');
 
-  if (bulkForm) {
-    bulkForm.addEventListener('submit', function (event) {
-      const selected = bulkForm.querySelectorAll('[data-media-check]:checked').length;
-      if (selected === 0) {
-        event.preventDefault();
-        toast('请先选择图片');
+    if (dialog) {
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog) {
+          closeDetail();
+        }
+      });
+      dialog.addEventListener('cancel', function () {
+        dialog.classList.remove('is-fallback-open');
+        document.body.classList.remove('media-dialog-open');
+      });
+    }
+
+    if (bulkForm) {
+      bulkForm.addEventListener('submit', function (event) {
+        const selected = bulkForm.querySelectorAll('[data-media-check]:checked').length;
+        if (selected === 0) {
+          event.preventDefault();
+          toast('请先选择图片');
+          return;
+        }
+        if (!window.confirm('确认删除选中的 ' + selected + ' 张图片？文章里的引用会失效。')) {
+          event.preventDefault();
+        }
+      });
+    }
+
+    function showPicked(files) {
+      if (!picked) {
         return;
       }
-      if (!window.confirm('确认删除选中的 ' + selected + ' 张图片？文章里的引用会失效。')) {
-        event.preventDefault();
-      }
-    });
-  }
-
-  const uploadForm = document.querySelector('[data-media-upload]');
-  const fileInput = document.querySelector('[data-media-files]');
-  const dropZone = document.querySelector('[data-media-drop]');
-  const picked = document.querySelector('[data-media-picked]');
-
-  function showPicked(files) {
-    if (!picked) {
-      return;
-    }
-    picked.classList.toggle('has-files', Boolean(files && files.length > 0));
-    if (!files || files.length === 0) {
-      picked.textContent = '还没有选择文件';
-      picked.removeAttribute('title');
-      return;
-    }
-    const names = Array.from(files).map(function (file) { return file.name; });
-    const head = names.length === 1 ? '已选择 1 张' : '已选择 ' + names.length + ' 张';
-    picked.textContent = head + '：' + names.slice(0, 3).join('、') + (names.length > 3 ? ' 等' : '');
-    picked.title = names.join('、');
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener('change', function () {
-      showPicked(fileInput.files);
-    });
-  }
-
-  if (dropZone && fileInput) {
-    ['dragenter', 'dragover'].forEach(function (name) {
-      dropZone.addEventListener(name, function (event) {
-        event.preventDefault();
-        dropZone.classList.add('is-dragover');
-      });
-    });
-    ['dragleave', 'drop'].forEach(function (name) {
-      dropZone.addEventListener(name, function (event) {
-        event.preventDefault();
-        dropZone.classList.remove('is-dragover');
-      });
-    });
-    dropZone.addEventListener('drop', function (event) {
-      const files = event.dataTransfer && event.dataTransfer.files;
+      picked.classList.toggle('has-files', Boolean(files && files.length > 0));
       if (!files || files.length === 0) {
+        picked.textContent = '还没有选择文件';
+        picked.removeAttribute('title');
         return;
       }
-      const transfer = new DataTransfer();
-      Array.from(files).slice(0, 5).forEach(function (file) {
-        transfer.items.add(file);
+      const names = Array.from(files).map(function (file) { return file.name; });
+      const head = names.length === 1 ? '已选择 1 张' : '已选择 ' + names.length + ' 张';
+      picked.textContent = head + '：' + names.slice(0, 3).join('、') + (names.length > 3 ? ' 等' : '');
+      picked.title = names.join('、');
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        showPicked(fileInput.files);
       });
-      fileInput.files = transfer.files;
-      showPicked(fileInput.files);
-    });
+    }
+
+    if (dropZone && fileInput) {
+      ['dragenter', 'dragover'].forEach(function (name) {
+        dropZone.addEventListener(name, function (event) {
+          event.preventDefault();
+          dropZone.classList.add('is-dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(function (name) {
+        dropZone.addEventListener(name, function (event) {
+          event.preventDefault();
+          dropZone.classList.remove('is-dragover');
+        });
+      });
+      dropZone.addEventListener('drop', function (event) {
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (!files || files.length === 0) {
+          return;
+        }
+        const transfer = new DataTransfer();
+        Array.from(files).slice(0, 5).forEach(function (file) {
+          transfer.items.add(file);
+        });
+        fileInput.files = transfer.files;
+        showPicked(fileInput.files);
+      });
+    }
+
+    if (uploadForm && fileInput) {
+      uploadForm.addEventListener('submit', function (event) {
+        if (!fileInput.files || fileInput.files.length === 0) {
+          event.preventDefault();
+          toast('请先选择图片');
+        }
+      });
+    }
+
+    if (selectAll) {
+      refreshSelection();
+    }
   }
 
-  if (uploadForm && fileInput) {
-    uploadForm.addEventListener('submit', function (event) {
-      if (!fileInput.files || fileInput.files.length === 0) {
-        event.preventDefault();
-        toast('请先选择图片');
-      }
-    });
-  }
-
-  if (selectAll) {
-    refreshSelection();
-  }
+  bindMedia();
+  document.addEventListener('admin:content-replaced', bindMedia);
 })();

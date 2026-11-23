@@ -115,6 +115,7 @@
     const doc = parse(html);
     const selector = form.dataset.ajaxTarget || '#admin-main';
     const full = form.hasAttribute('data-ajax-full') || selector === 'body' || isLoginUrl(url);
+    let contentRoot = document.body;
 
     if (full) {
       document.body.innerHTML = doc.body.innerHTML;
@@ -124,6 +125,7 @@
     } else {
       const current = document.querySelector(selector);
       const incoming = doc.querySelector(selector);
+      contentRoot = current;
       if (current && incoming) {
         current.innerHTML = incoming.innerHTML;
         current.className = incoming.className;
@@ -135,6 +137,16 @@
         return;
       }
       if (doc.title) document.title = doc.title;
+    }
+
+    document.dispatchEvent(new CustomEvent('admin:content-replaced', {
+      detail: { root: contentRoot, full: full }
+    }));
+    if (window.AdminSelect && typeof window.AdminSelect.enhance === 'function') {
+      window.AdminSelect.enhance(contentRoot);
+    }
+    if (window.AdminFilters && typeof window.AdminFilters.enhance === 'function') {
+      window.AdminFilters.enhance(contentRoot);
     }
 
     if (full && isLoginUrl(url)) {
