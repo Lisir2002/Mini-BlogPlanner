@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
@@ -78,7 +79,7 @@ final class CommentAdminController
                 'description' => (string) Env::get('APP_DESCRIPTION', ''),
                 'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             ],
-            'title' => '留言管理',
+            'title' => AdminNavigation::label('comments'),
             'current' => 'comments',
             'admin' => $admin,
             'csrf' => Csrf::token(),

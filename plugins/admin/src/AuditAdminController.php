@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditPresenter;
 use Core\Audit\AuditRepository;
 use Core\Config\Env;
@@ -126,7 +127,7 @@ final class AuditAdminController
                 'description' => (string) Env::get('APP_DESCRIPTION', ''),
                 'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             ],
-            'title' => '审计日志',
+            'title' => AdminNavigation::label('audit'),
             'current' => 'audit',
             'admin' => $admin,
             'csrf' => Csrf::token(),

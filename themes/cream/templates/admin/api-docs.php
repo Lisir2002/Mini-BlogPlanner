@@ -2,7 +2,6 @@
   <header class="admin-docs-head">
     <div class="admin-docs-copy">
       <span class="eyebrow"><?= cream_icon('plug', 'icon-sm') ?> PRIVATE SPEC · API v1</span>
-      <h2>接口文档</h2>
       <p>这里只对已登录的管理员开放。公开页面不再展示入口，OpenAPI 源文件也不在静态目录中。</p>
     </div>
     <div class="admin-docs-actions">

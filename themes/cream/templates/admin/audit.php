@@ -43,7 +43,6 @@ foreach ($eventOptions as $option) {
   <div class="audit-hero">
     <div class="audit-hero-copy">
       <span class="audit-eyebrow">BACKSTAGE · AUDIT TRAIL</span>
-      <h2 class="audit-title">审计日志</h2>
       <p class="audit-lede">谁在什么时候改了什么，一次写清。这里只读、可筛选、可导出，不提供后台删除。</p>
     </div>
     <div class="audit-hero-actions">

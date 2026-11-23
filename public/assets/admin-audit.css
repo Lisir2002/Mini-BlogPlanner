@@ -21,13 +21,6 @@
   letter-spacing: .16em;
 }
 
-.audit-title {
-  margin: 7px 0 0;
-  font-size: clamp(30px, 4vw, 44px);
-  line-height: 1.12;
-  letter-spacing: -.045em;
-}
-
 .audit-lede {
   max-width: 44rem;
   margin: 9px 0 0;
@@ -595,7 +588,6 @@
 
 @media (max-width: 520px) {
   .audit-hero { padding: 18px 16px; }
-  .audit-title { font-size: 31px; }
   .audit-stats-foot { display: grid; }
   .audit-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .audit-field-search,

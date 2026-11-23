@@ -31,11 +31,6 @@
   justify-content: space-between;
   gap: 12px;
 }
-.media-console-head h2 {
-  margin: 2px 0 0;
-  font: 800 22px/1.15 var(--font-serif, ui-serif, Georgia, serif);
-  letter-spacing: -0.02em;
-}
 .media-console-head p {
   margin: 4px 0 0;
   color: var(--muted);
@@ -557,7 +552,6 @@
 
 @media (max-width: 760px) {
   .media-console { gap: 9px; padding: 11px 12px; border-radius: 14px; }
-  .media-console-head h2 { font-size: 18px; }
   .media-console-head p { font-size: 10.5px; }
   .media-summary-item { padding: 7px 8px; }
   .media-summary-item small { font-size: 8.5px; }

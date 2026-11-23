@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditRepository;
 use Core\Auth\AdminRepository;
 use Core\Auth\Auth;
@@ -123,7 +124,7 @@ final class LoginController
     {
         $html = $this->theme->render('admin/login', [
             'site' => $this->site(),
-            'title' => '后台登录',
+            'title' => AdminNavigation::LOGIN_LABEL,
             'current' => 'login',
             'csrf' => Csrf::token(),
             'error' => $error,

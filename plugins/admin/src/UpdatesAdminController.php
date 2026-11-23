@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
@@ -83,7 +84,7 @@ final class UpdatesAdminController
 
         $html = $this->theme->render('admin/updates', [
             'site' => $this->site(),
-            'title' => '版本与升级',
+            'title' => AdminNavigation::label('updates'),
             'current' => 'updates',
             'admin' => $admin,
             'csrf' => Csrf::token(),

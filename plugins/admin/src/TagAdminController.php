@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
@@ -308,7 +309,7 @@ final class TagAdminController
                 'description' => (string) Env::get('APP_DESCRIPTION', ''),
                 'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             ],
-            'title' => '标签管理',
+            'title' => AdminNavigation::label('tags'),
             'current' => 'tags',
             'admin' => $admin,
             'csrf' => Csrf::token(),

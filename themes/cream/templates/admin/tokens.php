@@ -19,7 +19,6 @@ $pager_label = 'API 令牌分页';
     <span class="tape tape-mint token-tape" aria-hidden="true"></span>
     <div class="token-hero-copy">
       <span class="eyebrow"><?= cream_icon('plug', 'icon-sm') ?> API TOKENS</span>
-      <h2>给接口一把<br><span class="marker">可收回的钥匙。</span></h2>
       <p>令牌只用于管理接口。创建时显示一次明文，之后只保留前缀和哈希，撤销后立即失效。</p>
     </div>
     <aside class="token-hero-note">

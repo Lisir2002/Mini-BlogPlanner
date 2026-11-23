@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Audit\AuditRepository;
 use Core\Auth\Admin;
 use Core\Config\Env;
@@ -167,7 +168,7 @@ final class PostAdminController
         $notice = (string) ($flash['notice'] ?? '');
 
         return $this->render('admin/posts', $admin, [
-            'title' => '文章管理',
+            'title' => AdminNavigation::label('posts'),
             'current' => 'posts',
             'posts' => $posts,
             'summary' => $summary,

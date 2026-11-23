@@ -8,6 +8,8 @@ $headerTitle = trim((string) ($title ?? ''));
 if ($headerTitle === '') {
     $headerTitle = '后台';
 }
+$adminSections = \Core\Admin\AdminNavigation::all();
+$loginLabel = \Core\Admin\AdminNavigation::LOGIN_LABEL;
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -36,14 +38,9 @@ if ($headerTitle === '') {
     </a>
     <?php if ($admin !== null): ?>
     <nav class="admin-nav nav-desktop" aria-label="后台导航">
-      <a class="<?= $current === 'posts' ? 'is-current' : '' ?>" href="/admin/posts.html">文章</a>
-      <a class="<?= $current === 'tags' ? 'is-current' : '' ?>" href="/admin/tags.html">标签</a>
-      <a class="<?= $current === 'comments' ? 'is-current' : '' ?>" href="/admin/comments.html">评论</a>
-      <a class="<?= $current === 'media' ? 'is-current' : '' ?>" href="/admin/media.html">媒体</a>
-      <a class="<?= $current === 'audit' ? 'is-current' : '' ?>" href="/admin/audit.html">审计</a>
-      <a class="<?= $current === 'tokens' ? 'is-current' : '' ?>" href="/admin/tokens.html">API</a>
-      <a class="<?= $current === 'apidocs' ? 'is-current' : '' ?>" href="/admin/api-docs.html">接口文档</a>
-      <a class="<?= $current === 'updates' ? 'is-current' : '' ?>" href="/admin/updates.html">版本</a>
+      <?php foreach ($adminSections as $key => $section): ?>
+      <a class="<?= $current === $key ? 'is-current' : '' ?>" href="<?= cream_e($section['href']) ?>"><?= cream_e($section['label']) ?></a>
+      <?php endforeach; ?>
       <a href="/" target="_blank" rel="noopener">查看站点 <?= cream_icon('external', 'icon-xs') ?></a>
       <span class="admin-user"><?= cream_e($admin->username) ?></span>
       <form method="post" action="/admin/logout.html" class="inline-form" data-ajax-full>
@@ -66,50 +63,18 @@ if ($headerTitle === '') {
             <p class="nav-drawer-sub">选一项，继续写。</p>
           </div>
           <div class="nav-drawer-links">
-            <a class="nav-drawer-link<?= $current === 'posts' ? ' is-current' : '' ?>" href="/admin/posts.html"<?= $current === 'posts' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">文章</span>
-              <span class="nav-drawer-index">01</span>
+            <?php $sectionNumber = 0; foreach ($adminSections as $key => $section): $sectionNumber += 1; ?>
+            <a class="nav-drawer-link<?= $current === $key ? ' is-current' : '' ?>" href="<?= cream_e($section['href']) ?>"<?= $current === $key ? ' aria-current="page"' : '' ?>>
+              <span class="nav-drawer-icon"><?= cream_icon($section['icon'], 'icon-sm') ?></span>
+              <span class="nav-drawer-text"><?= cream_e($section['label']) ?></span>
+              <span class="nav-drawer-index"><?= str_pad((string) $sectionNumber, 2, '0', STR_PAD_LEFT) ?></span>
             </a>
-            <a class="nav-drawer-link<?= $current === 'tags' ? ' is-current' : '' ?>" href="/admin/tags.html"<?= $current === 'tags' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('tag', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">标签</span>
-              <span class="nav-drawer-index">02</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'comments' ? ' is-current' : '' ?>" href="/admin/comments.html"<?= $current === 'comments' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('comment', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">评论</span>
-              <span class="nav-drawer-index">03</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'media' ? ' is-current' : '' ?>" href="/admin/media.html"<?= $current === 'media' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('layers', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">媒体</span>
-              <span class="nav-drawer-index">04</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'audit' ? ' is-current' : '' ?>" href="/admin/audit.html"<?= $current === 'audit' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('shield', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">审计</span>
-              <span class="nav-drawer-index">05</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'tokens' ? ' is-current' : '' ?>" href="/admin/tokens.html"<?= $current === 'tokens' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('plug', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">API 令牌</span>
-              <span class="nav-drawer-index">06</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'apidocs' ? ' is-current' : '' ?>" href="/admin/api-docs.html"<?= $current === 'apidocs' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('book', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">接口文档</span>
-              <span class="nav-drawer-index">07</span>
-            </a>
-            <a class="nav-drawer-link<?= $current === 'updates' ? ' is-current' : '' ?>" href="/admin/updates.html"<?= $current === 'updates' ? ' aria-current="page"' : '' ?>>
-              <span class="nav-drawer-icon"><?= cream_icon('refresh', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">版本与升级</span>
-              <span class="nav-drawer-index">08</span>
-            </a>
+            <?php endforeach; ?>
+            <?php $sectionNumber += 1; ?>
             <a class="nav-drawer-link" href="/" target="_blank" rel="noopener">
               <span class="nav-drawer-icon"><?= cream_icon('external', 'icon-sm') ?></span>
               <span class="nav-drawer-text">查看站点</span>
-              <span class="nav-drawer-index">09</span>
+              <span class="nav-drawer-index"><?= str_pad((string) $sectionNumber, 2, '0', STR_PAD_LEFT) ?></span>
             </a>
           </div>
           <div class="nav-drawer-foot admin-mobile-foot">
@@ -124,7 +89,7 @@ if ($headerTitle === '') {
     </details>
     <?php else: ?>
     <nav class="admin-nav nav-desktop" aria-label="后台登录导航">
-      <a class="is-current" href="/admin/login.html">登录</a>
+      <a class="is-current" href="/admin/login.html"><?= cream_e($loginLabel) ?></a>
       <a href="/">返回站点 <?= cream_icon('external', 'icon-xs') ?></a>
     </nav>
     <details class="nav-mobile admin-mobile">
@@ -143,7 +108,7 @@ if ($headerTitle === '') {
           <div class="nav-drawer-links">
             <a class="nav-drawer-link is-current" href="/admin/login.html" aria-current="page">
               <span class="nav-drawer-icon"><?= cream_icon('lock', 'icon-sm') ?></span>
-              <span class="nav-drawer-text">登录</span>
+              <span class="nav-drawer-text"><?= cream_e($loginLabel) ?></span>
               <span class="nav-drawer-index">01</span>
             </a>
             <a class="nav-drawer-link" href="/">

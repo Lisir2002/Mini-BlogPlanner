@@ -690,7 +690,7 @@ html.is-visually-zoomed .nav-mobile-panel {
   .admin-table { min-width: 620px; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 980px) {
   .admin-nav.nav-desktop { display: none; }
   .admin-mobile { display: block; }
 }

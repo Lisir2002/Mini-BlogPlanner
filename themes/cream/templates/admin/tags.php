@@ -40,7 +40,6 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
     <span class="tag-admin-tape" aria-hidden="true"></span>
     <div class="tag-admin-hero-copy">
       <span class="eyebrow"><?= cream_icon('tag', 'icon-sm') ?> TAGS · INDEX</span>
-      <h2>给每篇字<br><span class="marker">找一个抽屉。</span></h2>
       <p>把散落在文章里的关键词收成清楚的标签。先看使用情况，再决定重命名、合并或清理。</p>
     </div>
     <aside class="tag-admin-hero-note">

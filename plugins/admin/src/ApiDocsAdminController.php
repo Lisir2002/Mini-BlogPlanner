@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Config\Env;
 use Core\Http\Csrf;
 use Core\Http\Request;
@@ -41,7 +42,7 @@ final class ApiDocsAdminController
                 'description' => (string) Env::get('APP_DESCRIPTION', ''),
                 'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             ],
-            'title' => '接口文档',
+            'title' => AdminNavigation::label('apidocs'),
             'current' => 'apidocs',
             'admin' => $admin,
             'csrf' => Csrf::token(),

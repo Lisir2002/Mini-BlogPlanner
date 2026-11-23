@@ -58,7 +58,6 @@ $excerpt = static function (string $text, int $limit = 90): string {
   <header class="comment-inbox-hero">
     <div class="comment-inbox-hero-copy">
       <span class="eyebrow"><?= cream_icon('comment', 'icon-sm') ?> COMMENTS · INBOX</span>
-      <h2>把留言一张张看过。</h2>
       <p>先处理待审核，再回看已通过和垃圾。通过后的留言才会出现在文章页，删除父留言会一并移除回复。</p>
     </div>
     <aside class="comment-inbox-hero-note" aria-label="留言概览">

@@ -22,8 +22,7 @@
 }
 
 .token-hero-copy { min-width: 0; }
-.token-hero h2 { margin: 10px 0 12px; max-width: 16ch; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; letter-spacing: -0.045em; }
-.token-hero p { margin: 0; max-width: 55ch; color: var(--ink-soft); font-size: 14px; }
+.token-hero p { margin: 10px 0 0; max-width: 55ch; color: var(--ink-soft); font-size: 14px; }
 .token-tape { position: absolute; top: -12px; left: 34px; width: 88px; }
 
 .token-hero-note {
@@ -130,7 +129,6 @@
 @media (max-width: 560px) {
   .token-page { width: calc(100% - 28px); padding: 28px 0 50px; gap: 16px; }
   .token-hero { padding: 24px 18px; }
-  .token-hero h2 { font-size: 30px; }
   .token-stats { grid-template-columns: 1fr; }
   .token-row { display: grid; }
   .token-revoke button { width: 100%; justify-content: center; }

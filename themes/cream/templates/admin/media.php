@@ -36,7 +36,6 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
     <header class="media-console-head">
       <div>
         <span class="eyebrow">MEDIA · LIBRARY</span>
-        <h2>媒体库</h2>
         <p>共 <?= number_format((int) ($summary['total'] ?? $total)) ?> 张图片，每页十张。图片存放在非公开目录，通过受控地址读取。</p>
       </div>
     </header>

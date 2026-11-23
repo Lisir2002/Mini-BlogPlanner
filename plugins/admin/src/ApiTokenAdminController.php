@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Admin;
 
+use Core\Admin\AdminNavigation;
 use Core\Api\ApiScope;
 use Core\Api\ApiToken;
 use Core\Api\ApiTokenRepository;
@@ -102,7 +103,7 @@ final class ApiTokenAdminController
                 'description' => (string) Env::get('APP_DESCRIPTION', ''),
                 'language' => (string) Env::get('APP_LOCALE', 'zh-CN'),
             ],
-            'title' => 'API 令牌',
+            'title' => AdminNavigation::label('tokens'),
             'current' => 'tokens',
             'admin' => $admin,
             'csrf' => Csrf::token(),

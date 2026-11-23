@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Core\Admin\AdminNavigation;
 use Core\Auth\AdminRepository;
 use Core\Auth\Auth;
 use Core\Auth\LoginThrottle;
@@ -1506,7 +1507,7 @@ check('API docs are private and admin-only', function (): void {
     truthy($controller !== false && str_contains($controller, 'new AdminGuard(') && substr_count($controller, 'authenticate($request)') >= 2, 'Both docs routes must require an admin session');
     truthy($controller !== false && str_contains($controller, "'/docs/openapi.yaml'") && str_contains($controller, "'Cache-Control', 'no-store, private, max-age=0'"), 'Private YAML must be read from outside public and must not be cached');
     truthy($template !== false && str_contains($template, 'data-url="/admin/api-docs/openapi.yaml"'), 'Docs page must load the guarded YAML endpoint');
-    truthy($layout !== false && str_contains($layout, 'href="/admin/api-docs.html"'), 'Backstage menu must link the private docs page');
+    truthy(AdminNavigation::all()['apidocs']['href'] === '/admin/api-docs.html' && $layout !== false && str_contains($layout, 'AdminNavigation::all()'), 'Backstage menu must link the private docs page');
     foreach ([$header, $footer, $home, $status] as $publicTemplate) {
         truthy($publicTemplate !== false && !str_contains($publicTemplate, '/api.html'), 'Public templates must not link the removed docs page');
     }
@@ -1526,6 +1527,54 @@ check('Page headings live in the top bar', function (): void {
     truthy($posts !== false && !str_contains($posts, '<h1') && $post !== false && !str_contains($post, '<h1') && $archive !== false && !str_contains($archive, '<h1'), 'List and article headings must move out of content');
     truthy($adminLayout !== false && str_contains($adminLayout, 'admin-brand-title'), 'Admin page heading must render in the top bar');
     truthy($adminPosts !== false && !str_contains($adminPosts, '<h1'), 'Admin page heading must not repeat in content');
+});
+
+check('Admin menu labels and page titles share one source', function (): void {
+    $root = dirname(__DIR__);
+    same([
+        'posts' => '文章管理',
+        'tags' => '标签管理',
+        'comments' => '留言管理',
+        'media' => '媒体库',
+        'audit' => '审计日志',
+        'tokens' => 'API 令牌',
+        'apidocs' => '接口文档',
+        'updates' => '版本与升级',
+    ], array_map(static fn (array $section): string => $section['label'], AdminNavigation::all()));
+    same('后台登录', AdminNavigation::LOGIN_LABEL);
+
+    $controllers = [
+        'PostAdminController.php' => 'posts',
+        'TagAdminController.php' => 'tags',
+        'CommentAdminController.php' => 'comments',
+        'MediaAdminController.php' => 'media',
+        'AuditAdminController.php' => 'audit',
+        'ApiTokenAdminController.php' => 'tokens',
+        'ApiDocsAdminController.php' => 'apidocs',
+        'UpdatesAdminController.php' => 'updates',
+    ];
+    foreach ($controllers as $file => $key) {
+        $source = file_get_contents($root . '/plugins/admin/src/' . $file);
+        truthy($source !== false && str_contains($source, "AdminNavigation::label('" . $key . "')"), 'Admin page title must use the shared menu label in ' . $file);
+    }
+    $login = file_get_contents($root . '/plugins/admin/src/LoginController.php');
+    truthy($login !== false && str_contains($login, 'AdminNavigation::LOGIN_LABEL'), 'Login page title must use the shared login label');
+
+    $layout = file_get_contents($root . '/themes/cream/templates/admin/layout.php');
+    truthy($layout !== false && str_contains($layout, 'AdminNavigation::all()') && substr_count($layout, 'foreach ($adminSections') === 2, 'Desktop and mobile menus must read the same nav source');
+    truthy($layout !== false && str_contains($layout, 'admin-brand-title'), 'The top bar must remain the single page-title location');
+
+    foreach ([
+        'media.php' => '<h2>媒体库</h2>',
+        'tags.php' => '给每篇字',
+        'comments.php' => '把留言一张张看过',
+        'tokens.php' => '给接口一把',
+        'api-docs.php' => '接口文档</h2>',
+        'audit.php' => 'audit-title',
+    ] as $file => $duplicate) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $file);
+        truthy($template !== false && !str_contains($template, $duplicate), 'Page title must not repeat inside the body of ' . $file);
+    }
 });
 
 check('Admin login uses a taped desk layout', function (): void {
@@ -2030,7 +2079,7 @@ check('Admin updates page exposes guarded one-click flow', function (): void {
     truthy($template !== false && str_contains($template, 'data-update-region="current"') && str_contains($template, 'data-update-region="progress"') && str_contains($template, 'data-update-region="details"'), 'Updates page needs independently refreshable regions');
     truthy($template !== false && str_contains($template, 'id="update-dialog"') && str_contains($template, 'action="/admin/updates/apply"'), 'Updates page needs a guarded apply dialog');
     truthy($template !== false && str_contains($template, 'name="_csrf"') && str_contains($template, 'name="tag"'), 'Apply dialog needs CSRF and target tag');
-    truthy($layout !== false && str_contains($layout, '/admin/updates.html') && str_contains($layout, '版本与升级'), 'Admin navigation must expose updates');
+    truthy(AdminNavigation::all()['updates']['href'] === '/admin/updates.html' && AdminNavigation::label('updates') === '版本与升级' && $layout !== false && str_contains($layout, 'AdminNavigation::all()'), 'Admin navigation must expose updates');
     truthy($plugin !== false && str_contains($plugin, "'/admin/updates'") && str_contains($plugin, "'/admin/updates/apply'"), 'Admin plugin must register updates routes');
     truthy($controller !== false && str_contains($controller, 'Csrf::validate') && str_contains($controller, 'sudo -n'), 'Controller must guard CSRF and use restricted sudo');
     truthy($controller !== false && str_contains($controller, '->reconcile('), 'Controller must reconcile an upgrade that already switched versions');
