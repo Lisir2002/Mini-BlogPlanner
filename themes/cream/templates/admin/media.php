@@ -108,7 +108,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
   </div>
 
 <?php if ($uploaded > 0 || $failed > 0 || $deleted > 0): ?>
-  <div class="admin-flash media-flash" role="status">
+  <div class="admin-flash media-flash" role="status"<?= $failed > 0 ? '' : ' data-auto-dismiss="5000"' ?>>
     <?= cream_icon('spark', 'icon-sm') ?>
     <span>
       <?php if ($uploaded > 0): ?>已上传 <?= $uploaded ?> 张，可以复制地址放进文章。<?php endif; ?>

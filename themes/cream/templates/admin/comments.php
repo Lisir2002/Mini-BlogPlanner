@@ -104,7 +104,7 @@ $excerpt = static function (string $text, int $limit = 90): string {
   </div>
 
   <?php if ($ok !== '' && isset($okMessages[$ok])): ?>
-  <div class="admin-flash comment-inbox-flash" role="status"><?= cream_icon('spark', 'icon-sm') ?> <?= cream_e($okMessages[$ok]) ?></div>
+  <div class="admin-flash comment-inbox-flash" role="status" data-auto-dismiss="5000"><?= cream_icon('spark', 'icon-sm') ?> <?= cream_e($okMessages[$ok]) ?></div>
   <?php endif; ?>
 
 <?php if ($comments === []): ?>

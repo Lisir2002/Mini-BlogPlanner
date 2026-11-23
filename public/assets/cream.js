@@ -105,6 +105,23 @@
 
   if (!body.classList.contains('admin-body')) return;
 
+  const bindAutoDismiss = (root) => {
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('[data-auto-dismiss]').forEach((node) => {
+      if (node.dataset.autoDismissReady === '1') return;
+      const delay = Number.parseInt(node.getAttribute('data-auto-dismiss') || '0', 10);
+      node.dataset.autoDismissReady = '1';
+      if (!Number.isFinite(delay) || delay <= 0) return;
+      window.setTimeout(() => {
+        node.classList.add('is-dismissing');
+        node.setAttribute('aria-hidden', 'true');
+        window.setTimeout(() => node.remove(), 240);
+      }, delay);
+    });
+  };
+
+  bindAutoDismiss(document);
+
   const isHtml = (text, type) => type.includes('text/html') || /^\s*<(?:!doctype|html)/i.test(text);
   const isLoginUrl = (url) => /\/admin\/login(?:\.html)?(?:[?#]|$)/.test(url);
 
@@ -148,6 +165,7 @@
     if (window.AdminFilters && typeof window.AdminFilters.enhance === 'function') {
       window.AdminFilters.enhance(contentRoot);
     }
+    bindAutoDismiss(contentRoot);
 
     if (full && isLoginUrl(url)) {
       try {

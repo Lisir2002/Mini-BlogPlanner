@@ -861,6 +861,8 @@ check('Media admin page and API stay wired together', function (): void {
     truthy($css !== false && str_contains($css, '.media-picked.has-files'), 'Picked upload files must stay visible on narrow screens');
     truthy($script !== false && str_contains($script, '已选择') && str_contains($script, 'has-files'), 'Picked upload feedback must show the selected count');
     truthy($cream !== false && str_contains($cream, 'admin:content-replaced') && str_contains($cream, 'AdminSelect.enhance') && str_contains($cream, 'AdminFilters.enhance'), 'Async content replacement must reinitialize page controls');
+    truthy($cream !== false && str_contains($cream, 'bindAutoDismiss') && str_contains($cream, 'is-dismissing'), 'Success notices must dismiss themselves after a delay');
+    truthy($template !== false && str_contains($template, 'data-auto-dismiss="5000"'), 'Media success notice must opt into auto dismiss');
     truthy($filters !== false && str_contains($filters, 'window.AdminFilters') && str_contains($filters, 'function start(root)'), 'Filters must expose a scoped reinitializer');
     truthy($script !== false && str_contains($script, 'admin:content-replaced') && str_contains($script, 'bindMedia'), 'Media actions must rebind after async replacement');
     truthy($css !== false && str_contains($css, "  .media-filterbar {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));"), 'Phone filter card must use two balanced columns');

@@ -77,7 +77,7 @@ $statusTabs = [
   </div>
 
   <?php if ($notice !== ''): ?>
-  <div class="admin-flash post-admin-flash" role="status"><?= cream_icon('spark', 'icon-sm') ?> <?= cream_e($notice) ?></div>
+  <div class="admin-flash post-admin-flash" role="status" data-auto-dismiss="5000"><?= cream_icon('spark', 'icon-sm') ?> <?= cream_e($notice) ?></div>
   <?php endif; ?>
 
 <?php if ($posts === []): ?>

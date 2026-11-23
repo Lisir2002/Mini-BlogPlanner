@@ -61,7 +61,7 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
 <?php if ($err !== null && isset($errMessages[$err])): ?>
   <div class="alert bad"><?= cream_e($errMessages[$err]) ?></div>
 <?php elseif ($ok !== null && isset($okMessages[$ok])): ?>
-  <div class="alert good"><?= cream_e($okMessages[$ok]) ?></div>
+  <div class="alert good" data-auto-dismiss="5000"><?= cream_e($okMessages[$ok]) ?></div>
 <?php endif; ?>
 
   <div class="tag-admin-toolbar">
