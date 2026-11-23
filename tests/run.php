@@ -1007,6 +1007,41 @@ check('Admin filter cards collapse on phones and reopen on demand', function ():
     }
 });
 
+check('Admin filters and category links stay on the same page', function (): void {
+    $root = dirname(__DIR__);
+    $cream = file_get_contents($root . '/public/assets/cream.js');
+    truthy($cream !== false && str_contains($cream, "closest('a[data-ajax-link]')"), 'Admin filter navigation must be caught before the browser leaves the page');
+    truthy($cream !== false && str_contains($cream, "'popstate'") && str_contains($cream, '正在恢复…'), 'Browser back and forward must restore filtered content without a full reload');
+
+    foreach (['audit', 'posts'] as $page) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $page . '.php');
+        truthy($template !== false && str_contains($template, 'data-admin-filter-panel data-ajax-silent'), 'Filter forms must stay inline and skip completion toasts on ' . $page);
+    }
+    foreach (['tags', 'media', 'comments', 'revisions'] as $page) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $page . '.php');
+        truthy($template !== false && str_contains($template, 'data-ajax-silent'), 'Filter forms must skip completion toasts on ' . $page);
+    }
+    $revisions = file_get_contents($root . '/themes/cream/templates/admin/revisions.php');
+    truthy($revisions !== false && str_contains($revisions, 'this.form.requestSubmit'), 'Compare selection must fire the async submit path');
+    foreach ([
+        'audit' => 'audit-category-tab',
+        'posts' => 'post-admin-rail-tab',
+        'comments' => 'comment-inbox-tab',
+    ] as $page => $class) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $page . '.php');
+        truthy($template !== false && preg_match('/class="' . preg_quote($class, '/') . '[^\\n]*data-ajax-link/', $template) === 1, 'Category tabs must stay inline on ' . $page);
+    }
+
+    $audit = file_get_contents($root . '/themes/cream/templates/admin/audit.php');
+    truthy($audit !== false && substr_count($audit, 'data-ajax-link') >= 11, 'Audit stats, chips, reset and pagination must all stay inline');
+    $pager = file_get_contents($root . '/themes/cream/templates/partials/page-pager.php');
+    truthy($pager !== false && str_contains($pager, 'data-ajax-link') && str_contains($pager, '$pager_ajax'), 'Shared pagination must support inline admin navigation');
+    foreach (['tags', 'media', 'tokens', 'revisions'] as $page) {
+        $template = file_get_contents($root . '/themes/cream/templates/admin/' . $page . '.php');
+        truthy($template !== false && str_contains($template, '$pager_ajax = true'), 'Admin pager must opt into inline navigation on ' . $page);
+    }
+});
+
 check('Auth logs in, expires idle sessions and logs out', function (): void {
     Session::start();
     $_SESSION = [];

@@ -127,11 +127,12 @@
 
   const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
 
-  const applyResponse = (html, status, url, form) => {
-    const type = 'text/html';
+  const applyResponse = (html, status, url, source, options) => {
     const doc = parse(html);
-    const selector = form.dataset.ajaxTarget || '#admin-main';
-    const full = form.hasAttribute('data-ajax-full') || selector === 'body' || isLoginUrl(url);
+    const selector = source.dataset.ajaxTarget || '#admin-main';
+    const full = source.hasAttribute('data-ajax-full') || selector === 'body' || isLoginUrl(url);
+    const updateHistory = !(options && options.updateHistory === false);
+    const sourceAction = source.getAttribute('action') || source.getAttribute('href') || '';
     let contentRoot = document.body;
 
     if (full) {
@@ -174,12 +175,12 @@
         // 登录跳转失败时保留原地址，用户仍可手动刷新。
       }
       hideLoader();
-      toast(/\/admin\/logout/.test(form.action || '') ? '已退出登录。' : '登录状态已失效，请重新登录。', /\/admin\/logout/.test(form.action || '') ? undefined : 'error');
+      toast(/\/admin\/logout/.test(sourceAction) ? '已退出登录。' : '登录状态已失效，请重新登录。', /\/admin\/logout/.test(sourceAction) ? undefined : 'error');
       return;
     }
 
     let historyUrl = url;
-    const resultUrl = form.dataset.ajaxResultUrl || '';
+    const resultUrl = source.dataset.ajaxResultUrl || '';
     if (status < 400 && resultUrl !== '') {
       try {
         const next = new URL(resultUrl, location.href);
@@ -188,7 +189,7 @@
         // 非法回跳地址保留服务端返回的地址。
       }
     }
-    if (historyUrl && status < 400) {
+    if (updateHistory && historyUrl && status < 400) {
       try {
         history.pushState({}, '', historyUrl);
       } catch (error) {
@@ -198,7 +199,7 @@
     hideLoader();
     if (status >= 400) {
       toast('请检查表单内容。', 'error');
-    } else if (!form.hasAttribute('data-ajax-silent')) {
+    } else if (!source.hasAttribute('data-ajax-silent')) {
       toast('已完成。');
     }
   };
@@ -271,6 +272,53 @@
       reject(new Error('upload failed'));
     };
     xhr.send(data);
+  });
+
+  const loadAdminPage = async (url, source, label, updateHistory) => {
+    showLoader(label, 'MINI-BLOGPLANNER');
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const text = await response.text();
+      if (!isHtml(text, response.headers.get('content-type') || '')) {
+        toast(text.trim() || '请求失败。', 'error');
+        hideLoader();
+        return;
+      }
+      applyResponse(text, response.status, response.url, source, { updateHistory: updateHistory !== false });
+    } catch (error) {
+      toast('网络连接失败，请稍后重试。', 'error');
+      hideLoader();
+    }
+  };
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest('a[data-ajax-link]');
+    if (!link || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (link.target && link.target !== '_self') return;
+    if (link.dataset.ajax === 'off' || link.hasAttribute('download')) return;
+    const target = new URL(link.href, location.href);
+    if (target.origin !== location.origin) return;
+    event.preventDefault();
+    if (inFlight) return;
+    inFlight = true;
+    loadAdminPage(target.href, link, '正在筛选…', true).finally(() => { inFlight = false; });
+  });
+
+  window.addEventListener('popstate', () => {
+    if (!location.pathname.startsWith('/admin/') || inFlight) return;
+    const source = document.createElement('a');
+    source.href = location.href;
+    source.dataset.ajaxTarget = '#admin-main';
+    source.setAttribute('data-ajax-silent', '');
+    inFlight = true;
+    loadAdminPage(location.href, source, '正在恢复…', false).finally(() => { inFlight = false; });
   });
 
   document.addEventListener('change', (event) => {

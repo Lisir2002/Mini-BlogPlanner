@@ -65,13 +65,13 @@ $excerpt = static function (string $text, int $limit = 90): string {
       <span>待审核</span>
       <strong><?= number_format($pending) ?></strong>
       <small>共 <?= number_format($allCount) ?> 条留言</small>
-      <?php if ($pending > 0): ?><a href="<?= cream_e($tabUrl('pending')) ?>">进入待审队列 <?= cream_icon('arrow-right', 'icon-xs') ?></a><?php endif; ?>
+      <?php if ($pending > 0): ?><a data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($tabUrl('pending')) ?>">进入待审队列 <?= cream_icon('arrow-right', 'icon-xs') ?></a><?php endif; ?>
     </aside>
   </header>
 
   <div class="comment-inbox-tabs" role="tablist" aria-label="留言状态">
     <?php foreach ($tabs as $key => [$label, $count]): ?>
-    <a class="comment-inbox-tab<?= $status === $key ? ' is-current' : '' ?>" href="<?= cream_e($tabUrl($key)) ?>" role="tab" aria-selected="<?= $status === $key ? 'true' : 'false' ?>">
+    <a class="comment-inbox-tab<?= $status === $key ? ' is-current' : '' ?>" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($tabUrl($key)) ?>" role="tab" aria-selected="<?= $status === $key ? 'true' : 'false' ?>">
       <span><?= cream_e($label) ?></span><strong><?= number_format((int) $count) ?></strong>
     </a>
     <?php endforeach; ?>
@@ -79,7 +79,7 @@ $excerpt = static function (string $text, int $limit = 90): string {
   </div>
 
   <div class="comment-inbox-filterbar<?= $q !== '' || $postId > 0 ? ' has-filter' : '' ?>">
-    <form class="comment-inbox-filter" method="get" action="<?= cream_e($baseUrl) ?>" role="search">
+    <form class="comment-inbox-filter" method="get" action="<?= cream_e($baseUrl) ?>" role="search" data-ajax-silent>
       <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= cream_e($status) ?>"><?php endif; ?>
       <label class="comment-inbox-search">
         <span class="visually-hidden">搜索留言</span>
@@ -97,7 +97,7 @@ $excerpt = static function (string $text, int $limit = 90): string {
       </label>
       <button class="admin-button primary comment-inbox-filter-submit" type="submit">筛选</button>
       <?php if ($q !== '' || $postId > 0): ?>
-      <a class="comment-inbox-clear" href="<?= cream_e($baseUrl . ($status !== '' ? '?status=' . rawurlencode($status) : '')) ?>">清空条件</a>
+      <a class="comment-inbox-clear" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($baseUrl . ($status !== '' ? '?status=' . rawurlencode($status) : '')) ?>">清空条件</a>
       <?php endif; ?>
     </form>
     <div class="comment-inbox-result"><strong><?= number_format($total) ?></strong> 条当前结果</div>
@@ -112,7 +112,7 @@ $excerpt = static function (string $text, int $limit = 90): string {
     <?= cream_icon('heart') ?>
     <h2><?= $status === 'pending' ? '待审队列已经清空' : ($status === 'spam' ? '垃圾箱是空的' : ($status === 'approved' ? '还没有通过的留言' : '收件箱还是空的')) ?></h2>
     <p><?= $q !== '' || $postId > 0 ? '换个关键词、文章或状态再试。' : '读者在文章页提交留言后，会先进入待审核队列。' ?></p>
-    <?php if ($q !== '' || $postId > 0): ?><a class="admin-button ghost" href="<?= cream_e($tabUrl($status)) ?>">清空条件</a><?php endif; ?>
+    <?php if ($q !== '' || $postId > 0): ?><a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($tabUrl($status)) ?>">清空条件</a><?php endif; ?>
   </div>
 <?php else: ?>
   <form id="comment-bulk-form" class="comment-bulk-form" method="post" action="/admin/comments/bulk.html">
@@ -221,9 +221,9 @@ $excerpt = static function (string $text, int $limit = 90): string {
 
   <?php if ($pages > 1): ?>
   <nav class="audit-pager comment-inbox-pager" aria-label="留言分页">
-    <?php if ($prevUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($prevUrl) ?>">上一页</a><?php endif; ?>
+    <?php if ($prevUrl !== null): ?><a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($prevUrl) ?>">上一页</a><?php endif; ?>
     <span>第 <?= $page ?> / <?= $pages ?> 页 · 共 <?= number_format($total) ?> 条</span>
-    <?php if ($nextUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($nextUrl) ?>">下一页</a><?php endif; ?>
+    <?php if ($nextUrl !== null): ?><a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($nextUrl) ?>">下一页</a><?php endif; ?>
   </nav>
   <?php endif; ?>
 <?php endif; ?>

@@ -96,7 +96,7 @@ $pager_label = 'API 令牌分页';
         </article>
 <?php endforeach; ?>
       </div>
-      <?php require dirname(__DIR__) . '/partials/page-pager.php'; ?>
+      <?php $pager_ajax = true; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
     <?php endif; ?>
     </section>
 

@@ -27,7 +27,7 @@ $statusTabs = [
   <div class="post-admin-console">
     <div class="post-admin-rail" role="tablist" aria-label="文章状态">
       <?php foreach ($statusTabs as $key => [$label, $count]): ?>
-      <a class="post-admin-rail-tab<?= $statusKey === $key ? ' is-current' : '' ?>" href="<?= cream_e((string) ($statusUrls[$key] ?? '/admin/posts.html')) ?>" role="tab" aria-selected="<?= $statusKey === $key ? 'true' : 'false' ?>">
+      <a class="post-admin-rail-tab<?= $statusKey === $key ? ' is-current' : '' ?>" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e((string) ($statusUrls[$key] ?? '/admin/posts.html')) ?>" role="tab" aria-selected="<?= $statusKey === $key ? 'true' : 'false' ?>">
         <span><?= cream_e($label) ?></span><strong><?= (int) $count ?></strong>
       </a>
       <?php endforeach; ?>
@@ -40,7 +40,7 @@ $statusTabs = [
       <a class="admin-button primary post-admin-new" href="/admin/posts/new.html"><?= cream_icon('pen', 'icon-sm') ?> 写新文章</a>
     </div>
 
-    <form class="post-admin-toolbar" method="get" action="/admin/posts.html" role="search" data-admin-filter-panel data-admin-filter-label="筛选文章" data-active-filter-count="<?= $activeFilterCount ?>">
+    <form class="post-admin-toolbar" method="get" action="/admin/posts.html" role="search" data-admin-filter-panel data-ajax-silent data-admin-filter-label="筛选文章" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="post-admin-search">
         <span class="visually-hidden">搜索文章</span>
         <?= cream_icon('search', 'icon-sm') ?>
@@ -67,9 +67,9 @@ $statusTabs = [
       <?php if ($changes): ?><input type="hidden" name="changes" value="1"><?php endif; ?>
       <button class="admin-button ghost post-admin-filter-button" type="submit">筛选</button>
       <span class="post-admin-result">筛选后 <strong><?= $total ?></strong> 篇</span>
-      <?php if ($hasFilters): ?><a class="post-admin-clear" href="/admin/posts.html">清空</a><?php endif; ?>
+      <?php if ($hasFilters): ?><a class="post-admin-clear" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/posts.html">清空</a><?php endif; ?>
       <?php if ((int) ($summary['with_changes'] ?? 0) > 0 && (!is_string($status) || $status === 'published')): ?>
-      <a class="post-admin-changes-toggle<?= $changes ? ' is-current' : '' ?>" href="<?= cream_e((string) ($changes ? ($clearChangesUrl ?? '/admin/posts.html') : ($changesUrl ?? '/admin/posts.html?changes=1'))) ?>"<?= $changes ? ' aria-pressed="true"' : ' aria-pressed="false"' ?>>
+      <a class="post-admin-changes-toggle<?= $changes ? ' is-current' : '' ?>" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e((string) ($changes ? ($clearChangesUrl ?? '/admin/posts.html') : ($changesUrl ?? '/admin/posts.html?changes=1'))) ?>"<?= $changes ? ' aria-pressed="true"' : ' aria-pressed="false"' ?>>
         <?= cream_icon('pen', 'icon-xs') ?> 未发布改动 <strong><?= (int) $summary['with_changes'] ?></strong>
       </a>
       <?php endif; ?>
@@ -93,7 +93,7 @@ $statusTabs = [
     <?php else: ?>
     <h2>没有符合条件的文章</h2>
     <p>换个关键词，或清空筛选看看全部。</p>
-    <a class="admin-button ghost" href="/admin/posts.html">清空筛选</a>
+    <a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/posts.html">清空筛选</a>
     <?php endif; ?>
   </div>
 <?php else: ?>
@@ -102,9 +102,9 @@ $statusTabs = [
 
   <?php if ($pages > 1): ?>
   <nav class="post-admin-pager" aria-label="文章分页">
-    <?php if ($prevUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($prevUrl) ?>">上一页</a><?php else: ?><span class="admin-button ghost is-disabled">上一页</span><?php endif; ?>
+    <?php if ($prevUrl !== null): ?><a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($prevUrl) ?>">上一页</a><?php else: ?><span class="admin-button ghost is-disabled">上一页</span><?php endif; ?>
     <span>第 <?= $page ?> / <?= $pages ?> 页 · 共 <?= $total ?> 篇</span>
-    <?php if ($nextUrl !== null): ?><a class="admin-button ghost" href="<?= cream_e($nextUrl) ?>">下一页</a><?php else: ?><span class="admin-button ghost is-disabled">下一页</span><?php endif; ?>
+    <?php if ($nextUrl !== null): ?><a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($nextUrl) ?>">下一页</a><?php else: ?><span class="admin-button ghost is-disabled">下一页</span><?php endif; ?>
   </nav>
   <?php endif; ?>
 <?php endif; ?>

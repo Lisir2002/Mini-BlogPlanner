@@ -55,22 +55,22 @@ foreach ($eventOptions as $option) {
   </div>
 
   <div class="audit-stats" aria-label="审计概览">
-    <a class="audit-stat" href="<?= cream_e($clearUrl) ?>">
+    <a class="audit-stat" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($clearUrl) ?>">
       <span class="audit-stat-label">全部记录</span>
       <strong><?= $stats['total'] ?? 0 ?></strong>
       <small>数据库内全部事件</small>
     </a>
-    <a class="audit-stat" href="/admin/audit.html?range=today">
+    <a class="audit-stat" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/audit.html?range=today">
       <span class="audit-stat-label">今天</span>
       <strong><?= $stats['today'] ?? 0 ?></strong>
       <small>按服务器日界统计</small>
     </a>
-    <a class="audit-stat" href="/admin/audit.html?range=7d">
+    <a class="audit-stat" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/audit.html?range=7d">
       <span class="audit-stat-label">最近 7 天</span>
       <strong><?= $stats['week'] ?? 0 ?></strong>
       <small>含今天在内的滚动区间</small>
     </a>
-    <a class="audit-stat<?= (int) ($stats['failed'] ?? 0) > 0 ? ' is-alert' : '' ?>" href="/admin/audit.html?result=failed">
+    <a class="audit-stat<?= (int) ($stats['failed'] ?? 0) > 0 ? ' is-alert' : '' ?>" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/audit.html?result=failed">
       <span class="audit-stat-label">失败事件</span>
       <strong><?= $stats['failed'] ?? 0 ?></strong>
       <small>登录失败、升级失败等</small>
@@ -93,14 +93,14 @@ foreach ($eventOptions as $option) {
 
   <nav class="audit-category-tabs" aria-label="按事件分类筛选">
     <?php foreach ($categoryTabs as $tab): ?>
-    <a class="audit-category-tab<?= !empty($tab['active']) ? ' is-current' : '' ?>" href="<?= cream_e((string) ($tab['url'] ?? $clearUrl)) ?>"<?= !empty($tab['active']) ? ' aria-current="page"' : '' ?>>
+    <a class="audit-category-tab<?= !empty($tab['active']) ? ' is-current' : '' ?>" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e((string) ($tab['url'] ?? $clearUrl)) ?>"<?= !empty($tab['active']) ? ' aria-current="page"' : '' ?>>
       <span><?= cream_e((string) ($tab['label'] ?? '')) ?></span>
       <strong><?= (int) ($tab['total'] ?? 0) ?></strong>
     </a>
     <?php endforeach; ?>
   </nav>
 
-  <form class="audit-filter-panel" method="get" action="/admin/audit.html" id="audit-filter" role="search" data-admin-filter-panel data-admin-filter-label="筛选日志" data-active-filter-count="<?= count($activeFilters) ?>">
+  <form class="audit-filter-panel" method="get" action="/admin/audit.html" id="audit-filter" role="search" data-admin-filter-panel data-ajax-silent data-admin-filter-label="筛选日志" data-active-filter-count="<?= count($activeFilters) ?>">
     <input type="hidden" name="category" value="<?= cream_e($category === 'all' ? '' : $category) ?>">
     <div class="audit-filter-grid">
       <label class="audit-field audit-field-search">
@@ -165,7 +165,7 @@ foreach ($eventOptions as $option) {
 
     <div class="audit-filter-actions">
       <button class="admin-button primary" type="submit">应用筛选</button>
-      <a class="admin-button ghost" href="<?= cream_e($clearUrl) ?>">清空条件</a>
+      <a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($clearUrl) ?>">清空条件</a>
       <label class="audit-field audit-field-size">
         <span>每页</span>
         <span class="audit-fixed-page">固定 10 条</span>
@@ -178,13 +178,13 @@ foreach ($eventOptions as $option) {
   <div class="audit-active-bar">
     <span class="audit-active-label">当前筛选</span>
     <?php foreach ($activeFilters as $item): ?>
-    <a class="audit-chip" href="<?= cream_e((string) ($item['url'] ?? $clearUrl)) ?>" title="移除这个条件">
+    <a class="audit-chip" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e((string) ($item['url'] ?? $clearUrl)) ?>" title="移除这个条件">
       <span><?= cream_e((string) ($item['label'] ?? '')) ?></span>
       <strong><?= cream_e((string) ($item['value'] ?? '')) ?></strong>
       <i aria-hidden="true">×</i>
     </a>
     <?php endforeach; ?>
-    <a class="audit-active-clear" href="<?= cream_e($clearUrl) ?>">全部清除</a>
+    <a class="audit-active-clear" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($clearUrl) ?>">全部清除</a>
   </div>
   <?php endif; ?>
 
@@ -281,7 +281,7 @@ foreach ($eventOptions as $option) {
   <?php if ($pages > 1): ?>
   <nav class="audit-pagination" aria-label="审计分页">
     <?php if ($prevUrl !== null): ?>
-    <a class="audit-page-step" href="<?= cream_e($prevUrl) ?>"><?= cream_icon('arrow-left', 'icon-xs') ?> 上一页</a>
+    <a class="audit-page-step" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($prevUrl) ?>"><?= cream_icon('arrow-left', 'icon-xs') ?> 上一页</a>
     <?php else: ?>
     <span class="audit-page-step is-disabled"><?= cream_icon('arrow-left', 'icon-xs') ?> 上一页</span>
     <?php endif; ?>
@@ -292,12 +292,12 @@ foreach ($eventOptions as $option) {
         <?php elseif (!empty($link['current'])): ?>
         <span class="audit-page-num is-current" aria-current="page"><?= (int) ($link['page'] ?? 0) ?></span>
         <?php else: ?>
-        <a class="audit-page-num" href="<?= cream_e((string) ($link['url'] ?? $clearUrl)) ?>"><?= (int) ($link['page'] ?? 0) ?></a>
+        <a class="audit-page-num" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e((string) ($link['url'] ?? $clearUrl)) ?>"><?= (int) ($link['page'] ?? 0) ?></a>
         <?php endif; ?>
       <?php endforeach; ?>
     </div>
     <?php if ($nextUrl !== null): ?>
-    <a class="audit-page-step" href="<?= cream_e($nextUrl) ?>">下一页 <?= cream_icon('arrow-right', 'icon-xs') ?></a>
+    <a class="audit-page-step" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="<?= cream_e($nextUrl) ?>">下一页 <?= cream_icon('arrow-right', 'icon-xs') ?></a>
     <?php else: ?>
     <span class="audit-page-step is-disabled">下一页 <?= cream_icon('arrow-right', 'icon-xs') ?></span>
     <?php endif; ?>

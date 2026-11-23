@@ -65,7 +65,7 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
 <?php endif; ?>
 
   <div class="tag-admin-toolbar">
-    <form class="tag-filter-form" method="get" action="/admin/tags.html" data-admin-filter-panel data-admin-filter-label="筛选标签" data-active-filter-count="<?= $activeFilterCount ?>">
+    <form class="tag-filter-form" method="get" action="/admin/tags.html" data-admin-filter-panel data-ajax-silent data-admin-filter-label="筛选标签" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="tag-search-field">
         <span class="tag-search-icon"><?= cream_icon('search', 'icon-xs') ?></span>
         <input name="q" value="<?= cream_e($q) ?>" maxlength="60" placeholder="搜索标签名或 slug" aria-label="搜索标签">
@@ -82,7 +82,7 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
       </select></label>
       <button class="admin-button primary" type="submit">筛选</button>
       <?php if ($q !== '' || $status !== 'all' || $sort !== 'usage'): ?>
-      <a class="tag-filter-reset" href="/admin/tags.html">重置</a>
+      <a class="tag-filter-reset" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/tags.html">重置</a>
       <?php endif; ?>
     </form>
     <form class="tag-create-form" method="post" action="/admin/tags.html">
@@ -107,7 +107,7 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
     <?= cream_icon('tag') ?>
     <h2><?= $q !== '' || $status !== 'all' ? '没有匹配的标签' : '还没有标签' ?></h2>
     <p><?= $q !== '' || $status !== 'all' ? '换一个关键词或筛选条件试试。' : '在文章编辑器里添加标签，或从上面的“新建标签”开始。' ?></p>
-    <?php if ($q !== '' || $status !== 'all'): ?><a class="text-link" href="/admin/tags.html">查看全部标签 <?= cream_icon('arrow-right', 'icon-xs') ?></a><?php endif; ?>
+    <?php if ($q !== '' || $status !== 'all'): ?><a class="text-link" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/tags.html">查看全部标签 <?= cream_icon('arrow-right', 'icon-xs') ?></a><?php endif; ?>
   </div>
 <?php else: ?>
   <div class="tag-admin-grid">
@@ -168,6 +168,6 @@ $activeFilterCount = ($q !== '' ? 1 : 0) + ($status !== 'all' ? 1 : 0) + ($sort 
     </article>
   <?php endforeach; ?>
   </div>
-  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '标签管理分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_ajax = true; $pager_label = '标签管理分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>

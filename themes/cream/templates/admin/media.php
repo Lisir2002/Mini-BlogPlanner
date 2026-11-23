@@ -50,7 +50,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
   </div>
 
   <div class="media-filter-shell">
-    <form class="media-filterbar<?= $hasFilters ? ' has-filter' : '' ?>" method="get" action="/admin/media.html" role="search" data-admin-filter-panel data-admin-filter-label="筛选图片" data-active-filter-count="<?= $activeFilterCount ?>">
+    <form class="media-filterbar<?= $hasFilters ? ' has-filter' : '' ?>" method="get" action="/admin/media.html" role="search" data-admin-filter-panel data-ajax-silent data-admin-filter-label="筛选图片" data-active-filter-count="<?= $activeFilterCount ?>">
       <label class="media-search">
         <span class="visually-hidden">搜索图片</span>
         <?= cream_icon('search', 'icon-sm') ?>
@@ -103,7 +103,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
       </label>
       <button class="admin-button ghost media-filter-submit" type="submit">筛选</button>
       <span class="media-result">筛选后 <strong><?= $total ?></strong> 张</span>
-      <?php if ($hasFilters): ?><a class="media-clear" href="/admin/media.html">清空</a><?php endif; ?>
+      <?php if ($hasFilters): ?><a class="media-clear" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/media.html">清空</a><?php endif; ?>
     </form>
   </div>
 
@@ -138,7 +138,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
     <?php if ($hasFilters): ?>
     <h2>没有符合条件的图片</h2>
     <p>换个关键词或格式，或者清空筛选看看全部。</p>
-    <a class="admin-button ghost" href="/admin/media.html">清空筛选</a>
+    <a class="admin-button ghost" data-ajax-link data-ajax-target="#admin-main" data-ajax-silent href="/admin/media.html">清空筛选</a>
     <?php else: ?>
     <h2>还没有图片</h2>
     <p>先上传一张，媒体库会记住它的尺寸、格式、大小和地址。</p>
@@ -196,7 +196,7 @@ $latest = isset($summary['latest_at']) && is_string($summary['latest_at']) && $s
     </div>
   </form>
 
-  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '媒体分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_ajax = true; $pager_label = '媒体分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 
   <dialog class="media-dialog" data-media-dialog aria-labelledby="mediaDialogTitle">
     <div class="media-dialog-sheet">

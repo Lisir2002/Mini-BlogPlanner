@@ -89,10 +89,10 @@ foreach ($diff as $row) {
           </div>
         </header>
 
-        <form class="revision-compare" method="get" action="/admin/posts/<?= $postId ?>/revisions">
+        <form class="revision-compare" method="get" action="/admin/posts/<?= $postId ?>/revisions" data-ajax-silent>
           <input type="hidden" name="version" value="<?= $selectedVersion ?>">
           <label for="revisionCompare">对比基准</label>
-          <select id="revisionCompare" name="compare" onchange="this.form.submit()">
+          <select id="revisionCompare" name="compare" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
             <option value=""<?= $baseIsOnline ? ' selected' : '' ?>>线上 v<?= $onlineVersion ?></option>
             <?php foreach ($revisionOptions as $revision): ?>
               <?php $optionVersion = (int) ($revision['version'] ?? 0); ?>
@@ -162,6 +162,6 @@ foreach ($diff as $row) {
       <?php endif; ?>
     </section>
   </div>
-  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_label = '版本历史分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
+  <?php $pager_page = $page; $pager_pages = $pages; $pager_total = $total; $pager_prev = $prev_url ?? null; $pager_next = $next_url ?? null; $pager_links = $page_links ?? []; $pager_ajax = true; $pager_label = '版本历史分页'; require dirname(__DIR__) . '/partials/page-pager.php'; ?>
 <?php endif; ?>
 </section>
