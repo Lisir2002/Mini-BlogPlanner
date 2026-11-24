@@ -133,10 +133,11 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
       <input id="comment-email" name="author_email" type="email" maxlength="190" value="<?= cream_e($value('author_email')) ?>" placeholder="你的邮箱地址" autocomplete="email" aria-label="邮箱" aria-describedby="comment-notify-hint" aria-invalid="<?= in_array('邮箱格式不正确。', $errors, true) ? 'true' : 'false' ?>">
     </div>
 
-    <label class="field">
-      <span>留言</span>
-      <textarea name="body" rows="4" maxlength="1000" placeholder="写下想说的话，最多 1000 字。" aria-invalid="<?= in_array('留言内容至少需要 2 个字。', $errors, true) ? 'true' : 'false' ?>"><?= cream_e($value('body')) ?></textarea>
-    </label>
+    <?php
+    $bodyValue = $value('body');
+    $bodyInvalid = in_array('留言内容至少需要 2 个字。', $errors, true);
+    require __DIR__ . '/comment-body-field.php';
+    ?>
     <div class="comment-form-foot">
       <p>留言会在审核后显示。邮箱只用于回复提醒，不会公开。</p>
       <button class="button button-primary" type="submit"><?= cream_icon('pen', 'icon-sm') ?> 提交留言</button>

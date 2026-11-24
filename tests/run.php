@@ -1300,6 +1300,28 @@ check('Comment email switch gates the optional email field', function (): void {
     truthy($controller !== false && str_contains($controller, '$notifyEmail ?'), 'Controller must ignore email when the switch is off');
 });
 
+check('Comment composer offers tone emoji and kaomoji without uploads', function (): void {
+    $root = dirname(__DIR__);
+    $partial = file_get_contents($root . '/themes/cream/templates/partials/comment-body-field.php');
+    $comments = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $script = file_get_contents($root . '/public/assets/comments.js');
+    $css = file_get_contents($root . '/public/assets/comments.css');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-trigger'), 'Comment body needs an emoji trigger');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-panel'), 'Comment body needs an emoji panel');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-recent-list'), 'Emoji panel needs a recent strip');
+    foreach (['agree' => '赞同', 'funny' => '好笑', 'sorry' => '抱歉', 'tired' => '累了', 'surprise' => '惊喜', 'kaomoji' => '颜文字'] as $key => $label) {
+        truthy($partial !== false && str_contains($partial, "'" . $key . "' => [") && str_contains($partial, "'label' => '" . $label . "'"), 'Emoji picker must expose the ' . $label . ' tab');
+    }
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-tab='), 'Emoji tabs need a script hook');
+    truthy($partial !== false && str_contains($partial, "'kind' => 'text'") && str_contains($partial, 'data-comment-emoji-kind='), 'Kaomoji must be stored as plain text');
+    truthy($partial !== false && !str_contains($partial, 'type="file"'), 'Comment emoji must not accept image uploads');
+    truthy($comments !== false && str_contains($comments, "require __DIR__ . '/comment-body-field.php'"), 'Comment form must include the shared body field');
+    truthy($script !== false && str_contains($script, 'cream.comment.emoji.recent.v1') && str_contains($script, 'window.localStorage.setItem'), 'Recent emoji must stay in browser storage');
+    truthy($script !== false && str_contains($script, 'body.setRangeText(value, start, end') && str_contains($script, 'body.focus({ preventScroll: true })'), 'Emoji must insert at the cursor and return focus');
+    truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, "event.key === 'Escape'"), 'Emoji tabs must support keyboard navigation');
+    truthy($css !== false && str_contains($css, '.comment-emoji-panel') && str_contains($css, '.comment-emoji-group.is-text') && str_contains($css, '.comment-emoji-recent-list'), 'Emoji panel must keep its paper styling');
+});
+
 check('Comment replies open in place without a page reload', function (): void {
     $root = dirname(__DIR__);
     $partial = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
