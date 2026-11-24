@@ -827,7 +827,7 @@
 .comment-emoji-item:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }
 
 .comment-emoji-group.is-text .comment-emoji-item {
-  flex: 1 1 calc(33.333% - 4px);
+  flex: 0 1 calc(33.333% - 4px);
   min-height: 34px;
   padding: 4px 5px;
   overflow: hidden;
