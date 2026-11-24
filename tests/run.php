@@ -1333,11 +1333,16 @@ check('Comment composer groups Emoji, GIF stickers and kaomoji by task', functio
     truthy($admin !== false && str_contains($admin, 'cream_comment_body($comment->body)'), 'Moderation cards must render sticker markers');
     truthy($script !== false && str_contains($script, 'cream.comment.expression.recent.v1') && str_contains($script, 'cream.comment.emoji.recent.v1'), 'Recent choices must migrate to a cross-section key');
     truthy($script !== false && str_contains($script, 'stickerPattern') && str_contains($script, '>= 6'), 'Picker must stop at six stickers per comment');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-drag-handle') && str_contains($partial, '方向键移动'), 'Picker header must expose its drag handle to pointer and keyboard users');
     truthy($script !== false && str_contains($script, "querySelectorAll('.comment-emoji-group')") && str_contains($script, 'groupTabs.forEach'), 'Group panels must be selected by panel class and all sub-tabs must reset selection');
     truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, 'sectionPanels.forEach') && str_contains($script, 'emojiPanel.contains(document.activeElement)'), 'Both tab levels need keyboard access and Escape close');
+    truthy($script !== false && str_contains($script, 'setPointerCapture') && str_contains($script, 'visualViewport') && str_contains($script, 'Math.hypot') && str_contains($script, 'panelMaxHeight'), 'Picker drag must capture the pointer and re-clamp to the visible viewport');
+    truthy($script !== false && str_contains($script, 'document.body.appendChild(emojiPanel)'), 'Picker must leave the form stacking context so the floating card stays above page content');
+    truthy($script !== false && str_contains($script, 'panelPinned') && str_contains($script, 'view.height * 0.78'), 'Picker must stay anchored to its trigger until dragged and keep a compact viewport height cap');
     truthy($controller !== false && str_contains($controller, 'preg_match_all(') && str_contains($controller, '最多使用 6 张贴图'), 'Server must enforce the sticker marker limit');
     truthy($css !== false && str_contains($css, '.comment-emoji-sections') && str_contains($css, '.comment-emoji-group.is-sticker') && str_contains($css, '.comment-sticker'), 'Picker and comment body need distinct sticker layout');
-    truthy($css !== false && str_contains($css, '.comment-emoji-group.is-emoji .comment-emoji-grid') && str_contains($css, 'max-height: min(38vh, 360px)'), 'Expanded groups need a four-column Emoji grid and a bounded scroll area');
+    truthy($css !== false && str_contains($css, '.comment-emoji-group.is-emoji .comment-emoji-grid') && str_contains($css, 'max-height: min(78dvh, 620px)') && str_contains($css, 'position: fixed'), 'Expanded groups need a four-column Emoji grid and a draggable viewport-bound card');
+    truthy($css !== false && str_contains($css, '.comment-emoji-groups') && str_contains($css, 'max-height: none') && str_contains($css, 'touch-action: none'), 'Picker body must scroll inside the sized card while its drag handle owns touch gestures');
     foreach (glob($root . '/public/assets/stickers/*.gif') ?: [] as $gif) {
         $png = substr($gif, 0, -4) . '.png';
         truthy(is_file($png), 'Animated sticker must ship a static fallback: ' . basename($gif));

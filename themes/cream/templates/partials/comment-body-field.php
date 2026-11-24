@@ -14,10 +14,11 @@ $firstSection = (string) ($sectionKeys[0] ?? 'emoji');
   <textarea id="comment-body" name="body" rows="4" maxlength="1000" placeholder="写下想说的话，最多 1000 字。" aria-invalid="<?= $bodyInvalid ? 'true' : 'false' ?>"><?= cream_e($bodyValue) ?></textarea>
 
   <section class="comment-emoji-panel" id="comment-emoji-panel" data-comment-emoji-panel aria-label="表情面板" hidden>
-    <div class="comment-emoji-head">
+    <div class="comment-emoji-head" tabindex="0" role="group" aria-label="拖动表情面板，方向键移动，双击回位" data-comment-emoji-drag-handle>
+      <span class="comment-emoji-grip" aria-hidden="true"></span>
       <div>
         <strong>挑一个表情</strong>
-        <small>点一下，插到光标处</small>
+        <small>点一下插入，按住标题可拖动</small>
       </div>
       <button class="comment-emoji-close" type="button" data-comment-emoji-close aria-label="关闭表情面板"><?= cream_icon('close', 'icon-xs') ?></button>
     </div>

@@ -66,23 +66,31 @@
   const emojiTrigger = form.querySelector('[data-comment-emoji-trigger]');
   const emojiPanel = form.querySelector('[data-comment-emoji-panel]');
   const emojiClose = form.querySelector('[data-comment-emoji-close]');
+  const emojiDragHandle = form.querySelector('[data-comment-emoji-drag-handle]');
   const emojiStatus = form.querySelector('[data-comment-emoji-status]');
   const emojiRecent = form.querySelector('[data-comment-emoji-recent]');
   const emojiRecentList = form.querySelector('[data-comment-emoji-recent-list]');
-  if (emojiTrigger && emojiPanel && emojiClose && emojiStatus && emojiRecent && emojiRecentList && body) {
+  if (emojiTrigger && emojiPanel && emojiClose && emojiDragHandle && emojiStatus && emojiRecent && emojiRecentList && body) {
     const sectionTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-section][role="tab"]'));
     const sectionPanels = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-panel]'));
     const groupTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-emoji-tab]'));
     const groups = Array.from(emojiPanel.querySelectorAll('.comment-emoji-group'));
-    const emojiNotice = form.querySelector('[data-comment-emoji-notice]');
+    const emojiNotice = emojiPanel.querySelector('[data-comment-emoji-notice]');
+    if (emojiPanel.parentElement !== document.body) document.body.appendChild(emojiPanel);
     const recentKey = 'cream.comment.expression.recent.v1';
     const legacyRecentKey = 'cream.comment.emoji.recent.v1';
     const recentLimit = 8;
     const stickerPattern = /\[贴图:[^\[\]\r\n]{1,12}\]/gu;
     const markerPath = (slug, extension) => '/assets/stickers/' + slug + '.' + extension;
+    const panelMargin = 10;
+    const panelMaxHeight = 620;
+    const panelWidthLimit = 380;
     let insertRange = { start: body.value.length, end: body.value.length };
     let activeSection = '';
     let noticeTimer = 0;
+    let panelClampFrame = 0;
+    let panelDrag = null;
+    let panelPinned = false;
     const lastGroup = new Map();
 
     const readStoredRecent = (key) => {
@@ -161,6 +169,7 @@
       emojiRecentList.replaceChildren();
       recent.forEach((item) => emojiRecentList.appendChild(createRecentItem(item)));
       emojiRecent.hidden = recent.length === 0;
+      if (!emojiPanel.hidden) queuePanelClamp();
     };
 
     const remember = (item) => {
@@ -196,6 +205,172 @@
     };
 
     const sectionOf = (element) => element.getAttribute('data-comment-emoji-section') || '';
+
+    const panelViewport = () => {
+      const view = window.visualViewport;
+      return {
+        left: view ? view.offsetLeft : 0,
+        top: view ? view.offsetTop : 0,
+        width: view ? view.width : window.innerWidth,
+        height: view ? view.height : window.innerHeight,
+      };
+    };
+
+    const syncPanelMetrics = () => {
+      const view = panelViewport();
+      const width = Math.max(240, Math.floor(view.width - panelMargin * 2));
+      const height = Math.min(view.height - panelMargin * 2, Math.max(160, Math.floor(view.height * 0.78)));
+      emojiPanel.style.maxWidth = Math.min(panelWidthLimit, width) + 'px';
+      emojiPanel.style.maxHeight = Math.min(panelMaxHeight, height) + 'px';
+    };
+
+    const clampPanelBox = (left, top) => {
+      const view = panelViewport();
+      const width = emojiPanel.offsetWidth;
+      const height = emojiPanel.offsetHeight;
+      const minLeft = view.left + panelMargin;
+      const minTop = view.top + panelMargin;
+      const maxLeft = Math.max(minLeft, view.left + view.width - width - panelMargin);
+      const maxTop = Math.max(minTop, view.top + view.height - height - panelMargin);
+      return {
+        left: Math.round(Math.min(Math.max(left, minLeft), maxLeft)),
+        top: Math.round(Math.min(Math.max(top, minTop), maxTop)),
+      };
+    };
+
+    const applyPanelPosition = (left, top) => {
+      const next = clampPanelBox(left, top);
+      emojiPanel.style.left = next.left + 'px';
+      emojiPanel.style.top = next.top + 'px';
+      emojiPanel.style.right = 'auto';
+      emojiPanel.style.bottom = 'auto';
+    };
+
+    const clampPanelPosition = () => {
+      if (emojiPanel.hidden) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      applyPanelPosition(rect.left, rect.top);
+    };
+
+    const queuePanelClamp = () => {
+      if (emojiPanel.hidden) return;
+      window.cancelAnimationFrame(panelClampFrame);
+      panelClampFrame = window.requestAnimationFrame(() => {
+        if (emojiPanel.hidden) return;
+        syncPanelMetrics();
+        clampPanelPosition();
+      });
+    };
+
+    const placePanel = () => {
+      if (emojiPanel.hidden) return;
+      syncPanelMetrics();
+      const view = panelViewport();
+      const width = emojiPanel.offsetWidth;
+      const height = emojiPanel.offsetHeight;
+      const triggerRect = emojiTrigger.getBoundingClientRect();
+      const gap = 8;
+      let left = triggerRect.right - width;
+      let top = triggerRect.bottom + gap;
+      const fitsBelow = top + height <= view.top + view.height - panelMargin;
+      const above = triggerRect.top - gap - height;
+      const fitsAbove = above >= view.top + panelMargin;
+      const right = triggerRect.right + gap;
+      const fitsRight = right + width <= view.left + view.width - panelMargin;
+
+      if (!fitsBelow) {
+        if (fitsAbove) {
+          top = above;
+        } else if (fitsRight) {
+          left = right;
+          top = triggerRect.top;
+        } else {
+          top = view.top + panelMargin;
+        }
+      }
+
+      applyPanelPosition(left, top);
+    };
+
+    const clearPanelDrag = () => {
+      if (!panelDrag) {
+        emojiPanel.classList.remove('is-dragging');
+        return;
+      }
+      const pointerId = panelDrag.pointerId;
+      panelDrag = null;
+      emojiPanel.classList.remove('is-dragging');
+      try {
+        if (emojiDragHandle.hasPointerCapture(pointerId)) {
+          emojiDragHandle.releasePointerCapture(pointerId);
+        }
+      } catch (error) {
+        // 指针已经离开时，浏览器会自动释放捕获。
+      }
+    };
+
+    const startPanelDrag = (event) => {
+      if (emojiPanel.hidden || event.button !== 0 || !event.isPrimary) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target && target.closest('button, a, input, select, textarea')) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      panelDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        moved: false,
+      };
+      try {
+        emojiDragHandle.setPointerCapture(event.pointerId);
+      } catch (error) {
+        // 捕获失败时，仍可在面板内继续拖动。
+      }
+    };
+
+    const movePanelDrag = (event) => {
+      if (!panelDrag || event.pointerId !== panelDrag.pointerId) return;
+      const dx = event.clientX - panelDrag.startX;
+      const dy = event.clientY - panelDrag.startY;
+      if (!panelDrag.moved) {
+        if (Math.hypot(dx, dy) < 5) return;
+        panelDrag.moved = true;
+        panelPinned = true;
+        emojiPanel.classList.add('is-dragging');
+      }
+      if (event.cancelable) event.preventDefault();
+      applyPanelPosition(panelDrag.left + dx, panelDrag.top + dy);
+    };
+
+    const finishPanelDrag = (event) => {
+      if (!panelDrag || event.pointerId !== panelDrag.pointerId) return;
+      const moved = panelDrag.moved;
+      clearPanelDrag();
+      if (moved) clampPanelPosition();
+    };
+
+    const onPanelHandleKeydown = (event) => {
+      if (event.target !== emojiDragHandle) return;
+      if (event.key === 'Home') {
+        event.preventDefault();
+        panelPinned = false;
+        placePanel();
+        return;
+      }
+      const step = event.shiftKey ? 32 : 12;
+      let dx = 0;
+      let dy = 0;
+      if (event.key === 'ArrowLeft') dx = -step;
+      if (event.key === 'ArrowRight') dx = step;
+      if (event.key === 'ArrowUp') dy = -step;
+      if (event.key === 'ArrowDown') dy = step;
+      if (!dx && !dy) return;
+      event.preventDefault();
+      panelPinned = true;
+      const rect = emojiPanel.getBoundingClientRect();
+      applyPanelPosition(rect.left + dx, rect.top + dy);
+    };
 
     const activateGroup = (sectionKey, groupKey, focusTab) => {
       const sectionGroups = groupTabs.filter((tab) => sectionOf(tab) === sectionKey);
@@ -236,10 +411,17 @@
       const remembered = lastGroup.get(targetKey) || '';
       activateGroup(targetKey, remembered, false);
       hideNotice();
+      if (panelPinned) {
+        queuePanelClamp();
+      } else {
+        placePanel();
+      }
       if (focusTab) target.focus();
     };
 
     const closePanel = (focusBody) => {
+      window.cancelAnimationFrame(panelClampFrame);
+      clearPanelDrag();
       emojiPanel.hidden = true;
       emojiTrigger.setAttribute('aria-expanded', 'false');
       hideNotice();
@@ -250,6 +432,7 @@
       composer.open = true;
       syncInsertRange();
       renderRecent();
+      panelPinned = false;
       emojiPanel.hidden = false;
       emojiTrigger.setAttribute('aria-expanded', 'true');
       const selected = sectionTabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
@@ -265,6 +448,27 @@
     });
 
     emojiClose.addEventListener('click', () => closePanel(true));
+
+    emojiDragHandle.addEventListener('pointerdown', startPanelDrag);
+    emojiDragHandle.addEventListener('pointermove', movePanelDrag);
+    emojiDragHandle.addEventListener('pointerup', finishPanelDrag);
+    emojiDragHandle.addEventListener('pointercancel', finishPanelDrag);
+    emojiDragHandle.addEventListener('lostpointercapture', clearPanelDrag);
+    emojiDragHandle.addEventListener('keydown', onPanelHandleKeydown);
+    emojiDragHandle.addEventListener('dblclick', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target && target.closest('button')) return;
+      event.preventDefault();
+      panelPinned = false;
+      placePanel();
+    });
+
+    window.addEventListener('resize', queuePanelClamp, { passive: true });
+    window.addEventListener('orientationchange', queuePanelClamp, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', queuePanelClamp, { passive: true });
+      window.visualViewport.addEventListener('scroll', queuePanelClamp, { passive: true });
+    }
 
     sectionTabs.forEach((tab, index) => {
       tab.addEventListener('click', () => activateSection(tab.getAttribute('data-comment-expression-section') || '', false));
