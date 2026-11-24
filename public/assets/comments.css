@@ -695,7 +695,7 @@
 
 .comment-emoji-panel {
   width: min(100%, 380px);
-  margin-top: 7px;
+  margin: 7px 0 0 auto;
   padding: 10px 11px 9px;
   border: 1px solid color-mix(in oklch, var(--line-strong) 52%, var(--paper));
   border-radius: 7px 13px 8px 11px / 10px 7px 13px 8px;
