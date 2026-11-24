@@ -213,6 +213,9 @@
         const visible = sectionOf(group) === sectionKey && group.getAttribute('data-comment-emoji-group') === targetKey;
         group.hidden = !visible;
       });
+      const sectionPanel = sectionPanels.find((panel) => panel.getAttribute('data-comment-expression-panel') === sectionKey);
+      const groupList = sectionPanel ? sectionPanel.querySelector('.comment-emoji-groups') : null;
+      if (groupList) groupList.scrollTop = 0;
       lastGroup.set(sectionKey, targetKey);
     };
 

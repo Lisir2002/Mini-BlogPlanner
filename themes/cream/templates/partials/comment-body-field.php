@@ -46,7 +46,7 @@ $firstSection = (string) ($sectionKeys[0] ?? 'emoji');
 
       <div class="comment-emoji-groups">
         <?php foreach (($section['groups'] ?? []) as $groupKey => $group): $groupActive = $groupKey === array_key_first($section['groups'] ?? []); ?>
-        <div class="comment-emoji-group<?= $section['kind'] === 'text' ? ' is-text' : '' ?><?= $section['kind'] === 'sticker' ? ' is-sticker' : '' ?>" role="tabpanel" id="comment-emoji-group-<?= cream_e((string) $sectionKey) ?>-<?= cream_e((string) $groupKey) ?>" aria-labelledby="comment-emoji-tab-<?= cream_e((string) $sectionKey) ?>-<?= cream_e((string) $groupKey) ?>" data-comment-emoji-group="<?= cream_e((string) $groupKey) ?>" data-comment-emoji-section="<?= cream_e((string) $sectionKey) ?>"<?= $groupActive ? '' : ' hidden' ?>>
+        <div class="comment-emoji-group<?= $section['kind'] === 'emoji' ? ' is-emoji' : '' ?><?= $section['kind'] === 'text' ? ' is-text' : '' ?><?= $section['kind'] === 'sticker' ? ' is-sticker' : '' ?>" role="tabpanel" id="comment-emoji-group-<?= cream_e((string) $sectionKey) ?>-<?= cream_e((string) $groupKey) ?>" aria-labelledby="comment-emoji-tab-<?= cream_e((string) $sectionKey) ?>-<?= cream_e((string) $groupKey) ?>" data-comment-emoji-group="<?= cream_e((string) $groupKey) ?>" data-comment-emoji-section="<?= cream_e((string) $sectionKey) ?>"<?= $groupActive ? '' : ' hidden' ?>>
           <div class="comment-emoji-group-head">
             <strong><?= cream_e((string) $group['label']) ?></strong>
             <span><?= cream_e((string) $group['hint']) ?></span>

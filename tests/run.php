@@ -1314,13 +1314,16 @@ check('Comment composer groups Emoji, GIF stickers and kaomoji by task', functio
     same(['emoji', 'sticker', 'kaomoji'], array_keys($catalog), 'Expression catalog must expose exactly three top-level sections');
     same(['Emoji', '贴图', '颜文字'], array_values(array_map(static fn (array $section): string => (string) $section['label'], $catalog)), 'Top-level sections must read Emoji, 贴图, 颜文字');
     same(['文字表情', 'GIF 动图', '字符表情'], array_values(array_map(static fn (array $section): string => (string) $section['short'], $catalog)), 'Each top-level section needs a one-line role');
-    foreach (['emoji' => 4, 'sticker' => 3, 'kaomoji' => 4] as $section => $count) {
+    foreach (['emoji' => 6, 'sticker' => 4, 'kaomoji' => 6] as $section => $count) {
         same($count, count($catalog[$section]['groups']), $section . ' must expose its planned sub-groups');
     }
-    same(['回应', '心情', '日常', '符号'], array_column($catalog['emoji']['groups'], 'label'), 'Emoji sub-groups must stay task-based');
-    same(['回应', '情绪', '氛围'], array_column($catalog['sticker']['groups'], 'label'), 'Sticker sub-groups must separate reaction, feeling and scene');
-    same(['元气', '温柔', '无语', '躺平'], array_column($catalog['kaomoji']['groups'], 'label'), 'Kaomoji sub-groups must separate tone');
-    same(66, array_sum(array_map(static fn (array $section): int => array_sum(array_map(static fn (array $group): int => count($group['items']), $section['groups'])), $catalog)), 'The first catalog must ship 66 usable choices');
+    same(['回应', '心情', '鼓励', '日常', '符号', '祝愿'], array_column($catalog['emoji']['groups'], 'label'), 'Emoji sub-groups must stay task-based');
+    same(['回应', '情绪', '日常', '氛围'], array_column($catalog['sticker']['groups'], 'label'), 'Sticker sub-groups must separate reaction, feeling, routine and scene');
+    same(['元气', '温柔', '无语', '躺平', '得意', '抓狂'], array_column($catalog['kaomoji']['groups'], 'label'), 'Kaomoji sub-groups must separate tone');
+    same(132, array_sum(array_map(static fn (array $section): int => array_sum(array_map(static fn (array $group): int => count($group['items']), $section['groups'])), $catalog)), 'The expanded catalog must ship 132 usable choices');
+    foreach (['emoji' => 48, 'sticker' => 36, 'kaomoji' => 48] as $section => $count) {
+        same($count, array_sum(array_map(static fn (array $group): int => count($group['items']), $catalog[$section]['groups'])), $section . ' must expose its planned choice count');
+    }
     truthy($partial !== false && str_contains($partial, 'data-comment-expression-section=') && str_contains($partial, 'data-comment-expression-panel='), 'Picker needs separate top-level and panel hooks');
     truthy($partial !== false && str_contains($partial, 'data-comment-emoji-tab=') && str_contains($partial, 'data-comment-emoji-group='), 'Picker needs sub-group tab and panel hooks');
     truthy($partial !== false && str_contains($partial, 'data-comment-emoji-kind="sticker"') && str_contains($partial, "data-comment-emoji=\"[贴图:"), 'Stickers must insert a readable fixed marker');
@@ -1334,6 +1337,7 @@ check('Comment composer groups Emoji, GIF stickers and kaomoji by task', functio
     truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, 'sectionPanels.forEach') && str_contains($script, 'emojiPanel.contains(document.activeElement)'), 'Both tab levels need keyboard access and Escape close');
     truthy($controller !== false && str_contains($controller, 'preg_match_all(') && str_contains($controller, '最多使用 6 张贴图'), 'Server must enforce the sticker marker limit');
     truthy($css !== false && str_contains($css, '.comment-emoji-sections') && str_contains($css, '.comment-emoji-group.is-sticker') && str_contains($css, '.comment-sticker'), 'Picker and comment body need distinct sticker layout');
+    truthy($css !== false && str_contains($css, '.comment-emoji-group.is-emoji .comment-emoji-grid') && str_contains($css, 'max-height: min(38vh, 360px)'), 'Expanded groups need a four-column Emoji grid and a bounded scroll area');
     foreach (glob($root . '/public/assets/stickers/*.gif') ?: [] as $gif) {
         $png = substr($gif, 0, -4) . '.png';
         truthy(is_file($png), 'Animated sticker must ship a static fallback: ' . basename($gif));
@@ -1341,7 +1345,7 @@ check('Comment composer groups Emoji, GIF stickers and kaomoji by task', functio
         truthy($size !== false && $size[0] === 96 && $size[1] === 96, 'Static sticker must be 96 square: ' . basename($png));
         truthy(filesize($png) > 512, 'Static sticker fallback must not be blank: ' . basename($png));
     }
-    truthy(count(glob($root . '/public/assets/stickers/*.gif') ?: []) === 18, 'First sticker pack must ship 18 animated files');
+    truthy(count(glob($root . '/public/assets/stickers/*.gif') ?: []) === 36, 'Expanded sticker pack must ship 36 animated files');
     $readme = file_get_contents($root . '/public/assets/stickers/README.md');
     truthy($readme !== false && str_contains($readme, 'CC BY 4.0') && str_contains($readme, 'Noto Emoji'), 'Sticker pack must document its Noto Emoji attribution');
 });

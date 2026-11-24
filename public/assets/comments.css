@@ -866,7 +866,21 @@
 .comment-emoji-tab.is-active { border-color: color-mix(in oklch, var(--butter) 68%, var(--line-strong)); background: var(--butter); color: var(--ink); font-weight: 800; }
 .comment-emoji-tab:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
 
-.comment-emoji-groups { min-height: 40px; }
+.comment-emoji-groups {
+  min-height: 40px;
+  max-height: min(38vh, 360px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--line-strong) 46%, transparent) transparent;
+}
+
+.comment-emoji-groups::-webkit-scrollbar { width: 6px; }
+.comment-emoji-groups::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--line-strong) 42%, transparent);
+}
 
 .comment-emoji-group { min-width: 0; }
 
@@ -936,6 +950,18 @@
   font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.comment-emoji-group.is-emoji .comment-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.comment-emoji-group.is-emoji .comment-emoji-item {
+  width: 100%;
+  min-height: 38px;
+  flex: none;
 }
 
 .comment-emoji-group.is-sticker .comment-emoji-grid {
