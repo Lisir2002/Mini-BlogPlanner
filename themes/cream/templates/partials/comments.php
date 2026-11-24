@@ -48,7 +48,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
         <strong><?= cream_e($comment->authorName) ?></strong>
         <time datetime="<?= cream_e($comment->createdAt) ?>"><?= cream_e(cream_date($comment->createdAt)) ?></time>
       </div>
-      <div class="comment-body"><?= nl2br(cream_e($comment->body)) ?></div>
+      <div class="comment-body"><?= cream_comment_body($comment->body) ?></div>
       <a class="comment-reply-link" href="/posts/<?= $slug ?>.html?reply=<?= (int) $comment->id ?>#comment-form" data-comment-reply="<?= (int) $comment->id ?>" data-comment-author="<?= cream_e($comment->authorName) ?>"><?= cream_icon('arrow-right', 'icon-xs') ?> 回复</a>
 
       <?php if ($thread['replies'] !== []): ?>
@@ -59,7 +59,7 @@ $value = static fn (string $key): string => (string) ($values[$key] ?? '');
             <strong><?= cream_e($reply->authorName) ?></strong>
             <time datetime="<?= cream_e($reply->createdAt) ?>"><?= cream_e(cream_date($reply->createdAt)) ?></time>
           </div>
-          <div class="comment-body"><?= nl2br(cream_e($reply->body)) ?></div>
+          <div class="comment-body"><?= cream_comment_body($reply->body) ?></div>
         </article>
         <?php endforeach; ?>
       </div>

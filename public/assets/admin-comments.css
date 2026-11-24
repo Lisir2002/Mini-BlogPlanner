@@ -278,3 +278,20 @@
   .comment-inbox-actions { grid-template-columns: 1fr; }
   .comment-bulk-actions { grid-template-columns: 1fr; }
 }
+
+.comment-inbox-body .comment-sticker {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+.comment-inbox-body .comment-sticker picture,
+.comment-inbox-body .comment-sticker img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}

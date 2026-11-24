@@ -1300,26 +1300,50 @@ check('Comment email switch gates the optional email field', function (): void {
     truthy($controller !== false && str_contains($controller, '$notifyEmail ?'), 'Controller must ignore email when the switch is off');
 });
 
-check('Comment composer offers tone emoji and kaomoji without uploads', function (): void {
+check('Comment composer groups Emoji, GIF stickers and kaomoji by task', function (): void {
     $root = dirname(__DIR__);
+    $catalog = require $root . '/themes/cream/catalog.php';
     $partial = file_get_contents($root . '/themes/cream/templates/partials/comment-body-field.php');
     $comments = file_get_contents($root . '/themes/cream/templates/partials/comments.php');
+    $admin = file_get_contents($root . '/themes/cream/templates/admin/comments.php');
+    $bootstrap = file_get_contents($root . '/themes/cream/bootstrap.php');
     $script = file_get_contents($root . '/public/assets/comments.js');
     $css = file_get_contents($root . '/public/assets/comments.css');
-    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-trigger'), 'Comment body needs an emoji trigger');
-    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-panel'), 'Comment body needs an emoji panel');
-    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-recent-list'), 'Emoji panel needs a recent strip');
-    foreach (['agree' => '赞同', 'funny' => '好笑', 'sorry' => '抱歉', 'tired' => '累了', 'surprise' => '惊喜', 'kaomoji' => '颜文字'] as $key => $label) {
-        truthy($partial !== false && str_contains($partial, "'" . $key . "' => [") && str_contains($partial, "'label' => '" . $label . "'"), 'Emoji picker must expose the ' . $label . ' tab');
+    $controller = file_get_contents($root . '/plugins/posts/src/CommentController.php');
+    truthy(is_array($catalog) && $catalog !== [], 'Expression catalog must be readable');
+    same(['emoji', 'sticker', 'kaomoji'], array_keys($catalog), 'Expression catalog must expose exactly three top-level sections');
+    same(['Emoji', '贴图', '颜文字'], array_values(array_map(static fn (array $section): string => (string) $section['label'], $catalog)), 'Top-level sections must read Emoji, 贴图, 颜文字');
+    same(['文字表情', 'GIF 动图', '字符表情'], array_values(array_map(static fn (array $section): string => (string) $section['short'], $catalog)), 'Each top-level section needs a one-line role');
+    foreach (['emoji' => 4, 'sticker' => 3, 'kaomoji' => 4] as $section => $count) {
+        same($count, count($catalog[$section]['groups']), $section . ' must expose its planned sub-groups');
     }
-    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-tab='), 'Emoji tabs need a script hook');
-    truthy($partial !== false && str_contains($partial, "'kind' => 'text'") && str_contains($partial, 'data-comment-emoji-kind='), 'Kaomoji must be stored as plain text');
-    truthy($partial !== false && !str_contains($partial, 'type="file"'), 'Comment emoji must not accept image uploads');
-    truthy($comments !== false && str_contains($comments, "require __DIR__ . '/comment-body-field.php'"), 'Comment form must include the shared body field');
-    truthy($script !== false && str_contains($script, 'cream.comment.emoji.recent.v1') && str_contains($script, 'window.localStorage.setItem'), 'Recent emoji must stay in browser storage');
-    truthy($script !== false && str_contains($script, 'body.setRangeText(value, start, end') && str_contains($script, 'body.focus({ preventScroll: true })'), 'Emoji must insert at the cursor and return focus');
-    truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, "event.key !== 'Escape'") && str_contains($script, 'emojiPanel.contains(document.activeElement)'), 'Emoji tabs must support keyboard navigation and Escape close');
-    truthy($css !== false && str_contains($css, '.comment-emoji-panel') && str_contains($css, '.comment-emoji-group.is-text') && str_contains($css, '.comment-emoji-recent-list'), 'Emoji panel must keep its paper styling');
+    same(['回应', '心情', '日常', '符号'], array_column($catalog['emoji']['groups'], 'label'), 'Emoji sub-groups must stay task-based');
+    same(['回应', '情绪', '氛围'], array_column($catalog['sticker']['groups'], 'label'), 'Sticker sub-groups must separate reaction, feeling and scene');
+    same(['元气', '温柔', '无语', '躺平'], array_column($catalog['kaomoji']['groups'], 'label'), 'Kaomoji sub-groups must separate tone');
+    same(66, array_sum(array_map(static fn (array $section): int => array_sum(array_map(static fn (array $group): int => count($group['items']), $section['groups'])), $catalog)), 'The first catalog must ship 66 usable choices');
+    truthy($partial !== false && str_contains($partial, 'data-comment-expression-section=') && str_contains($partial, 'data-comment-expression-panel='), 'Picker needs separate top-level and panel hooks');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-tab=') && str_contains($partial, 'data-comment-emoji-group='), 'Picker needs sub-group tab and panel hooks');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-kind="sticker"') && str_contains($partial, "data-comment-emoji=\"[贴图:"), 'Stickers must insert a readable fixed marker');
+    truthy($partial !== false && !str_contains($partial, 'type="file"'), 'Expression picker must not accept image uploads');
+    truthy($bootstrap !== false && str_contains($bootstrap, 'cream_comment_body') && str_contains($bootstrap, 'media="(prefers-reduced-motion: reduce)"'), 'Sticker rendering needs a body helper and a static motion fallback');
+    truthy($comments !== false && str_contains($comments, 'cream_comment_body($comment->body)') && str_contains($comments, 'cream_comment_body($reply->body)'), 'Comments and replies must render sticker markers');
+    truthy($admin !== false && str_contains($admin, 'cream_comment_body($comment->body)'), 'Moderation cards must render sticker markers');
+    truthy($script !== false && str_contains($script, 'cream.comment.expression.recent.v1') && str_contains($script, 'cream.comment.emoji.recent.v1'), 'Recent choices must migrate to a cross-section key');
+    truthy($script !== false && str_contains($script, 'stickerPattern') && str_contains($script, '>= 6'), 'Picker must stop at six stickers per comment');
+    truthy($script !== false && str_contains($script, "querySelectorAll('.comment-emoji-group')") && str_contains($script, 'groupTabs.forEach'), 'Group panels must be selected by panel class and all sub-tabs must reset selection');
+    truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, 'sectionPanels.forEach') && str_contains($script, 'emojiPanel.contains(document.activeElement)'), 'Both tab levels need keyboard access and Escape close');
+    truthy($controller !== false && str_contains($controller, 'preg_match_all(') && str_contains($controller, '最多使用 6 张贴图'), 'Server must enforce the sticker marker limit');
+    truthy($css !== false && str_contains($css, '.comment-emoji-sections') && str_contains($css, '.comment-emoji-group.is-sticker') && str_contains($css, '.comment-sticker'), 'Picker and comment body need distinct sticker layout');
+    foreach (glob($root . '/public/assets/stickers/*.gif') ?: [] as $gif) {
+        $png = substr($gif, 0, -4) . '.png';
+        truthy(is_file($png), 'Animated sticker must ship a static fallback: ' . basename($gif));
+        $size = getimagesize($png);
+        truthy($size !== false && $size[0] === 96 && $size[1] === 96, 'Static sticker must be 96 square: ' . basename($png));
+        truthy(filesize($png) > 512, 'Static sticker fallback must not be blank: ' . basename($png));
+    }
+    truthy(count(glob($root . '/public/assets/stickers/*.gif') ?: []) === 18, 'First sticker pack must ship 18 animated files');
+    $readme = file_get_contents($root . '/public/assets/stickers/README.md');
+    truthy($readme !== false && str_contains($readme, 'CC BY 4.0') && str_contains($readme, 'Noto Emoji'), 'Sticker pack must document its Noto Emoji attribution');
 });
 
 check('Comment replies open in place without a page reload', function (): void {

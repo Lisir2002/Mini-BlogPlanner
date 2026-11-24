@@ -70,22 +70,43 @@
   const emojiRecent = form.querySelector('[data-comment-emoji-recent]');
   const emojiRecentList = form.querySelector('[data-comment-emoji-recent-list]');
   if (emojiTrigger && emojiPanel && emojiClose && emojiStatus && emojiRecent && emojiRecentList && body) {
-    const tabs = Array.from(emojiPanel.querySelectorAll('[data-comment-emoji-tab]'));
-    const groups = Array.from(emojiPanel.querySelectorAll('[data-comment-emoji-group]'));
-    const recentKey = 'cream.comment.emoji.recent.v1';
+    const sectionTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-section][role="tab"]'));
+    const sectionPanels = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-panel]'));
+    const groupTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-emoji-tab]'));
+    const groups = Array.from(emojiPanel.querySelectorAll('.comment-emoji-group'));
+    const emojiNotice = form.querySelector('[data-comment-emoji-notice]');
+    const recentKey = 'cream.comment.expression.recent.v1';
+    const legacyRecentKey = 'cream.comment.emoji.recent.v1';
     const recentLimit = 8;
+    const stickerPattern = /\[贴图:[^\[\]\r\n]{1,12}\]/gu;
+    const markerPath = (slug, extension) => '/assets/stickers/' + slug + '.' + extension;
     let insertRange = { start: body.value.length, end: body.value.length };
+    let activeSection = '';
+    let noticeTimer = 0;
+    const lastGroup = new Map();
 
-    const readRecent = () => {
+    const readStoredRecent = (key) => {
       try {
-        const parsed = JSON.parse(window.localStorage.getItem(recentKey) || '[]');
+        const parsed = JSON.parse(window.localStorage.getItem(key) || '[]');
         if (!Array.isArray(parsed)) return [];
-        return parsed.filter((item) => item && typeof item.v === 'string' && typeof item.n === 'string'
-          && typeof item.g === 'string' && (item.k === 'emoji' || item.k === 'text')
-          && item.v.length <= 40 && item.n.length <= 20 && item.g.length <= 8).slice(0, recentLimit);
+        return parsed.filter((item) => {
+          if (!item || typeof item.v !== 'string' || typeof item.n !== 'string'
+            || typeof item.g !== 'string' || !['emoji', 'text', 'sticker'].includes(item.k)
+            || item.v.length > 40 || item.n.length > 20 || item.g.length > 8) return false;
+          return item.k !== 'sticker' || (typeof item.s === 'string' && /^[a-z0-9-]+$/.test(item.s));
+        }).slice(0, recentLimit);
       } catch (error) {
         return [];
       }
+    };
+
+    const readRecent = () => {
+      let items = readStoredRecent(recentKey);
+      if (items.length === 0) {
+        items = readStoredRecent(legacyRecentKey).map((item) => ({ ...item, s: item.s || '' }));
+        if (items.length > 0) writeRecent(items);
+      }
+      return items;
     };
 
     const writeRecent = (items) => {
@@ -96,19 +117,43 @@
       }
     };
 
-    let recent = readRecent();
+    let recent = [];
+
+    const buildStickerPicture = (slug, size) => {
+      const picture = document.createElement('picture');
+      const source = document.createElement('source');
+      source.media = '(prefers-reduced-motion: reduce)';
+      source.srcset = markerPath(slug, 'png');
+      const image = document.createElement('img');
+      image.src = markerPath(slug, 'gif');
+      image.alt = '';
+      image.width = size;
+      image.height = size;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      picture.append(source, image);
+      return picture;
+    };
 
     const createRecentItem = (item) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'comment-emoji-item' + (item.k === 'text' ? ' is-text' : '');
+      button.className = 'comment-emoji-item' + (item.k === 'text' ? ' is-text' : '') + (item.k === 'sticker' ? ' is-sticker' : '');
       button.setAttribute('data-comment-emoji', item.v);
       button.setAttribute('data-comment-emoji-name', item.n);
       button.setAttribute('data-comment-emoji-group', item.g);
       button.setAttribute('data-comment-emoji-kind', item.k);
-      button.setAttribute('aria-label', '插入' + item.g + '：' + item.n);
+      button.setAttribute('aria-label', '插入' + (item.k === 'sticker' ? '贴图' : '表情') + '：' + item.n);
       button.title = item.n;
-      button.textContent = item.v;
+      if (item.k === 'sticker') {
+        button.setAttribute('data-comment-emoji-sticker', item.s);
+        const thumb = document.createElement('span');
+        thumb.className = 'comment-emoji-thumb';
+        thumb.appendChild(buildStickerPicture(item.s, 40));
+        button.appendChild(thumb);
+      } else {
+        button.textContent = item.v;
+      }
       return button;
     };
 
@@ -131,22 +176,70 @@
       };
     };
 
-    const activateTab = (key, focusTab) => {
-      tabs.forEach((tab) => {
-        const active = tab.getAttribute('data-comment-emoji-tab') === key;
+    const hideNotice = () => {
+      window.clearTimeout(noticeTimer);
+      if (emojiNotice) {
+        emojiNotice.hidden = true;
+        emojiNotice.textContent = '';
+      }
+    };
+
+    const showNotice = (message) => {
+      hideNotice();
+      if (!emojiNotice) return;
+      emojiNotice.textContent = message;
+      emojiNotice.hidden = false;
+      noticeTimer = window.setTimeout(() => {
+        emojiNotice.hidden = true;
+        emojiNotice.textContent = '';
+      }, 4200);
+    };
+
+    const sectionOf = (element) => element.getAttribute('data-comment-emoji-section') || '';
+
+    const activateGroup = (sectionKey, groupKey, focusTab) => {
+      const sectionGroups = groupTabs.filter((tab) => sectionOf(tab) === sectionKey);
+      const target = sectionGroups.find((tab) => tab.getAttribute('data-comment-emoji-tab') === groupKey) || sectionGroups[0];
+      if (!target) return;
+      const targetKey = target.getAttribute('data-comment-emoji-tab') || '';
+      groupTabs.forEach((tab) => {
+        const active = tab === target;
         tab.classList.toggle('is-active', active);
         tab.setAttribute('aria-selected', active ? 'true' : 'false');
         tab.tabIndex = active ? 0 : -1;
         if (active && focusTab) tab.focus();
       });
       groups.forEach((group) => {
-        group.hidden = group.getAttribute('data-comment-emoji-group') !== key;
+        const visible = sectionOf(group) === sectionKey && group.getAttribute('data-comment-emoji-group') === targetKey;
+        group.hidden = !visible;
       });
+      lastGroup.set(sectionKey, targetKey);
+    };
+
+    const activateSection = (sectionKey, focusTab) => {
+      const target = sectionTabs.find((tab) => tab.getAttribute('data-comment-expression-section') === sectionKey) || sectionTabs[0];
+      if (!target) return;
+      const targetKey = target.getAttribute('data-comment-expression-section') || '';
+      activeSection = targetKey;
+      sectionTabs.forEach((tab) => {
+        const active = tab === target;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+      });
+      sectionPanels.forEach((panel) => {
+        panel.hidden = panel.getAttribute('data-comment-expression-panel') !== targetKey;
+      });
+      const remembered = lastGroup.get(targetKey) || '';
+      activateGroup(targetKey, remembered, false);
+      hideNotice();
+      if (focusTab) target.focus();
     };
 
     const closePanel = (focusBody) => {
       emojiPanel.hidden = true;
       emojiTrigger.setAttribute('aria-expanded', 'false');
+      hideNotice();
       if (focusBody) body.focus({ preventScroll: true });
     };
 
@@ -156,8 +249,8 @@
       renderRecent();
       emojiPanel.hidden = false;
       emojiTrigger.setAttribute('aria-expanded', 'true');
-      const active = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || tabs[0];
-      if (active) activateTab(active.getAttribute('data-comment-emoji-tab') || '', false);
+      const selected = sectionTabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
+      activateSection(selected ? (selected.getAttribute('data-comment-expression-section') || '') : activeSection, false);
     };
 
     emojiTrigger.addEventListener('click', () => {
@@ -170,17 +263,34 @@
 
     emojiClose.addEventListener('click', () => closePanel(true));
 
-    tabs.forEach((tab, index) => {
-      tab.addEventListener('click', () => activateTab(tab.getAttribute('data-comment-emoji-tab') || '', false));
+    sectionTabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activateSection(tab.getAttribute('data-comment-expression-section') || '', false));
       tab.addEventListener('keydown', (event) => {
         let next = -1;
-        if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-        if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'ArrowRight') next = (index + 1) % sectionTabs.length;
+        if (event.key === 'ArrowLeft') next = (index - 1 + sectionTabs.length) % sectionTabs.length;
         if (event.key === 'Home') next = 0;
-        if (event.key === 'End') next = tabs.length - 1;
+        if (event.key === 'End') next = sectionTabs.length - 1;
         if (next < 0) return;
         event.preventDefault();
-        activateTab(tabs[next].getAttribute('data-comment-emoji-tab') || '', true);
+        activateSection(sectionTabs[next].getAttribute('data-comment-expression-section') || '', true);
+      });
+    });
+
+    groupTabs.forEach((tab) => {
+      tab.addEventListener('click', () => activateGroup(sectionOf(tab), tab.getAttribute('data-comment-emoji-tab') || '', false));
+      tab.addEventListener('keydown', (event) => {
+        const sectionKey = sectionOf(tab);
+        const siblings = groupTabs.filter((item) => sectionOf(item) === sectionKey);
+        const index = siblings.indexOf(tab);
+        let next = -1;
+        if (event.key === 'ArrowRight') next = (index + 1) % siblings.length;
+        if (event.key === 'ArrowLeft') next = (index - 1 + siblings.length) % siblings.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = siblings.length - 1;
+        if (next < 0) return;
+        event.preventDefault();
+        activateGroup(sectionKey, siblings[next].getAttribute('data-comment-emoji-tab') || '', true);
       });
     });
 
@@ -191,18 +301,31 @@
       const value = target.getAttribute('data-comment-emoji') || '';
       const name = target.getAttribute('data-comment-emoji-name') || '';
       const group = target.getAttribute('data-comment-emoji-group') || '';
-      const kind = target.getAttribute('data-comment-emoji-kind') === 'text' ? 'text' : 'emoji';
+      const kind = ['text', 'sticker'].includes(target.getAttribute('data-comment-emoji-kind') || '') ? (target.getAttribute('data-comment-emoji-kind') || '') : 'emoji';
+      const stickerSlug = target.getAttribute('data-comment-emoji-sticker') || '';
       const maxLength = Number(body.maxLength) || 1000;
       const start = Math.max(0, Math.min(insertRange.start, body.value.length));
       const end = Math.max(start, Math.min(insertRange.end, body.value.length));
       if (body.value.length - (end - start) + value.length > maxLength) {
+        showNotice('快到 1000 字上限了。');
         emojiStatus.textContent = '快到 1000 字上限了。';
         return;
+      }
+      if (kind === 'sticker') {
+        const remaining = body.value.slice(0, start) + body.value.slice(end);
+        if ((remaining.match(stickerPattern) || []).length >= 6) {
+          showNotice('一条留言最多 6 张贴图。');
+          emojiStatus.textContent = '一条留言最多 6 张贴图。';
+          return;
+        }
       }
       body.setRangeText(value, start, end, 'end');
       body.dispatchEvent(new Event('input', { bubbles: true }));
       insertRange = { start: body.selectionStart ?? start + value.length, end: body.selectionEnd ?? start + value.length };
-      remember({ v: value, n: name, g: group, k: kind });
+      const remembered = { v: value, n: name, g: group, k: kind };
+      if (kind === 'sticker' && stickerSlug) remembered.s = stickerSlug;
+      remember(remembered);
+      hideNotice();
       emojiStatus.textContent = '已插入：' + name;
       body.focus({ preventScroll: true });
     });
@@ -224,9 +347,9 @@
       closePanel(emojiPanel.contains(document.activeElement));
     });
 
+    recent = readRecent();
     renderRecent();
   }
-
   const defaultNote = summaryNote.getAttribute('data-default-note') || summaryNote.textContent || '';
   let scrollTimer = 0;
   let focusTimer = 0;

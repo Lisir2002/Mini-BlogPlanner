@@ -9,6 +9,87 @@ if (!function_exists('cream_e')) {
     }
 }
 
+if (!function_exists('cream_expression_catalog')) {
+    /** @return array<string, array<string, mixed>> */
+    function cream_expression_catalog(): array
+    {
+        static $catalog = null;
+        if (!is_array($catalog)) {
+            $file = __DIR__ . '/catalog.php';
+            $loaded = is_file($file) ? require $file : [];
+            $catalog = is_array($loaded) ? $loaded : [];
+        }
+
+        return $catalog;
+    }
+}
+
+if (!function_exists('cream_sticker_map')) {
+    /** @return array<string, array{slug:string, group:string}> */
+    function cream_sticker_map(): array
+    {
+        static $map = null;
+        if (is_array($map)) {
+            return $map;
+        }
+        $map = [];
+        $catalog = cream_expression_catalog();
+        foreach ($catalog as $section) {
+            if (($section['kind'] ?? '') !== 'sticker') {
+                continue;
+            }
+            foreach (($section['groups'] ?? []) as $group) {
+                foreach (($group['items'] ?? []) as $item) {
+                    $name = (string) ($item['name'] ?? '');
+                    $slug = (string) ($item['slug'] ?? '');
+                    if ($name !== '' && preg_match('/^[a-z0-9-]+$/', $slug) === 1) {
+                        $map[$name] = ['slug' => $slug, 'group' => (string) ($group['label'] ?? '')];
+                    }
+                }
+            }
+        }
+
+        return $map;
+    }
+}
+
+if (!function_exists('cream_sticker_picture')) {
+    function cream_sticker_picture(string $slug, int $size = 72): string
+    {
+        if (preg_match('/^[a-z0-9-]+$/', $slug) !== 1) {
+            return '';
+        }
+        $gif = cream_asset('stickers/' . $slug . '.gif');
+        $png = cream_asset('stickers/' . $slug . '.png');
+        $px = (string) max(24, min(192, $size));
+
+        return '<picture><source srcset="' . cream_e($png) . '" media="(prefers-reduced-motion: reduce)"><img src="' . cream_e($gif) . '" alt="" width="' . $px . '" height="' . $px . '" loading="lazy" decoding="async"></picture>';
+    }
+}
+
+if (!function_exists('cream_comment_body')) {
+    function cream_comment_body(string $body): string
+    {
+        $escaped = cream_e($body);
+        $map = cream_sticker_map();
+        $rendered = preg_replace_callback('/[\[［]贴图[：:]([^\[\]\r\n]{1,12})[\]］]/u', static function (array $matches) use ($map): string {
+            $name = (string) $matches[1];
+            if (!isset($map[$name])) {
+                return $matches[0];
+            }
+            $slug = $map[$name]['slug'];
+            $picture = cream_sticker_picture($slug, 72);
+
+            return '<span class="comment-sticker" role="img" aria-label="贴图：' . cream_e($name) . '">' . $picture . '</span>';
+        }, $escaped, 6);
+        if (!is_string($rendered)) {
+            $rendered = $escaped;
+        }
+
+        return nl2br($rendered);
+    }
+}
+
 if (!function_exists('cream_asset_version')) {
     function cream_asset_version(): string
     {

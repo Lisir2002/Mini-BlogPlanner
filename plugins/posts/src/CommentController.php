@@ -65,6 +65,9 @@ final class CommentController
         if (mb_strlen($body) < 2) {
             $errors[] = '留言内容至少需要 2 个字。';
         }
+        if (preg_match_all('/[\[［]贴图[：:]([^\[\]\r\n]{1,12})[\]］]/u', $body, $stickerMatches) > 6) {
+            $errors[] = '一条留言最多使用 6 张贴图。';
+        }
 
         $parentId = null;
         $rawParent = (string) ($_POST['parent_id'] ?? '');

@@ -171,7 +171,7 @@ $excerpt = static function (string $text, int $limit = 90): string {
         </div>
         <?php endif; ?>
 
-        <p class="comment-inbox-body"><?= nl2br(cream_e($comment->body)) ?></p>
+        <p class="comment-inbox-body"><?= cream_comment_body($comment->body) ?></p>
 
         <footer class="comment-inbox-actions">
           <?php if ($comment->status !== 'approved'): ?>
