@@ -170,13 +170,6 @@
 
     emojiClose.addEventListener('click', () => closePanel(true));
 
-    emojiPanel.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closePanel(true);
-      }
-    });
-
     tabs.forEach((tab, index) => {
       tab.addEventListener('click', () => activateTab(tab.getAttribute('data-comment-emoji-tab') || '', false));
       tab.addEventListener('keydown', (event) => {
@@ -226,10 +219,9 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !emojiPanel.hidden && document.activeElement === emojiTrigger) {
-        event.preventDefault();
-        closePanel(false);
-      }
+      if (event.key !== 'Escape' || emojiPanel.hidden) return;
+      event.preventDefault();
+      closePanel(emojiPanel.contains(document.activeElement));
     });
 
     renderRecent();

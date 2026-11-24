@@ -1318,7 +1318,7 @@ check('Comment composer offers tone emoji and kaomoji without uploads', function
     truthy($comments !== false && str_contains($comments, "require __DIR__ . '/comment-body-field.php'"), 'Comment form must include the shared body field');
     truthy($script !== false && str_contains($script, 'cream.comment.emoji.recent.v1') && str_contains($script, 'window.localStorage.setItem'), 'Recent emoji must stay in browser storage');
     truthy($script !== false && str_contains($script, 'body.setRangeText(value, start, end') && str_contains($script, 'body.focus({ preventScroll: true })'), 'Emoji must insert at the cursor and return focus');
-    truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, "event.key === 'Escape'"), 'Emoji tabs must support keyboard navigation');
+    truthy($script !== false && str_contains($script, "event.key === 'ArrowRight'") && str_contains($script, "event.key !== 'Escape'") && str_contains($script, 'emojiPanel.contains(document.activeElement)'), 'Emoji tabs must support keyboard navigation and Escape close');
     truthy($css !== false && str_contains($css, '.comment-emoji-panel') && str_contains($css, '.comment-emoji-group.is-text') && str_contains($css, '.comment-emoji-recent-list'), 'Emoji panel must keep its paper styling');
 });
 
