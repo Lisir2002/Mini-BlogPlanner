@@ -1343,6 +1343,11 @@ check('Comment composer groups Emoji, GIF stickers and kaomoji by task', functio
     truthy($css !== false && str_contains($css, '.comment-emoji-sections') && str_contains($css, '.comment-emoji-group.is-sticker') && str_contains($css, '.comment-sticker'), 'Picker and comment body need distinct sticker layout');
     truthy($css !== false && str_contains($css, '.comment-emoji-group.is-emoji .comment-emoji-grid') && str_contains($css, 'max-height: min(78dvh, 620px)') && str_contains($css, 'position: fixed'), 'Expanded groups need a four-column Emoji grid and a draggable viewport-bound card');
     truthy($css !== false && str_contains($css, '.comment-emoji-groups') && str_contains($css, 'max-height: none') && str_contains($css, 'touch-action: none'), 'Picker body must scroll inside the sized card while its drag handle owns touch gestures');
+    truthy($partial !== false && str_contains($partial, 'data-comment-emoji-resize-handle') && str_contains($partial, '双击恢复默认大小'), 'Picker must expose a corner resize handle with a discoverable reset action');
+    truthy($script !== false && str_contains($script, 'panelResizeWidthLimit') && str_contains($script, 'panelMinWidth') && str_contains($script, 'panelMinHeight') && str_contains($script, 'panelStickerMinHeight'), 'Picker resize must cap the card and enforce section-aware minimum sizes');
+    truthy($script !== false && str_contains($script, 'panelResize.aspect') && str_contains($script, 'panelAspect') && str_contains($script, 'ensurePanelMinSize'), 'Picker resize must lock the dragged ratio and keep tall sections usable');
+    truthy($script !== false && str_contains($script, 'cream.comment.expression.size.v1') && str_contains($script, 'writePanelSize') && str_contains($script, 'clearPanelSize'), 'Picker must remember the user size locally and allow returning to the default');
+    truthy($css !== false && str_contains($css, '.comment-emoji-resize') && str_contains($css, 'cursor: nwse-resize') && str_contains($css, 'touch-action: none') && str_contains($css, 'repeating-linear-gradient(135deg'), 'Corner handle needs a diagonal grip, resize cursor and touch ownership');
     foreach (glob($root . '/public/assets/stickers/*.gif') ?: [] as $gif) {
         $png = substr($gif, 0, -4) . '.png';
         truthy(is_file($png), 'Animated sticker must ship a static fallback: ' . basename($gif));

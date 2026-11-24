@@ -67,10 +67,11 @@
   const emojiPanel = form.querySelector('[data-comment-emoji-panel]');
   const emojiClose = form.querySelector('[data-comment-emoji-close]');
   const emojiDragHandle = form.querySelector('[data-comment-emoji-drag-handle]');
+  const emojiResizeHandle = form.querySelector('[data-comment-emoji-resize-handle]');
   const emojiStatus = form.querySelector('[data-comment-emoji-status]');
   const emojiRecent = form.querySelector('[data-comment-emoji-recent]');
   const emojiRecentList = form.querySelector('[data-comment-emoji-recent-list]');
-  if (emojiTrigger && emojiPanel && emojiClose && emojiDragHandle && emojiStatus && emojiRecent && emojiRecentList && body) {
+  if (emojiTrigger && emojiPanel && emojiClose && emojiDragHandle && emojiResizeHandle && emojiStatus && emojiRecent && emojiRecentList && body) {
     const sectionTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-section][role="tab"]'));
     const sectionPanels = Array.from(emojiPanel.querySelectorAll('[data-comment-expression-panel]'));
     const groupTabs = Array.from(emojiPanel.querySelectorAll('[data-comment-emoji-tab]'));
@@ -84,13 +85,22 @@
     const markerPath = (slug, extension) => '/assets/stickers/' + slug + '.' + extension;
     const panelMargin = 10;
     const panelMaxHeight = 620;
+    const panelResizeMaxHeight = 760;
     const panelWidthLimit = 380;
+    const panelResizeWidthLimit = 560;
+    const panelMinWidth = 260;
+    const panelMinHeight = 220;
+    const panelStickerMinHeight = 300;
+    const panelSizeKey = 'cream.comment.expression.size.v1';
     let insertRange = { start: body.value.length, end: body.value.length };
     let activeSection = '';
     let noticeTimer = 0;
     let panelClampFrame = 0;
     let panelDrag = null;
+    let panelResize = null;
     let panelPinned = false;
+    let panelSized = false;
+    let panelAspect = 0;
     const lastGroup = new Map();
 
     const readStoredRecent = (key) => {
@@ -122,6 +132,37 @@
         window.localStorage.setItem(recentKey, JSON.stringify(items));
       } catch (error) {
         // 隐私模式或存储已满时，最近使用只在当前页面内保留。
+      }
+    };
+
+    const readPanelSize = () => {
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem(panelSizeKey) || 'null');
+        if (!parsed || typeof parsed.w !== 'number' || typeof parsed.h !== 'number'
+          || !Number.isFinite(parsed.w) || !Number.isFinite(parsed.h)
+          || parsed.w < 180 || parsed.h < 150 || parsed.w > 1200 || parsed.h > 1600) return null;
+        return { width: parsed.w, height: parsed.h };
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const writePanelSize = (width, height) => {
+      try {
+        window.localStorage.setItem(panelSizeKey, JSON.stringify({
+          w: Math.round(width * 10) / 10,
+          h: Math.round(height * 10) / 10,
+        }));
+      } catch (error) {
+        // 隐私模式或存储已满时，本次打开仍保留用户调好的大小。
+      }
+    };
+
+    const clearPanelSize = () => {
+      try {
+        window.localStorage.removeItem(panelSizeKey);
+      } catch (error) {
+        // 无法写入存储时不需要额外处理。
       }
     };
 
@@ -216,12 +257,69 @@
       };
     };
 
+    const panelWidthCap = (view) => Math.max(120, Math.min(panelResizeWidthLimit, view.width - panelMargin * 2));
+    const panelHeightCap = (view) => Math.max(120, Math.min(panelResizeMaxHeight, view.height - panelMargin * 2));
+    const panelMinHeightForSection = (sectionKey = activeSection) => sectionKey === 'sticker' ? panelStickerMinHeight : panelMinHeight;
+
     const syncPanelMetrics = () => {
       const view = panelViewport();
+      if (panelSized) {
+        emojiPanel.style.maxWidth = Math.round(panelWidthCap(view)) + 'px';
+        emojiPanel.style.maxHeight = Math.round(panelHeightCap(view)) + 'px';
+        return;
+      }
       const width = Math.max(240, Math.floor(view.width - panelMargin * 2));
       const height = Math.min(view.height - panelMargin * 2, Math.max(160, Math.floor(view.height * 0.78)));
       emojiPanel.style.maxWidth = Math.min(panelWidthLimit, width) + 'px';
       emojiPanel.style.maxHeight = Math.min(panelMaxHeight, height) + 'px';
+    };
+
+    const applyPanelSize = (width, height, keepAspect = true) => {
+      const nextWidth = Math.round(width * 10) / 10;
+      const nextHeight = Math.round(height * 10) / 10;
+      if (!Number.isFinite(nextWidth) || !Number.isFinite(nextHeight) || nextWidth <= 0 || nextHeight <= 0) return;
+      if (!keepAspect || !panelAspect) panelAspect = nextWidth / nextHeight;
+      panelSized = true;
+      emojiPanel.style.width = nextWidth + 'px';
+      emojiPanel.style.height = nextHeight + 'px';
+    };
+
+    const fitPanelSize = () => {
+      if (!panelSized || emojiPanel.hidden) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const view = panelViewport();
+      const aspect = panelAspect > 0 ? panelAspect : rect.width / rect.height;
+      const width = Math.min(rect.width, rect.height * aspect, panelWidthCap(view), panelHeightCap(view) * aspect);
+      if (!Number.isFinite(width) || width <= 0) return;
+      applyPanelSize(width, width / aspect);
+    };
+
+    const resetPanelSize = () => {
+      panelSized = false;
+      panelAspect = 0;
+      emojiPanel.style.width = '';
+      emojiPanel.style.height = '';
+      syncPanelMetrics();
+    };
+
+    const restorePanelSize = () => {
+      const size = readPanelSize();
+      if (!size) return false;
+      panelSized = true;
+      panelAspect = size.width / size.height;
+      emojiPanel.style.width = size.width + 'px';
+      emojiPanel.style.height = size.height + 'px';
+      syncPanelMetrics();
+      fitPanelSize();
+      return true;
+    };
+
+    const persistPanelSize = () => {
+      if (!panelSized || emojiPanel.hidden) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      writePanelSize(rect.width, rect.height);
     };
 
     const clampPanelBox = (left, top) => {
@@ -258,6 +356,7 @@
       panelClampFrame = window.requestAnimationFrame(() => {
         if (emojiPanel.hidden) return;
         syncPanelMetrics();
+        fitPanelSize();
         clampPanelPosition();
       });
     };
@@ -265,6 +364,7 @@
     const placePanel = () => {
       if (emojiPanel.hidden) return;
       syncPanelMetrics();
+      fitPanelSize();
       const view = panelViewport();
       const width = emojiPanel.offsetWidth;
       const height = emojiPanel.offsetHeight;
@@ -350,6 +450,150 @@
       if (moved) clampPanelPosition();
     };
 
+    const clearPanelResize = () => {
+      if (!panelResize) {
+        emojiPanel.classList.remove('is-resizing');
+        return;
+      }
+      const pointerId = panelResize.pointerId;
+      panelResize = null;
+      emojiPanel.classList.remove('is-resizing');
+      try {
+        if (emojiResizeHandle.hasPointerCapture(pointerId)) {
+          emojiResizeHandle.releasePointerCapture(pointerId);
+        }
+      } catch (error) {
+        // 指针已经离开时，浏览器会自动释放捕获。
+      }
+    };
+
+    const startPanelResize = (event) => {
+      if (emojiPanel.hidden || event.button !== 0 || !event.isPrimary) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const view = panelViewport();
+      const aspect = rect.width / rect.height;
+      const maxWidth = Math.max(rect.width, Math.min(
+        panelResizeWidthLimit,
+        panelWidthCap(view),
+        panelHeightCap(view) * aspect,
+        view.left + view.width - panelMargin - rect.left,
+      ));
+      const minHeight = panelMinHeightForSection(activeSection);
+      panelResize = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        width: rect.width,
+        height: rect.height,
+        aspect,
+        minWidth: Math.min(maxWidth, Math.max(panelMinWidth, minHeight * aspect)),
+        maxWidth,
+        moved: false,
+      };
+      try {
+        emojiResizeHandle.setPointerCapture(event.pointerId);
+      } catch (error) {
+        // 捕获失败时，仍可在手柄上继续缩放。
+      }
+    };
+
+    const movePanelResize = (event) => {
+      if (!panelResize || event.pointerId !== panelResize.pointerId) return;
+      const dx = event.clientX - panelResize.startX;
+      const dy = event.clientY - panelResize.startY;
+      if (!panelResize.moved) {
+        if (Math.hypot(dx, dy) < 4) return;
+        panelResize.moved = true;
+        emojiPanel.classList.add('is-resizing');
+        if (!panelSized) {
+          panelSized = true;
+          panelAspect = panelResize.aspect;
+          emojiPanel.style.width = panelResize.width + 'px';
+          emojiPanel.style.height = panelResize.height + 'px';
+          syncPanelMetrics();
+        }
+      }
+      if (event.cancelable) event.preventDefault();
+      const projected = (dx + dy / panelResize.aspect) / (1 + 1 / (panelResize.aspect * panelResize.aspect));
+      const width = Math.min(Math.max(panelResize.width + projected, panelResize.minWidth), panelResize.maxWidth);
+      applyPanelSize(width, width / panelResize.aspect);
+    };
+
+    const finishPanelResize = (event) => {
+      if (!panelResize || event.pointerId !== panelResize.pointerId) return;
+      const moved = panelResize.moved;
+      clearPanelResize();
+      if (moved) {
+        clampPanelPosition();
+        persistPanelSize();
+      }
+    };
+
+    const ensurePanelMinSize = () => {
+      if (!panelSized || emojiPanel.hidden) return;
+      const rect = emojiPanel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const view = panelViewport();
+      const aspect = panelAspect > 0 ? panelAspect : rect.width / rect.height;
+      const minimumHeight = panelMinHeightForSection(activeSection);
+      const minimumWidth = Math.max(panelMinWidth, minimumHeight * aspect);
+      const width = Math.max(rect.width, Math.min(minimumWidth, panelWidthCap(view)));
+      const fittedHeight = width / aspect;
+      const height = Math.min(Math.max(fittedHeight, minimumHeight), panelHeightCap(view));
+      if (width <= rect.width + 0.5 && height <= rect.height + 0.5) return;
+      const keepsAspect = Math.abs(width / height - aspect) < 0.002;
+      applyPanelSize(width, height, keepsAspect);
+      syncPanelMetrics();
+      clampPanelPosition();
+    };
+
+    const resetPanelSizeForUser = () => {
+      resetPanelSize();
+      clearPanelSize();
+      if (panelPinned) {
+        queuePanelClamp();
+      } else {
+        placePanel();
+      }
+    };
+
+    const resizePanelByStep = (delta) => {
+      const rect = emojiPanel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const view = panelViewport();
+      const aspect = rect.width / rect.height;
+      const maxWidth = Math.max(rect.width, Math.min(
+        panelResizeWidthLimit,
+        panelWidthCap(view),
+        panelHeightCap(view) * aspect,
+        view.left + view.width - panelMargin - rect.left,
+      ));
+      const minWidth = Math.min(maxWidth, Math.max(panelMinWidth, panelMinHeightForSection(activeSection) * aspect));
+      const width = Math.min(Math.max(rect.width + delta, minWidth), maxWidth);
+      if (Math.abs(width - rect.width) < 1) return;
+      applyPanelSize(width, width / aspect);
+      syncPanelMetrics();
+      clampPanelPosition();
+      persistPanelSize();
+    };
+
+    const onPanelResizeKeydown = (event) => {
+      if (event.target !== emojiResizeHandle) return;
+      if (event.key === 'Home') {
+        event.preventDefault();
+        resetPanelSizeForUser();
+        return;
+      }
+      const step = event.shiftKey ? 64 : 24;
+      let delta = 0;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') delta = -step;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') delta = step;
+      if (!delta) return;
+      event.preventDefault();
+      resizePanelByStep(delta);
+    };
+
     const onPanelHandleKeydown = (event) => {
       if (event.target !== emojiDragHandle) return;
       if (event.key === 'Home') {
@@ -411,7 +655,8 @@
       const remembered = lastGroup.get(targetKey) || '';
       activateGroup(targetKey, remembered, false);
       hideNotice();
-      if (panelPinned) {
+      ensurePanelMinSize();
+      if (panelPinned || panelSized) {
         queuePanelClamp();
       } else {
         placePanel();
@@ -422,6 +667,7 @@
     const closePanel = (focusBody) => {
       window.cancelAnimationFrame(panelClampFrame);
       clearPanelDrag();
+      clearPanelResize();
       emojiPanel.hidden = true;
       emojiTrigger.setAttribute('aria-expanded', 'false');
       hideNotice();
@@ -433,10 +679,15 @@
       syncInsertRange();
       renderRecent();
       panelPinned = false;
+      resetPanelSize();
       emojiPanel.hidden = false;
       emojiTrigger.setAttribute('aria-expanded', 'true');
       const selected = sectionTabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
       activateSection(selected ? (selected.getAttribute('data-comment-expression-section') || '') : activeSection, false);
+      if (restorePanelSize()) {
+        ensurePanelMinSize();
+        placePanel();
+      }
     };
 
     emojiTrigger.addEventListener('click', () => {
@@ -461,6 +712,17 @@
       event.preventDefault();
       panelPinned = false;
       placePanel();
+    });
+
+    emojiResizeHandle.addEventListener('pointerdown', startPanelResize);
+    emojiResizeHandle.addEventListener('pointermove', movePanelResize);
+    emojiResizeHandle.addEventListener('pointerup', finishPanelResize);
+    emojiResizeHandle.addEventListener('pointercancel', finishPanelResize);
+    emojiResizeHandle.addEventListener('lostpointercapture', clearPanelResize);
+    emojiResizeHandle.addEventListener('keydown', onPanelResizeKeydown);
+    emojiResizeHandle.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      resetPanelSizeForUser();
     });
 
     window.addEventListener('resize', queuePanelClamp, { passive: true });

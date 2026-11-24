@@ -18,7 +18,7 @@ $firstSection = (string) ($sectionKeys[0] ?? 'emoji');
       <span class="comment-emoji-grip" aria-hidden="true"></span>
       <div>
         <strong>挑一个表情</strong>
-        <small>点一下插入，按住标题可拖动</small>
+        <small>点表情插入，拖标题移动，右下角缩放</small>
       </div>
       <button class="comment-emoji-close" type="button" data-comment-emoji-close aria-label="关闭表情面板"><?= cream_icon('close', 'icon-xs') ?></button>
     </div>
@@ -73,6 +73,7 @@ $firstSection = (string) ($sectionKeys[0] ?? 'emoji');
       <?php endif; ?>
     </div>
     <?php endforeach; ?>
+    <button class="comment-emoji-resize" type="button" data-comment-emoji-resize-handle aria-label="调整表情面板大小，按住右下角等比缩放，双击恢复默认大小" title="拖动等比缩放，双击恢复默认大小"></button>
     <p class="comment-emoji-notice" data-comment-emoji-notice aria-live="polite" hidden></p>
     <p class="comment-emoji-status sr-only" aria-live="polite" data-comment-emoji-status></p>
   </section>
